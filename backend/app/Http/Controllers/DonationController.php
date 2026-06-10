@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Helpers\ApiResponse;
 use App\Http\Requests\StoreDonationRequest;
+use App\Http\Requests\UpdatePaymentStatusRequest;
 use App\Services\DonationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DonationController extends Controller
 {
@@ -40,7 +42,7 @@ class DonationController extends Controller
         $payload = $request->validated();
 
         // Cek campaign aktif
-        $campaign = \Illuminate\Support\Facades\DB::selectOne(
+        $campaign = DB::selectOne(
             'SELECT id_campaign, status FROM campaign WHERE id_campaign = ? AND deleted_at IS NULL',
             [$payload['id_campaign']]
         );
@@ -74,7 +76,6 @@ class DonationController extends Controller
         $donasi = $this->service->getById($userId, $id);
 
         if (!$donasi) {
-            // Cek apakah donasi ada tapi bukan milik user ini
             if ($this->service->existsDonation($id)) {
                 return ApiResponse::error('Akses ditolak', 403, 'ERR-DON-06');
             }
@@ -82,5 +83,45 @@ class DonationController extends Controller
         }
 
         return ApiResponse::success($donasi, 'Detail transaksi berhasil ditampilkan');
+    }
+
+    public function receipt(Request $request, int $id): JsonResponse
+    {
+        $receipt = $this->service->getReceipt($id);
+
+        if (!$receipt) {
+            return ApiResponse::error('Bukti donasi tidak ditemukan', 404, 'ERR-DON-05');
+        }
+
+        if ($receipt->id_user !== auth()->user()->id_user) {
+            return ApiResponse::error('Anda tidak memiliki akses ke bukti donasi ini', 403, 'ERR-DON-04');
+        }
+
+        return ApiResponse::success([
+            'id_donasi'          => $receipt->id_donasi,
+            'nomor_transaksi'    => $receipt->nomor_transaksi,
+            'tanggal_transaksi'  => $receipt->tanggal_transaksi,
+            'judul_campaign'     => $receipt->judul_campaign,
+            'nominal'            => $receipt->nominal,
+            'metode_pembayaran'  => $receipt->metode_pembayaran,
+            'nama_tampil'        => $receipt->nama_tampil,
+            'bukti_pdf_url'      => $receipt->bukti_pdf_url,
+        ], 'Bukti donasi berhasil ditemukan');
+    }
+
+    public function updatePaymentStatus(UpdatePaymentStatusRequest $request, int $id): JsonResponse
+    {
+        $donasi = DB::selectOne(
+            'SELECT id_donasi, status_pembayaran FROM donasi WHERE id_donasi = ?',
+            [$id]
+        );
+
+        if (!$donasi) {
+            return ApiResponse::error('Data donasi tidak ditemukan', 404, 'ERR-DON-03');
+        }
+
+        $result = $this->service->updatePaymentStatus($id, $request->status_pembayaran);
+
+        return ApiResponse::success($result, 'Status pembayaran berhasil diperbarui');
     }
 }

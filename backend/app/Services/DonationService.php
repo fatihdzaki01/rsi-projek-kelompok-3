@@ -71,4 +71,55 @@ class DonationService
         );
         return $row !== null;
     }
+
+    public function getReceipt(int $idDonasi): ?object
+    {
+        return DB::selectOne(
+            'SELECT id_donasi, nomor_transaksi, tanggal_transaksi, judul_campaign,
+                    nominal, metode_pembayaran, nama_tampil, bukti_pdf_url, id_user
+             FROM v_donation_receipt
+             WHERE id_donasi = ?',
+            [$idDonasi]
+        ) ?: null;
+    }
+
+    public function updatePaymentStatus(int $idDonasi, string $status): object
+    {
+        if ($status === 'berhasil') {
+            DB::statement('CALL sp_confirm_payment(?)', [$idDonasi]);
+
+            // Cek apakah campaign perlu platform fee
+            $campaign = DB::selectOne(
+                'SELECT c.id_campaign, c.status, c.potongan_platform_sudah_dipotong
+                 FROM donasi d
+                 JOIN campaign c ON c.id_campaign = d.id_campaign
+                 WHERE d.id_donasi = ?',
+                [$idDonasi]
+            );
+
+            if (
+                $campaign &&
+                $campaign->status === 'selesai' &&
+                !$campaign->potongan_platform_sudah_dipotong
+            ) {
+                DB::statement('CALL sp_apply_platform_fee(?, ?)', [
+                    $campaign->id_campaign,
+                    auth()->user()->id_user,
+                ]);
+            }
+        } else {
+            DB::statement('CALL sp_fail_payment(?)', [$idDonasi]);
+        }
+
+        $donasi = DB::selectOne(
+            'SELECT id_donasi, status_pembayaran FROM donasi WHERE id_donasi = ?',
+            [$idDonasi]
+        );
+
+        return (object) [
+            'id_donasi'          => $donasi->id_donasi,
+            'status_pembayaran'  => $donasi->status_pembayaran,
+            'tanggal_verifikasi' => now()->toIso8601String(),
+        ];
+    }
 }
