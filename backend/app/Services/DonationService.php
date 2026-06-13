@@ -6,22 +6,36 @@ use Illuminate\Support\Facades\DB;
 
 class DonationService
 {
-    public function getHistory(int $userId, int $page, int $perPage): array
+    public function getHistory(int $userId, int $page, int $perPage, string $search = '', string $status = ''): array
     {
         $offset = ($page - 1) * $perPage;
 
+        $where  = 'WHERE id_user = ?';
+        $params = [$userId];
+
+        if ($search !== '') {
+            $where .= ' AND (judul_campaign LIKE ? OR nomor_transaksi LIKE ?)';
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+        }
+
+        if ($status !== '' && $status !== 'semua') {
+            $where .= ' AND status_pembayaran = ?';
+            $params[] = $status;
+        }
+
         $data = DB::select(
-            'SELECT id_donasi, judul_campaign, nominal, status_pembayaran, created_at
+            "SELECT id_donasi, judul_campaign, nominal, status_pembayaran, created_at
              FROM v_user_donation_history
-             WHERE id_user = ?
+             {$where}
              ORDER BY created_at DESC
-             LIMIT ? OFFSET ?',
-            [$userId, $perPage, $offset]
+             LIMIT ? OFFSET ?",
+            [...$params, $perPage, $offset]
         );
 
         $total = DB::selectOne(
-            'SELECT COUNT(*) as total FROM v_user_donation_history WHERE id_user = ?',
-            [$userId]
+            "SELECT COUNT(*) as total FROM v_user_donation_history {$where}",
+            $params
         )->total;
 
         return ['data' => $data, 'total' => (int) $total];
