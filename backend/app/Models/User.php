@@ -11,8 +11,6 @@ class User extends Authenticatable
 
     protected $table = 'users';
     protected $primaryKey = 'id_user';
-    
-    public $timestamps = false;
 
     protected $fillable = [
         'username',
@@ -34,13 +32,14 @@ class User extends Authenticatable
     ];
 
     protected $casts = [
-        'is_active'      => 'boolean',
-        'is_verified'    => 'boolean',
-        'tanggal_lahir'  => 'date',
+        'is_active' => 'boolean',
+        'is_verified' => 'boolean',
+        'tanggal_lahir' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    // Wajib: Sanctum pakai ini untuk verifikasi password
-    public function getAuthPassword(): string
+    public function getAuthPassword()
     {
         return $this->password_hash;
     }
