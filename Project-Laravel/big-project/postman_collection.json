@@ -1,0 +1,344 @@
+{
+  "info": {
+    "name": "RSI Big Project - API V1",
+    "description": "Koleksi Postman untuk semua endpoint API V1 project Laravel RSI Kelompok 3.\n\nBase URL: http://localhost:8000/api/v1\n\n**Cara Pakai:**\n1. Set variable `base_url` = `http://localhost:8000/api/v1`\n2. Jalankan `php artisan serve` di terminal\n3. Isi data yang diperlukan di body/params masing-masing request",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "campaign_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "update_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "community_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "notification_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏕️ Campaign",
+      "item": [
+        {
+          "name": "FSD-7.1 — Detail Campaign Publik",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/campaigns/{{campaign_id}}/public",
+              "host": ["{{base_url}}"],
+              "path": ["campaigns", "{{campaign_id}}", "public"]
+            },
+            "description": "Menampilkan detail campaign publik (status: aktif atau selesai).\nJika status bukan aktif/selesai → 403 ERR-MON-01"
+          }
+        },
+        {
+          "name": "FSD-7.2 — Detail Campaign Internal",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/campaigns/{{campaign_id}}/internal",
+              "host": ["{{base_url}}"],
+              "path": ["campaigns", "{{campaign_id}}", "internal"]
+            },
+            "description": "Detail campaign untuk penggunaan internal komunitas/admin.\nMenampilkan data donasi, pencairan dana, dan laporan penggunaan dana."
+          }
+        },
+        {
+          "name": "FSD-8.1 — Pencarian Campaign",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/campaigns/search?kata_kunci=bantuan&kategori=1&wilayah=32",
+              "host": ["{{base_url}}"],
+              "path": ["campaigns", "search"],
+              "query": [
+                {
+                  "key": "kata_kunci",
+                  "value": "bantuan",
+                  "description": "Cari berdasarkan judul campaign (opsional)"
+                },
+                {
+                  "key": "kategori",
+                  "value": "1",
+                  "description": "Filter berdasarkan id_kategori (opsional)"
+                },
+                {
+                  "key": "wilayah",
+                  "value": "32",
+                  "description": "Filter berdasarkan kode_wilayah (prefix match, opsional)"
+                }
+              ]
+            },
+            "description": "Mencari campaign yang berstatus aktif.\nSupports filter: kata_kunci, kategori, wilayah. Hasil di-paginate (12 per halaman)."
+          }
+        },
+        {
+          "name": "FSD-7.3 — Post Update Campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "judul_update",
+                  "value": "Update Minggu Ke-3",
+                  "type": "text",
+                  "description": "Wajib diisi"
+                },
+                {
+                  "key": "deskripsi",
+                  "value": "Alhamdulillah, penyaluran bantuan telah mencapai 80% dari target.",
+                  "type": "text",
+                  "description": "Wajib diisi"
+                },
+                {
+                  "key": "foto",
+                  "type": "file",
+                  "src": "",
+                  "description": "Opsional, bisa upload hingga 5 foto (jpg/jpeg/png, maks 5MB per file)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/campaigns/{{campaign_id}}/updates",
+              "host": ["{{base_url}}"],
+              "path": ["campaigns", "{{campaign_id}}", "updates"]
+            },
+            "description": "Komunitas memposting update pada campaign yang aktif.\nBody: multipart/form-data\n\n**Validasi:**\n- judul_update: required string max:255\n- deskripsi: required string\n- foto: opsional, array max 5 file (jpg/jpeg/png, max 5MB)\n\n**Error:** 403 ERR-MON-08 jika campaign tidak aktif"
+          }
+        },
+        {
+          "name": "FSD-7.4 — Hapus Update Campaign (Superadmin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alasan_hapus\": \"Konten melanggar aturan platform\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/campaigns/updates/{{update_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["campaigns", "updates", "{{update_id}}"]
+            },
+            "description": "Superadmin menghapus post update campaign.\nBody: { alasan_hapus: string } — wajib diisi"
+          }
+        },
+        {
+          "name": "FSD-7.5 — Laporkan Post Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alasan_laporan\": \"Konten ini mengandung informasi yang menyesatkan\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/campaigns/updates/{{update_id}}/reports",
+              "host": ["{{base_url}}"],
+              "path": ["campaigns", "updates", "{{update_id}}", "reports"]
+            },
+            "description": "User melaporkan sebuah post update.\nBody: { alasan_laporan: string } — wajib diisi\n\n**Business Rule:**\n- BR-1: Jika user sudah pernah melapor → 409 ERR-MON-10"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏘️ Community",
+      "item": [
+        {
+          "name": "FSD-8.2 — Pencarian Komunitas",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/communities/search?kata_kunci=yayasan",
+              "host": ["{{base_url}}"],
+              "path": ["communities", "search"],
+              "query": [
+                {
+                  "key": "kata_kunci",
+                  "value": "yayasan",
+                  "description": "Cari berdasarkan nama_lembaga (opsional)"
+                }
+              ]
+            },
+            "description": "Mencari komunitas yang berstatus aktif.\nFilter: kata_kunci (nama_lembaga). Hasil di-paginate 12 per halaman."
+          }
+        },
+        {
+          "name": "FSD-8.3 — Profil Komunitas Publik",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/communities/{{community_id}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["communities", "{{community_id}}", "profile"]
+            },
+            "description": "Menampilkan profil publik komunitas.\nMenunjukkan: info komunitas, total follower, total dana, campaign aktif & selesai.\n\n**Error:** 404 ERR-MON-13 jika komunitas tidak aktif/tidak ditemukan"
+          }
+        },
+        {
+          "name": "FSD-7.6 — Follow Komunitas",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/communities/{{community_id}}/follow",
+              "host": ["{{base_url}}"],
+              "path": ["communities", "{{community_id}}", "follow"]
+            },
+            "description": "User follow sebuah komunitas.\nTidak membutuhkan body.\n\n**Error:** 409 ERR-MON-12 jika sudah follow"
+          }
+        },
+        {
+          "name": "FSD-7.7 — Unfollow Komunitas",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/communities/{{community_id}}/follow",
+              "host": ["{{base_url}}"],
+              "path": ["communities", "{{community_id}}", "follow"]
+            },
+            "description": "User unfollow komunitas.\nTidak membutuhkan body.\n\n**Error:** 404 ERR-MON-14 jika belum follow"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Community Dashboard",
+      "item": [
+        {
+          "name": "FSD-10.1 — Ringkasan Dashboard Komunitas",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/communities/dashboard/summary",
+              "host": ["{{base_url}}"],
+              "path": ["communities", "dashboard", "summary"]
+            },
+            "description": "Menampilkan ringkasan dashboard untuk komunitas yang sedang login.\nData: total campaign aktif/selesai, total dana terkumpul & dicairkan, total follower.\n\n**Requires Auth** (user harus punya relasi komunitas)"
+          }
+        },
+        {
+          "name": "FSD-10.2 — Grafik Donasi (3 Bulan Terakhir)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/communities/dashboard/donation-chart",
+              "host": ["{{base_url}}"],
+              "path": ["communities", "dashboard", "donation-chart"]
+            },
+            "description": "Menampilkan data grafik donasi per bulan (3 bulan terakhir) untuk komunitas yang login.\nFormat response: [{ bulan: 'YYYY-MM', total_donasi: number }]\n\n**Requires Auth**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔔 Notification",
+      "item": [
+        {
+          "name": "FSD — List Notifikasi",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"]
+            },
+            "description": "Mengambil semua notifikasi milik user yang sedang login."
+          }
+        },
+        {
+          "name": "FSD — Tandai Satu Notifikasi Sudah Dibaca",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/{{notification_id}}/read",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "{{notification_id}}", "read"]
+            },
+            "description": "Menandai satu notifikasi sebagai sudah dibaca."
+          }
+        },
+        {
+          "name": "FSD — Tandai Semua Notifikasi Sudah Dibaca",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/read-all",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "read-all"]
+            },
+            "description": "Menandai semua notifikasi user sebagai sudah dibaca sekaligus."
+          }
+        }
+      ]
+    }
+  ]
+}
