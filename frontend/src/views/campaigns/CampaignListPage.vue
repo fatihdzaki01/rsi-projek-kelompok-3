@@ -217,8 +217,8 @@
 import { ref, computed } from 'vue'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
-import CampaignCard from '@/components/ui/CampaignCard.vue'
-import type { Campaign } from '@/components/ui/CampaignCard.vue'
+import CampaignCard from '@/components/campaign/CampaignCard.vue'
+import type { Campaign } from '@/components/campaign/CampaignCard.vue'
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 const allCampaigns: Campaign[] = [

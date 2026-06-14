@@ -112,8 +112,8 @@ import { computed } from 'vue'
 import { Heart, Clock } from 'lucide-vue-next'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
-import DonationSidebar from '@/components/ui/DonationSidebar.vue'
-import CampaignStory from '@/components/ui/CampaignStory.vue'
+import DonationSidebar from '@/components/donation/DonationSidebar.vue'
+import CampaignStory from '@/components/campaign/CampaignStory.vue'
 
 const campaign = {
   id_campaign: 1,
