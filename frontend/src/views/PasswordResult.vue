@@ -96,4 +96,8 @@ function handleSecondaryAction() {
 
   router.push("/forgot-password");
 }
+<<<<<<< HEAD
 </script>
+=======
+</script>
+>>>>>>> feat/auth

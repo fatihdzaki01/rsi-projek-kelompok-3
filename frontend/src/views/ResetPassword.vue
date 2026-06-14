@@ -266,4 +266,8 @@ function handleApiError(error) {
     },
   });
 }
+<<<<<<< HEAD
 </script>
+=======
+</script>
+>>>>>>> feat/auth

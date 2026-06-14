@@ -143,4 +143,8 @@ async function handleSubmit() {
     loading.value = false;
   }
 }
+<<<<<<< HEAD
 </script>
+=======
+</script>
+>>>>>>> feat/auth
