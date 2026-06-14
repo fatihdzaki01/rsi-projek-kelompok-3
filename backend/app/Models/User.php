@@ -3,16 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens;
+    use HasApiTokens, Notifiable;
 
     protected $table = 'users';
     protected $primaryKey = 'id_user';
-    
-    public $timestamps = false;
+
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     protected $fillable = [
         'username',
@@ -31,16 +33,18 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password_hash',
+        'remember_token',
     ];
 
     protected $casts = [
-        'is_active'      => 'boolean',
-        'is_verified'    => 'boolean',
-        'tanggal_lahir'  => 'date',
+        'is_active' => 'boolean',
+        'is_verified' => 'boolean',
+        'tanggal_lahir' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    // Wajib: Sanctum pakai ini untuk verifikasi password
-    public function getAuthPassword(): string
+    public function getAuthPassword()
     {
         return $this->password_hash;
     }
