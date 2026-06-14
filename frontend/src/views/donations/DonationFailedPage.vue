@@ -1,32 +1,56 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import api from '@/api/axios'
 
-const failedDonation = ref({
-  transaction_id: 'TRX-99201',
-  amount: 500000,
-  reason: 'Donasi sebesar Rp 500.000 tidak dapat diproses saat ini. Silakan coba kembali atau gunakan metode pembayaran lain.'
-})
+const route = useRoute()
+const router = useRouter()
+
+const failedDonation = ref(null)
+const loading = ref(true)
 
 const formattedAmount = computed(() => {
-  return 'Rp ' + failedDonation.value.amount.toLocaleString('id-ID')
+  if (!failedDonation.value) return ''
+  return 'Rp ' + Number(failedDonation.value.nominal).toLocaleString('id-ID')
+})
+
+onMounted(async () => {
+  try {
+    const res = await api.get(`/donations/${route.params.id}`)
+    failedDonation.value = res.data.data
+  } catch {
+    alert('Gagal memuat data donasi')
+    router.push('/donations/history')
+  } finally {
+    loading.value = false
+  }
 })
 
 function retryPayment() {
-  // router.push('/payment/checkout')
+  const method = failedDonation.value?.metode_pembayaran
+  const va = ['bca', 'mandiri', 'bni', 'bri', 'btn', 'syariah']
+  if (va.includes(method)) {
+    router.push(`/payments/va/${route.params.id}`)
+  } else {
+    router.push(`/payments/checkout/${route.params.id}`)
+  }
 }
 
 function changeMethod() {
-  // router.push('/payment/method')
+  router.back()
 }
 
 function contactSupport() {
-  // router.push('/support')
+  alert('Hubungi bantuan melalui email support@berbagive.com')
 }
 </script>
 
 <template>
   <div class="min-h-screen flex items-center justify-center px-4" style="background-color: #E8DDD0;">
-    <div class="bg-white rounded-3xl shadow-lg w-full max-w-sm p-8">
+
+    <div v-if="loading" class="text-sm text-gray-500">Memuat...</div>
+
+    <div v-if="failedDonation" class="bg-white rounded-3xl shadow-lg w-full max-w-sm p-8">
 
       <!-- Error Icon -->
       <div
@@ -51,7 +75,7 @@ function contactSupport() {
           Terjadi Kesalahan
         </p>
         <p class="text-sm leading-relaxed" style="color: #4B5563;">
-          {{ failedDonation.reason }}
+          Donasi sebesar {{ formattedAmount }} tidak dapat diproses saat ini. Silakan coba kembali atau gunakan metode pembayaran lain.
         </p>
       </div>
 
@@ -66,7 +90,7 @@ function contactSupport() {
             <rect x="2" y="5" width="20" height="14" rx="2"/>
             <line x1="2" y1="10" x2="22" y2="10"/>
           </svg>
-          #{{ failedDonation.transaction_id }}
+          #{{ failedDonation.nomor_transaksi }}
         </span>
 
         <button

@@ -126,8 +126,11 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ShieldCheck } from 'lucide-vue-next'
 import api from '@/api/axios'
+
+const router = useRouter()
 
 const props = defineProps({
   campaignId: { type: Number, required: true },
@@ -171,12 +174,18 @@ async function handleDonate() {
   donating.value = true
   notif.value = null
   try {
-    await api.post('/donations', {
+    const res = await api.post('/donations', {
       id_campaign: props.campaignId,
       nominal,
       metode_pembayaran: metodePembayaran.value,
     })
-    notif.value = { type: 'success', message: 'Donasi berhasil dibuat!' }
+    const data = res.data.data
+    const vaMethods = ['bca', 'mandiri', 'bni']
+    if (vaMethods.includes(metodePembayaran.value)) {
+      router.push(`/payments/va/${data.id_donasi}`)
+    } else {
+      router.push(`/payments/checkout/${data.id_donasi}`)
+    }
   } catch (e) {
     const msg = e.response?.data?.message ?? 'Gagal membuat donasi'
     notif.value = { type: 'error', message: msg }

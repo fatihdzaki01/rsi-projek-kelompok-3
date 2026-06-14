@@ -47,6 +47,10 @@
     <!-- Main content -->
     <main class="flex-1 flex flex-col items-center px-4 py-10">
 
+      <div v-if="loading" class="text-sm text-gray-500">Memuat data donasi...</div>
+
+      <template v-if="!loading">
+
       <!-- Page Header -->
       <div class="text-center mb-7">
         <h1 class="text-2xl font-bold text-[#1a1a1a] mb-1">Selesaikan Pembayaran</h1>
@@ -73,6 +77,8 @@
           :formatted-time="formattedTime"
         />
       </div>
+
+      </template>
 
       <!-- Action Buttons -->
       <div class="w-full max-w-sm flex flex-col items-center gap-2">
@@ -117,12 +123,19 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import PaymentInfoCard from '@/components/payment/PaymentInfoCard.vue'
+import api from '@/api/axios'
 
-const transactionId = ref('BRB-99201')
-const totalAmount = ref(500000)
-const paymentMethod = ref('Bank Mandiri')
+const route = useRoute()
+const router = useRouter()
+
+const donationId = ref(route.params.id)
+const transactionId = ref('')
+const totalAmount = ref(0)
+const paymentMethod = ref('Bank Transfer')
 const timeLeft = ref(23 * 60 + 45)
+const loading = ref(true)
 let timer = null
 
 const formattedTime = computed(() => {
@@ -131,7 +144,8 @@ const formattedTime = computed(() => {
   return `${m}:${s}`
 })
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchDonation()
   timer = setInterval(() => {
     if (timeLeft.value > 0) timeLeft.value--
   }, 1000)
@@ -139,13 +153,42 @@ onMounted(() => {
 
 onUnmounted(() => clearInterval(timer))
 
-function checkStatus() {
-  // will call GET /api/v1/donations/{id}
-  console.log('Checking status for:', transactionId.value)
+async function fetchDonation() {
+  try {
+    const res = await api.get(`/donations/${donationId.value}`)
+    const data = res.data.data
+    transactionId.value = data.nomor_transaksi ?? data.id_donasi
+    totalAmount.value = data.nominal
+    const methodMap = {
+      bca: 'BCA', mandiri: 'Bank Mandiri', bni: 'BNI',
+      bri: 'BRI', btn: 'BTN', syariah: 'Bank Syariah',
+    }
+    paymentMethod.value = methodMap[data.metode_pembayaran] ?? 'Bank Transfer'
+  } catch {
+    alert('Gagal memuat data donasi')
+    router.back()
+  } finally {
+    loading.value = false
+  }
+}
+
+async function checkStatus() {
+  try {
+    const res = await api.get(`/donations/${donationId.value}`)
+    const data = res.data.data
+    if (data.status_pembayaran === 'berhasil') {
+      router.push(`/donations/success/${donationId.value}`)
+    } else if (data.status_pembayaran === 'gagal') {
+      router.push(`/donations/failed/${donationId.value}`)
+    } else {
+      alert('Pembayaran masih pending. Silakan selesaikan pembayaran Anda.')
+    }
+  } catch (e) {
+    alert(e.response?.data?.message ?? 'Gagal mengecek status pembayaran')
+  }
 }
 
 function changeMethod() {
-  // router.push('/payment/method')
-  console.log('Changing payment method')
+  router.back()
 }
 </script>

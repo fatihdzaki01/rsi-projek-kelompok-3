@@ -8,6 +8,10 @@ import PasswordResult from '@/views/PasswordResult.vue'
 import EmailVerification from '@/views/EmailVerification.vue'
 import DonationHistory from '@/views/donations/DonationHistory.vue'
 import CampaignDetailPage from '@/views/campaigns/CampaignDetailPage.vue'
+import PaymentCheckoutPage from '@/views/payments/PaymentCheckoutPage.vue'
+import PaymentVAPage from '@/views/payments/PaymentVAPage.vue'
+import DonationSuccessPage from '@/views/donations/DonationSuccessPage.vue'
+import DonationFailedPage from '@/views/donations/DonationFailedPage.vue'
 
 const routes = [
   { path: '/', redirect: '/donations/history' },
@@ -19,7 +23,11 @@ const routes = [
   { path: '/reset-password', name: 'ResetPassword', component: ResetPassword },
   { path: '/password-result', name: 'PasswordResult', component: PasswordResult },
   { path: '/donations/history', component: DonationHistory },
+  { path: '/donations/success/:id', component: DonationSuccessPage },
+  { path: '/donations/failed/:id', component: DonationFailedPage },
   { path: '/campaigns/:id', component: CampaignDetailPage },
+  { path: '/payments/checkout/:id', component: PaymentCheckoutPage },
+  { path: '/payments/va/:id', component: PaymentVAPage },
   { path: '/dashboard', name: 'DashboardUser', component: { template: "<h1 style='padding: 40px'>Dashboard User</h1>" } },
   { path: '/dashboard-komunitas', name: 'DashboardKomunitas', component: { template: "<h1 style='padding: 40px'>Dashboard Komunitas</h1>" } },
   { path: '/dashboard-superadmin', name: 'DashboardSuperadmin', component: { template: "<h1 style='padding: 40px'>Dashboard Superadmin</h1>" } },

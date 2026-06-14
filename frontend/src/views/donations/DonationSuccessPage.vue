@@ -1,31 +1,43 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import api from '@/api/axios'
 
-const donation = ref({
-  transaction_id: 'TRX-99201',
-  amount: 500000,
-  campaign_name: 'Program Nutrisi Anak Sekolah di pelosok Indonesia',
-  is_regular_donor: true
-})
+const route = useRoute()
+const router = useRouter()
+
+const donation = ref(null)
+const loading = ref(true)
 
 const formattedAmount = computed(() => {
-  return 'Rp ' + donation.value.amount.toLocaleString('id-ID')
+  if (!donation.value) return ''
+  return 'Rp ' + Number(donation.value.nominal).toLocaleString('id-ID')
+})
+
+onMounted(async () => {
+  try {
+    const res = await api.get(`/donations/${route.params.id}`)
+    donation.value = res.data.data
+  } catch {
+    alert('Gagal memuat data donasi')
+    router.push('/donations/history')
+  } finally {
+    loading.value = false
+  }
 })
 
 function goBack() {
-  // router.push('/campaigns')
-  console.log('Kembali ke halaman campaign')
+  router.push('/donations/history')
 }
 
 function share() {
+  if (!donation.value) return
   if (navigator.share) {
     navigator.share({
       title: 'Berbagive - Donasi Berhasil',
-      text: `Saya baru saja berdonasi ${formattedAmount.value} untuk ${donation.value.campaign_name}. Yuk ikut berdonasi!`,
+      text: `Saya baru saja berdonasi ${formattedAmount.value} untuk ${donation.value.judul_campaign}. Yuk ikut berdonasi!`,
       url: window.location.href
     })
-  } else {
-    console.log('Share not supported')
   }
 }
 </script>
@@ -33,8 +45,10 @@ function share() {
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8" style="background-color: #E8DDD0;">
 
+    <div v-if="loading" class="text-sm text-gray-500">Memuat...</div>
+
     <!-- Card -->
-    <div class="relative bg-white rounded-3xl shadow-xl w-full max-w-md p-8 overflow-hidden">
+    <div v-if="donation" class="relative bg-white rounded-3xl shadow-xl w-full max-w-md p-8 overflow-hidden">
 
       <!-- Decorative blob top-right -->
       <div
@@ -74,7 +88,7 @@ function share() {
         <p class="text-sm leading-relaxed" style="color: #3a3a3a;">
           Donasi sebesar
           <strong style="color: #1a2744;">{{ formattedAmount }}</strong>
-          telah dialokasikan untuk {{ donation.campaign_name }}.
+          telah dialokasikan untuk {{ donation.judul_campaign }}.
         </p>
       </div>
 
@@ -90,12 +104,12 @@ function share() {
             <rect x="2" y="5" width="20" height="14" rx="2" />
             <line x1="2" y1="10" x2="22" y2="10" />
           </svg>
-          ID: #{{ donation.transaction_id }}
+          ID: #{{ donation.nomor_transaksi }}
         </span>
 
         <!-- Donatur Tetap Badge -->
         <span
-          v-if="donation.is_regular_donor"
+          v-if="false"
           class="flex items-center gap-1.5 border rounded-full px-3 py-1 text-sm"
           style="border-color: #fca5a5; color: #f87171;"
         >
