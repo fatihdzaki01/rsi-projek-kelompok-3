@@ -19,8 +19,10 @@ class DonationController extends Controller
         $userId  = auth()->user()->id_user;
         $page    = max(1, (int) $request->get('page', 1));
         $perPage = min((int) $request->get('per_page', 15), 100);
+        $search  = $request->get('search', '');
+        $status  = $request->get('status', '');
 
-        $result = $this->service->getHistory($userId, $page, $perPage);
+        $result = $this->service->getHistory($userId, $page, $perPage, $search, $status);
 
         if (empty($result['data'])) {
             return ApiResponse::error('Belum ada riwayat donasi', 404, 'ERR-PROF-DONASI-01');
