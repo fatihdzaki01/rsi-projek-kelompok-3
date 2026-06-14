@@ -94,7 +94,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import { resendVerification } from "../services/api";
+import { resendVerification } from "../../services/api";
 
 const route = useRoute();
 

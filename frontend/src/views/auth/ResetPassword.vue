@@ -110,9 +110,9 @@
 <script setup>
 import { reactive, ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { resetPassword } from "../services/api";
-import AuthNavbar from "../components/auth/AuthNavbar.vue";
-import AuthFooter from "../components/auth/AuthFooter.vue";
+import { resetPassword } from "../../services/api";
+import AuthNavbar from "../../components/auth/AuthNavbar.vue";
+import AuthFooter from "../../components/auth/AuthFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -266,8 +266,4 @@ function handleApiError(error) {
     },
   });
 }
-<<<<<<< HEAD
 </script>
-=======
-</script>
->>>>>>> feat/auth

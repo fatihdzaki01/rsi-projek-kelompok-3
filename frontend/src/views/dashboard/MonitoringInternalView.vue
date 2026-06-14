@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import api from '@/services/api'
-import AppFooter from '@/components/AppFooter.vue'
+import AppFooter from '@/components/shared/AppFooter.vue'
 
 const route = useRoute()
 

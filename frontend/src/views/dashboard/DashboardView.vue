@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import AppFooter from '@/components/AppFooter.vue'
+import AppFooter from '@/components/shared/AppFooter.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

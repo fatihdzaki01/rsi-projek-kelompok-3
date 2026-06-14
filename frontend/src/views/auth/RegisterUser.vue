@@ -128,7 +128,7 @@
 <script setup>
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { registerUser } from "../services/api";
+import { registerUser } from "../../services/api";
 
 const router = useRouter();
 

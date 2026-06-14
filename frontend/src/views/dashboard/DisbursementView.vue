@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/services/api'
-import AppFooter from '@/components/AppFooter.vue'
+import AppFooter from '@/components/shared/AppFooter.vue'
 
 const activeTab = ref('review')
 const items = ref([])

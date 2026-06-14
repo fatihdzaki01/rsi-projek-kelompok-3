@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import AppFooter from '@/components/AppFooter.vue'
+import AppFooter from '@/components/shared/AppFooter.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

@@ -64,9 +64,9 @@
 <script setup>
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { forgotPassword } from "../services/api";
-import AuthNavbar from "../components/auth/AuthNavbar.vue";
-import AuthFooter from "../components/auth/AuthFooter.vue";
+import { forgotPassword } from "../../services/api";
+import AuthNavbar from "../../components/auth/AuthNavbar.vue";
+import AuthFooter from "../../components/auth/AuthFooter.vue";
 
 const router = useRouter();
 
@@ -143,8 +143,4 @@ async function handleSubmit() {
     loading.value = false;
   }
 }
-<<<<<<< HEAD
 </script>
-=======
-</script>
->>>>>>> feat/auth

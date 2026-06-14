@@ -33,8 +33,8 @@
 <script setup>
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AuthNavbar from "../components/auth/AuthNavbar.vue";
-import AuthFooter from "../components/auth/AuthFooter.vue";
+import AuthNavbar from "../../components/auth/AuthNavbar.vue";
+import AuthFooter from "../../components/auth/AuthFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -96,8 +96,4 @@ function handleSecondaryAction() {
 
   router.push("/forgot-password");
 }
-<<<<<<< HEAD
 </script>
-=======
-</script>
->>>>>>> feat/auth
