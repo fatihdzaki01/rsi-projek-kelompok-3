@@ -209,7 +209,7 @@ async function handleSubmit() {
 
       <p class="mt-6 text-center text-sm text-gray-600">
         Sudah memiliki akun?
-        <button type="button" @click="router.push('/login')" class="text-[#8B4513] font-semibold hover:underline ml-0.5">Masuk ke Dashboard</button>
+        <button type="button" @click="router.push('/login')" class="text-[#8B4513] font-semibold hover:underline ml-0.5">Login sekarang</button>
       </p>
     </div>
   </div>

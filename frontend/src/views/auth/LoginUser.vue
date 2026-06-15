@@ -186,7 +186,7 @@ async function handleSubmit() {
     const roleDashboard = {
       SUPERADMIN: '/dashboard',
       KOMUNITAS: '/communities/dashboard',
-      DONATUR: '/my-dashboard',
+      DONATUR: '/campaigns',
     }
     const dashboard = roleDashboard[userRole] || '/campaigns'
 

@@ -1,180 +1,159 @@
+<template>
+  <div class="min-h-screen flex flex-col bg-[#F5F0E8]">
+    <TheNavbar />
+
+    <main class="flex-1 px-4 py-6">
+      <div class="max-w-2xl mx-auto">
+        <nav class="text-xs text-gray-500 mb-4">
+          <router-link to="/" class="hover:text-[#8B4513]">Beranda</router-link>
+          <span class="mx-1">›</span>
+          <router-link :to="`/campaigns/${campaignId}`" class="hover:text-[#8B4513]">Campaign</router-link>
+          <span class="mx-1">›</span>
+          <span class="text-[#1a2744] font-medium">Monitoring</span>
+        </nav>
+
+        <!-- Loading -->
+        <div v-if="loading" class="flex items-center justify-center py-20">
+          <div class="w-8 h-8 border-2 border-[#8B4513] border-t-transparent rounded-full animate-spin" />
+        </div>
+
+        <!-- Error -->
+        <div v-else-if="errorMessage" class="bg-white rounded-2xl shadow-sm p-8 text-center">
+          <p class="text-sm text-red-500">{{ errorMessage }}</p>
+        </div>
+
+        <template v-else>
+          <!-- Card: Campaign Header -->
+          <section class="bg-white rounded-2xl shadow-sm p-6 mb-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <h1 class="text-lg font-bold text-[#1a2744]">{{ data.judul }}</h1>
+                <p class="text-sm text-gray-500 mt-1">{{ data.nama_lembaga }} • {{ data.nama_kategori }}</p>
+              </div>
+              <span
+                class="shrink-0 px-3 py-1 rounded-full text-xs font-semibold"
+                :class="statusBadgeClass"
+              >
+                {{ data.status }}
+              </span>
+            </div>
+
+            <!-- Progress -->
+            <div class="mt-4">
+              <div class="flex justify-between text-sm mb-1.5">
+                <span class="font-semibold text-[#1a2744]">{{ formatRupiah(data.dana_terkumpul) }}</span>
+                <span class="text-gray-400">Target {{ formatRupiah(data.target_dana) }}</span>
+              </div>
+              <div class="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-500"
+                  :style="{ width: `${data.progress_persen}%`, backgroundColor: '#8B4513' }"
+                />
+              </div>
+              <p class="text-xs text-gray-400 mt-1">{{ data.progress_persen }}% terkumpul</p>
+            </div>
+          </section>
+
+          <!-- Stats Cards -->
+          <section class="grid grid-cols-2 gap-4 mb-4">
+            <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+              <p class="text-2xl font-bold text-[#1a2744]">{{ data.jumlah_donatur }}</p>
+              <p class="text-xs text-gray-500 mt-1">Donatur</p>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+              <p class="text-2xl font-bold text-[#8B4513]">{{ data.hari_tersisa }}</p>
+              <p class="text-xs text-gray-500 mt-1">Hari Tersisa</p>
+            </div>
+          </section>
+
+          <!-- Donatur Terbaru -->
+          <section class="bg-white rounded-2xl shadow-sm p-6 mb-4">
+            <h2 class="text-sm font-bold text-[#1a2744] mb-4">Donatur Terbaru</h2>
+
+            <div v-if="data.donatur_terbaru?.length === 0" class="text-sm text-gray-400 text-center py-6">
+              Belum ada donatur.
+            </div>
+
+            <div v-else class="space-y-2">
+              <div
+                v-for="(d, i) in data.donatur_terbaru"
+                :key="i"
+                class="flex items-center justify-between py-2 border-b border-stone-50 last:border-b-0"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-[#FDF5EE] flex items-center justify-center text-xs font-bold text-[#8B4513]">
+                    {{ d.nama.charAt(0).toUpperCase() }}
+                  </div>
+                  <span class="text-sm text-gray-700">{{ d.nama }}</span>
+                </div>
+                <span class="text-xs text-gray-400">{{ formatDate(d.created_at) }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Back link -->
+          <div class="text-center">
+            <router-link
+              :to="`/campaigns/${campaignId}`"
+              class="text-sm text-[#8B4513] hover:text-[#6b3410] underline-offset-2 hover:underline transition-colors"
+            >
+              ← Kembali ke Campaign
+            </router-link>
+          </div>
+        </template>
+      </div>
+    </main>
+
+    <TheFooter />
+  </div>
+</template>
+
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { onMounted, ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/api/axios'
-import AppFooter from '@/components/shared/AppFooter.vue'
+import TheNavbar from '@/components/shared/Navbar.vue'
+import TheFooter from '@/components/shared/Footer.vue'
 
 const route = useRoute()
+const campaignId = route.params.id
 
 const data = ref(null)
 const loading = ref(true)
 const errorMessage = ref('')
 
-const fetchInternalMonitoring = async () => {
+async function fetchMonitoring() {
   loading.value = true
   errorMessage.value = ''
-
   try {
-    const response = await api.get(`/campaigns/${route.params.id}/internal`)
-    data.value = response.data.data
-  } catch (error) {
-    errorMessage.value =
-      error.response?.data?.message || 'Gagal memuat monitoring internal.'
+    const res = await api.get(`/campaigns/${campaignId}/monitoring`)
+    data.value = res.data.data
+  } catch (e) {
+    errorMessage.value = e.response?.data?.message || 'Gagal memuat monitoring.'
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchInternalMonitoring)
+onMounted(fetchMonitoring)
+
+const statusBadgeClass = computed(() => {
+  const map = {
+    aktif: 'bg-green-100 text-green-700',
+    selesai: 'bg-blue-100 text-blue-700',
+    menunggu_review: 'bg-amber-100 text-amber-700',
+    ditolak: 'bg-red-100 text-red-700',
+    nonaktif: 'bg-gray-100 text-gray-600',
+  }
+  return map[data.value?.status] || 'bg-gray-100 text-gray-600'
+})
+
+function formatRupiah(n) {
+  return 'Rp ' + Number(n || 0).toLocaleString('id-ID')
+}
+
+function formatDate(s) {
+  if (!s) return ''
+  return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(s))
+}
 </script>
-
-<template>
-  <main class="dashboard-page">
-    <header class="navbar">
-      <div class="brand">BERBAGIVE</div>
-
-      <nav>
-        <RouterLink to="/dashboard" class="active">Dashboard</RouterLink>
-      </nav>
-    </header>
-
-    <section class="container">
-      <div class="page-title">
-        <div>
-          <h1>Monitoring Internal Campaign</h1>
-          <p>Menampilkan ringkasan dana, donasi, pencairan, dan dokumen campaign.</p>
-        </div>
-
-        <RouterLink
-          v-if="data"
-          class="back-link"
-          :to="`/dashboard/campaigns/${data.campaign.id_campaign}`"
-        >
-          Kembali Detail
-        </RouterLink>
-      </div>
-
-      <section v-if="loading" class="card">Memuat monitoring internal...</section>
-
-      <section v-else-if="errorMessage" class="card error">
-        {{ errorMessage }}
-      </section>
-
-      <template v-else>
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <h2>{{ data.campaign.judul }}</h2>
-              <p>{{ data.campaign.nama_lembaga }} • {{ data.campaign.nama_kategori }}</p>
-            </div>
-            <span class="status">{{ data.campaign.status }}</span>
-          </div>
-        </section>
-
-        <section class="stats-grid">
-          <div class="stat-card">
-            <p>Total Dana Masuk</p>
-            <h2>Rp{{ Number(data.summary.total_dana_masuk).toLocaleString('id-ID') }}</h2>
-            <span>Donasi berhasil</span>
-          </div>
-
-          <div class="stat-card">
-            <p>Saldo Tersisa</p>
-            <h2>Rp{{ Number(data.summary.saldo_tersisa).toLocaleString('id-ID') }}</h2>
-            <span>Saldo campaign</span>
-          </div>
-
-          <div class="stat-card highlight">
-            <p>Total Dicairkan</p>
-            <h2>Rp{{ Number(data.summary.total_dana_dicairkan).toLocaleString('id-ID') }}</h2>
-            <span>Riwayat pencairan</span>
-          </div>
-        </section>
-
-        <section class="content-grid">
-          <div class="card">
-            <h2>Donasi Terbaru</h2>
-
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Donatur</th>
-                  <th>Nominal</th>
-                  <th>Metode</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr v-if="data.donations.length === 0">
-                  <td colspan="5">Belum ada donasi.</td>
-                </tr>
-
-                <tr v-for="donation in data.donations" :key="donation.id_donasi">
-                  <td>{{ donation.id_donasi }}</td>
-                  <td>{{ donation.is_anonim ? 'Anonim' : donation.nama_lengkap }}</td>
-                  <td>Rp{{ Number(donation.nominal).toLocaleString('id-ID') }}</td>
-                  <td>{{ donation.metode_pembayaran }}</td>
-                  <td><span class="status">{{ donation.status_pembayaran }}</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <aside class="card profile-card">
-            <h2>Dokumen dan Dana</h2>
-
-            <p>
-              <strong>Target Dana</strong>
-              Rp{{ Number(data.campaign.target_dana).toLocaleString('id-ID') }}
-            </p>
-
-            <p>
-              <strong>Potongan Platform</strong>
-              Rp{{ Number(data.summary.potongan_platform).toLocaleString('id-ID') }}
-            </p>
-
-            <p>
-              <strong>Dokumen RAB</strong>
-              <a :href="data.summary.dokumen_rab" target="_blank">Lihat Dokumen</a>
-            </p>
-          </aside>
-        </section>
-
-        <section class="card">
-          <h2>Riwayat Pencairan</h2>
-
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Urutan</th>
-                <th>Nominal Diajukan</th>
-                <th>Nominal Disetujui</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr v-if="data.withdrawals.length === 0">
-                <td colspan="5">Belum ada pencairan.</td>
-              </tr>
-
-              <tr v-for="item in data.withdrawals" :key="item.id_pencairan">
-                <td>{{ item.id_pencairan }}</td>
-                <td>{{ item.urutan_ke }}</td>
-                <td>Rp{{ Number(item.nominal_diajukan).toLocaleString('id-ID') }}</td>
-                <td>
-                  Rp{{ Number(item.nominal_disetujui || 0).toLocaleString('id-ID') }}
-                </td>
-                <td><span class="status">{{ item.status }}</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-      </template>
-    </section>
-    <AppFooter />
-  </main>
-</template>

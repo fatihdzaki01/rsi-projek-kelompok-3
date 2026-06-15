@@ -16,6 +16,7 @@ class StoreDonationRequest extends FormRequest
             'metode_pembayaran' => 'required|string|in:qris,gopay,ovo,shopeepay,bca,mandiri,bni',
             'is_anonim'         => 'sometimes|boolean',
             'nama_tampil'       => 'sometimes|nullable|string|max:100',
+            'pesan'             => 'sometimes|nullable|string|max:500',
         ];
     }
 }

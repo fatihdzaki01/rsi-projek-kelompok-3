@@ -29,9 +29,13 @@ class KomunitasProfilController extends Controller
             ->where('status', Campaign::STATUS_AKTIF)
             ->get(['id_campaign', 'judul', 'target_dana', 'dana_terkumpul', 'tanggal_selesai']);
 
-        $campaignSelesai = Campaign::where('id_komunitas', $id)
+        $campaignSelesaiCount = Campaign::where('id_komunitas', $id)
             ->where('status', Campaign::STATUS_SELESAI)
             ->count();
+
+        $campaignSelesaiList = Campaign::where('id_komunitas', $id)
+            ->where('status', Campaign::STATUS_SELESAI)
+            ->get(['id_campaign', 'judul', 'target_dana', 'dana_terkumpul']);
 
         $totalFollower = $komunitas->followers()
             ->where('is_active', true)
@@ -50,22 +54,23 @@ class KomunitasProfilController extends Controller
         }
 
         return ApiResponse::success([
-            'id_komunitas'           => $komunitas->id_komunitas,
-            'nama_lembaga'           => $komunitas->nama_lembaga,
-            'deskripsi'              => $komunitas->deskripsi,
-            'alamat_detail'          => $komunitas->alamat_detail,
-            'nomor_kontak'           => $komunitas->nomor_kontak,
-            'link_medsos'            => $komunitas->link_medsos,
-            'foto_lembaga_url'       => $komunitas->foto_lembaga_url,
-            'kode_wilayah'           => $komunitas->kode_wilayah,
-            'status'                 => $komunitas->status,
-            'created_at'             => $komunitas->created_at,
-            'total_follower'         => $totalFollower,
-            'total_dana_diterima'    => $totalDanaDiterima,
-            'total_campaign_aktif'   => count($campaignAktif),
-            'total_campaign_selesai' => $campaignSelesai,
-            'daftar_campaign_aktif'  => $campaignAktif,
-            'is_following'           => $isFollowing,
+            'id_komunitas'            => $komunitas->id_komunitas,
+            'nama_lembaga'            => $komunitas->nama_lembaga,
+            'deskripsi'               => $komunitas->deskripsi,
+            'alamat_detail'           => $komunitas->alamat_detail,
+            'nomor_kontak'            => $komunitas->nomor_kontak,
+            'link_medsos'             => $komunitas->link_medsos,
+            'foto_lembaga_url'        => $komunitas->foto_lembaga_url,
+            'kode_wilayah'            => $komunitas->kode_wilayah,
+            'status'                  => $komunitas->status,
+            'created_at'              => $komunitas->created_at,
+            'total_follower'          => $totalFollower,
+            'total_dana_diterima'     => $totalDanaDiterima,
+            'total_campaign_aktif'    => count($campaignAktif),
+            'total_campaign_selesai'  => $campaignSelesaiCount,
+            'daftar_campaign_aktif'   => $campaignAktif,
+            'daftar_campaign_selesai' => $campaignSelesaiList,
+            'is_following'            => $isFollowing,
         ]);
     }
 

@@ -109,6 +109,30 @@
               </button>
             </div>
           </div>
+
+          <!-- Komunitas Yang Diikuti -->
+          <div
+            class="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+            @click="showFollowingModal = true"
+          >
+            <div class="px-6 py-4 flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-500">Komunitas Yang Diikuti</p>
+                <p class="text-2xl font-bold text-[#2C2C2C] mt-0.5">
+                  {{ followingLoading ? '...' : following.length }}
+                </p>
+              </div>
+              <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Following Modal -->
+          <FollowingModal
+            :show="showFollowingModal"
+            @close="showFollowingModal = false"
+          />
         </template>
       </div>
     </main>
@@ -119,13 +143,21 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 import Navbar from '@/components/shared/Navbar.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
+import FollowingModal from '@/components/community/FollowingModal.vue'
+
+const router = useRouter()
 
 const loading = ref(true)
 const error = ref('')
 const profile = ref({})
+
+const following = ref([])
+const followingLoading = ref(false)
+const showFollowingModal = ref(false)
 
 const editForm = ref({ nama_lengkap: '', nomor_telepon: '' })
 const editErrors = ref({})
@@ -158,6 +190,25 @@ async function fetchProfile() {
   } finally {
     loading.value = false
   }
+
+  fetchFollowing()
+}
+
+async function fetchFollowing() {
+  followingLoading.value = true
+  try {
+    const res = await api.get('/users/me/following')
+    following.value = res.data.data || []
+  } catch {
+    following.value = []
+  } finally {
+    followingLoading.value = false
+  }
+}
+
+function formatDate(s) {
+  if (!s) return ''
+  return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(s))
 }
 
 async function handleUpdateProfile() {

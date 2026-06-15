@@ -87,15 +87,24 @@
 
             <!-- Stats -->
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-100">
-              <div class="bg-[#FDF5EE] rounded-xl p-3 text-center">
+              <div
+                class="bg-[#FDF5EE] rounded-xl p-3 text-center cursor-pointer hover:bg-[#f8efe4] transition-colors"
+                @click="showFollowersModal = true"
+              >
                 <p class="text-xl font-bold text-[#1a2744]">{{ formatNumber(profile.total_follower) }}</p>
                 <p class="text-xs text-gray-500 mt-0.5">Followers</p>
               </div>
-              <div class="bg-[#FDF5EE] rounded-xl p-3 text-center">
+              <div
+                class="bg-[#FDF5EE] rounded-xl p-3 text-center cursor-pointer hover:bg-[#f8efe4] transition-colors"
+                @click="showCampaignAktifModal = true"
+              >
                 <p class="text-xl font-bold text-[#1a2744]">{{ profile.total_campaign_aktif }}</p>
                 <p class="text-xs text-gray-500 mt-0.5">Campaign Aktif</p>
               </div>
-              <div class="bg-[#FDF5EE] rounded-xl p-3 text-center">
+              <div
+                class="bg-[#FDF5EE] rounded-xl p-3 text-center cursor-pointer hover:bg-[#f8efe4] transition-colors"
+                @click="showCampaignSelesaiModal = true"
+              >
                 <p class="text-xl font-bold text-[#1a2744]">{{ profile.total_campaign_selesai }}</p>
                 <p class="text-xs text-gray-500 mt-0.5">Campaign Selesai</p>
               </div>
@@ -174,6 +183,31 @@
       @cancel="showUnfollowModal = false"
     />
 
+    <!-- Followers Modal -->
+    <FollowersModal
+      :show="showFollowersModal"
+      :community-id="profile?.id_komunitas"
+      @close="showFollowersModal = false"
+    />
+
+    <!-- Campaign Aktif Modal -->
+    <CampaignListModal
+      :show="showCampaignAktifModal"
+      title="Campaign Aktif"
+      empty-message="Belum ada campaign aktif."
+      :campaigns="profile?.daftar_campaign_aktif || []"
+      @close="showCampaignAktifModal = false"
+    />
+
+    <!-- Campaign Selesai Modal -->
+    <CampaignListModal
+      :show="showCampaignSelesaiModal"
+      title="Campaign Selesai"
+      empty-message="Belum ada campaign selesai."
+      :campaigns="profile?.daftar_campaign_selesai || []"
+      @close="showCampaignSelesaiModal = false"
+    />
+
     <AppFooter />
   </div>
 </template>
@@ -185,6 +219,8 @@ import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
 import UnfollowModal from '@/components/community/UnfollowModal.vue'
+import FollowersModal from '@/components/community/FollowersModal.vue'
+import CampaignListModal from '@/components/community/CampaignListModal.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -197,6 +233,9 @@ const error = ref('')
 const isFollowing = ref(false)
 const followLoading = ref(false)
 const showUnfollowModal = ref(false)
+const showFollowersModal = ref(false)
+const showCampaignAktifModal = ref(false)
+const showCampaignSelesaiModal = ref(false)
 
 const initials = computed(() => {
   const name = profile.value?.nama_lembaga || ''

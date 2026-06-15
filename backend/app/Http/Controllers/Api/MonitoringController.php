@@ -56,7 +56,7 @@ class MonitoringController extends Controller
 
         $jumlahDonatur = DB::table('donasi')
             ->where('id_campaign', $id)
-            ->where('status_pembayaran', 'success')
+            ->where('status_pembayaran', 'berhasil')
             ->distinct('id_user')
             ->count('id_user');
 
@@ -68,6 +68,24 @@ class MonitoringController extends Controller
         $progressPersen = $campaign->target_dana > 0
             ? min(100, round(($campaign->dana_terkumpul / $campaign->target_dana) * 100, 2))
             : 0;
+
+        $recentDonors = DB::table('donasi as d')
+            ->join('users as u', 'u.id_user', '=', 'd.id_user')
+            ->where('d.id_campaign', $id)
+            ->where('d.status_pembayaran', 'berhasil')
+            ->select(
+                'd.is_anonim',
+                'd.nama_tampil',
+                'u.nama_lengkap',
+                'd.created_at'
+            )
+            ->orderByDesc('d.created_at')
+            ->limit(20)
+            ->get()
+            ->map(fn ($r) => [
+                'nama'       => $r->is_anonim ? 'Anonim' : ($r->nama_tampil ?? $r->nama_lengkap),
+                'created_at' => $r->created_at,
+            ]);
 
         return $this->success([
             'id_campaign'      => $campaign->id_campaign,
@@ -82,6 +100,7 @@ class MonitoringController extends Controller
             'hari_tersisa'     => $daysRemaining,
             'tanggal_mulai'    => $campaign->tanggal_mulai,
             'tanggal_selesai'  => $campaign->tanggal_selesai,
+            'donatur_terbaru'  => $recentDonors,
         ], 'Monitoring campaign berhasil dimuat.');
     }
 

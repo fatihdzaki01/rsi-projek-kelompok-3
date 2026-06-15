@@ -39,6 +39,7 @@ Route::middleware('auth:sanctum')->prefix('users')->group(function () {
     Route::post('/me', [UserController::class, 'update']);
     Route::patch('/me/password', [UserController::class, 'changePassword']);
     Route::get('/me/donations', [DonationController::class, 'history']);
+    Route::get('/me/following', [UserController::class, 'following']);
 });
 
 Route::get('/communities/{id}/profile', [KomunitasProfilController::class, 'profilPublik']);
@@ -50,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/campaigns/{id}/monitoring', [MonitoringController::class, 'publicCampaign']);
     Route::post('/communities/{communityId}/follow', [CommunityFollowController::class, 'follow']);
     Route::delete('/communities/{communityId}/follow', [CommunityFollowController::class, 'unfollow']);
+    Route::get('/communities/{communityId}/followers', [CommunityFollowController::class, 'followers']);
 
     // KOMUNITAS-only routes
     Route::middleware('role:KOMUNITAS')->group(function () {

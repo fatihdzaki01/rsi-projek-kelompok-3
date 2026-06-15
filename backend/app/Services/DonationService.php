@@ -45,13 +45,14 @@ class DonationService
 
     public function createDonation(int $userId, array $payload): object
     {
-        DB::statement('CALL sp_create_donation(?, ?, ?, ?, ?, ?)', [
+        DB::statement('CALL sp_create_donation(?, ?, ?, ?, ?, ?, ?)', [
             $userId,
             $payload['id_campaign'],
             $payload['nominal'],
             $payload['metode_pembayaran'],
             $payload['is_anonim'] ?? true,
             $payload['nama_tampil'] ?? null,
+            $payload['pesan'] ?? null,
         ]);
 
         // Ambil donasi terbaru milik user ini
@@ -70,13 +71,25 @@ class DonationService
     public function getById(int $userId, int $idDonasi): ?object
     {
         $row = DB::selectOne(
-            'SELECT id_donasi, nomor_transaksi, judul_campaign, nominal, metode_pembayaran, status_pembayaran, created_at
+            'SELECT id_donasi, nomor_transaksi, id_campaign, judul_campaign, nominal,
+                    metode_pembayaran, status_pembayaran, is_anonim, created_at
              FROM v_user_donation_history
              WHERE id_user = ? AND id_donasi = ?',
             [$userId, $idDonasi]
         );
 
-        return $row ?: null;
+        if (!$row) return null;
+
+        $extra = DB::selectOne(
+            'SELECT nama_tampil, pesan, bukti_pdf_url FROM donasi WHERE id_donasi = ?',
+            [$idDonasi]
+        );
+
+        $row->nama_tampil = $extra->nama_tampil ?? null;
+        $row->pesan = $extra->pesan ?? null;
+        $row->bukti_pdf_url = $extra->bukti_pdf_url ?? null;
+
+        return $row;
     }
 
     public function existsDonation(int $idDonasi): bool

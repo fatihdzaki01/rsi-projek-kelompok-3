@@ -45,6 +45,7 @@ const routes = [
   { path: '/profile/edit', component: () => import('@/views/profile/EditProfilePage.vue'), meta: { requiresAuth: true } },
   { path: '/profile/change-password', component: () => import('@/views/profile/ChangePasswordPage.vue'), meta: { requiresAuth: true } },
   { path: '/donations/history', component: () => import('@/views/donations/DonationHistory.vue'), meta: { requiresAuth: true } },
+  { path: '/donations/:id', component: () => import('@/views/donations/DonationDetailPage.vue'), meta: { requiresAuth: true } },
   { path: '/notifications', name: 'Notifications', component: () => import('@/views/notifications/NotificationPage.vue'), meta: { requiresAuth: true } },
   { path: '/campaigns/:id/monitoring', name: 'CampaignMonitoring', component: () => import('@/views/dashboard/MonitoringInternalView.vue'), meta: { requiresAuth: true } },
   { path: '/payments/checkout/:id', component: () => import('@/views/payments/PaymentCheckoutPage.vue'), meta: { requiresAuth: true } },
@@ -55,7 +56,6 @@ const routes = [
   { path: '/dashboard/profile', component: () => import('@/views/admin/AdminProfilePage.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
 
   // Donatur dashboard
-  { path: '/my-dashboard', name: 'DonaturDashboard', component: () => import('@/views/dashboard/DonaturDashboardPage.vue'), meta: { requiresAuth: true, role: 'DONATUR' } },
   { path: '/dashboard/donors', component: () => import('@/views/admin/DonorListPage.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
   { path: '/dashboard/donors/:id', component: () => import('@/views/admin/DonorDetailPage.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
   { path: '/dashboard/communities', component: () => import('@/views/admin/CommunityManagePage.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },

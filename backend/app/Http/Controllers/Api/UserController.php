@@ -6,6 +6,7 @@ use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\FollowKomunitas;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
@@ -118,5 +119,25 @@ class UserController extends Controller
         }
 
         return ApiResponse::success($donations, 'Riwayat donasi berhasil ditampilkan');
+    }
+
+    public function following()
+    {
+        $user = auth()->user();
+
+        $following = FollowKomunitas::where('id_user', $user->id_user)
+            ->where('is_active', true)
+            ->with('komunitas:id_komunitas,nama_lembaga,foto_lembaga_url')
+            ->orderByDesc('followed_at')
+            ->get()
+            ->map(fn ($f) => [
+                'id_follow'      => $f->id_follow,
+                'id_komunitas'   => $f->komunitas->id_komunitas,
+                'nama_lembaga'   => $f->komunitas->nama_lembaga,
+                'foto_lembaga_url' => $f->komunitas->foto_lembaga_url,
+                'followed_at'    => $f->followed_at,
+            ]);
+
+        return ApiResponse::success($following, 'Daftar komunitas yang diikuti berhasil dimuat');
     }
 }

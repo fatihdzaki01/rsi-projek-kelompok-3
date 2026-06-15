@@ -173,7 +173,7 @@ const handleSubmit = async () => {
         <p class="mt-6 text-center text-xs text-gray-500">
           Sudah memiliki akun?
           <router-link to="/login" class="text-[#8B4513] font-semibold hover:underline">
-            Masuk ke Dashboard
+            Login sekarang
           </router-link>
         </p>
       </div>
