@@ -38,7 +38,7 @@ Route::middleware('auth:sanctum')->prefix('users')->group(function () {
     Route::patch('/me', [UserController::class, 'update']);
     Route::post('/me', [UserController::class, 'update']);
     Route::patch('/me/password', [UserController::class, 'changePassword']);
-    Route::get('/me/donations', [UserController::class, 'donations']);
+    Route::get('/me/donations', [DonationController::class, 'history']);
 });
 
 Route::get('/communities/{id}/profile', [KomunitasProfilController::class, 'profilPublik']);
@@ -59,6 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/communities/bank-account/history', [RekeningController::class, 'riwayat']);
     Route::post('/communities/bank-account/change', [RekeningController::class, 'ajukanPerubahan']);
+
+    Route::get('/communities/profile', [KomunitasProfilController::class, 'profilSaya']);
 
     Route::get('/communities/dashboard', [DashboardController::class, 'index']);
 

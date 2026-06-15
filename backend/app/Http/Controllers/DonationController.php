@@ -24,16 +24,12 @@ class DonationController extends Controller
 
         $result = $this->service->getHistory($userId, $page, $perPage, $search, $status);
 
-        if (empty($result['data'])) {
-            return ApiResponse::error('Belum ada riwayat donasi', 404, 'ERR-PROF-DONASI-01');
-        }
-
         return ApiResponse::success([
-            'data'       => $result['data'],
+            'data'       => $result['data'] ?? [],
             'pagination' => [
                 'page'     => $page,
                 'per_page' => $perPage,
-                'total'    => $result['total'],
+                'total'    => $result['total'] ?? 0,
             ],
         ], 'Riwayat donasi berhasil ditampilkan');
     }
@@ -50,15 +46,15 @@ class DonationController extends Controller
         );
 
         if (!$campaign) {
-            return ApiResponse::error('Campaign tidak ditemukan', 404, 'ERR-DON-02');
+            return ApiResponse::error('Campaign tidak ditemukan', 'ERR-DON-02', 404);
         }
 
         if ($campaign->status !== 'aktif') {
-            return ApiResponse::error('Campaign tidak menerima donasi', 403, 'ERR-DON-02');
+            return ApiResponse::error('Campaign tidak menerima donasi', 'ERR-DON-02', 403);
         }
 
         if ($payload['nominal'] < 5000) {
-            return ApiResponse::error('Nominal donasi tidak valid', 400, 'ERR-DON-01');
+            return ApiResponse::error('Nominal donasi tidak valid', 'ERR-DON-01', 400);
         }
 
         $donasi = $this->service->createDonation($userId, $payload);
@@ -83,9 +79,9 @@ class DonationController extends Controller
 
         if (!$donasi) {
             if ($this->service->existsDonation($id)) {
-                return ApiResponse::error('Akses ditolak', 403, 'ERR-DON-06');
+                return ApiResponse::error('Akses ditolak', 'ERR-DON-06', 403);
             }
-            return ApiResponse::error('Transaksi tidak ditemukan', 404, 'ERR-DON-07');
+            return ApiResponse::error('Transaksi tidak ditemukan', 'ERR-DON-07', 404);
         }
 
         return ApiResponse::success($donasi, 'Detail transaksi berhasil ditampilkan');
@@ -96,11 +92,11 @@ class DonationController extends Controller
         $receipt = $this->service->getReceipt($id);
 
         if (!$receipt) {
-            return ApiResponse::error('Bukti donasi tidak ditemukan', 404, 'ERR-DON-05');
+            return ApiResponse::error('Bukti donasi tidak ditemukan', 'ERR-DON-05', 404);
         }
 
         if ($receipt->id_user !== auth()->user()->id_user) {
-            return ApiResponse::error('Anda tidak memiliki akses ke bukti donasi ini', 403, 'ERR-DON-04');
+            return ApiResponse::error('Anda tidak memiliki akses ke bukti donasi ini', 'ERR-DON-04', 403);
         }
 
         if (!$receipt->bukti_pdf_url && $receipt->status_pembayaran === 'berhasil') {
@@ -125,17 +121,17 @@ class DonationController extends Controller
         $receipt = $this->service->getReceipt($id);
 
         if (!$receipt) {
-            return ApiResponse::error('Bukti donasi tidak ditemukan', 404, 'ERR-DON-05');
+            return ApiResponse::error('Bukti donasi tidak ditemukan', 'ERR-DON-05', 404);
         }
 
         if ($receipt->id_user !== auth()->user()->id_user) {
-            return ApiResponse::error('Anda tidak memiliki akses ke bukti donasi ini', 403, 'ERR-DON-04');
+            return ApiResponse::error('Anda tidak memiliki akses ke bukti donasi ini', 'ERR-DON-04', 403);
         }
 
         $pdf = $this->service->downloadReceiptPdf($id);
 
         if (!$pdf) {
-            return ApiResponse::error('Gagal membuat bukti donasi', 500, 'ERR-DON-08');
+            return ApiResponse::error('Gagal membuat bukti donasi', 'ERR-DON-08', 500);
         }
 
         return $pdf->download('bukti-donasi-' . $id . '.pdf');
@@ -149,7 +145,7 @@ class DonationController extends Controller
         );
 
         if (!$donasi) {
-            return ApiResponse::error('Data donasi tidak ditemukan', 404, 'ERR-DON-03');
+            return ApiResponse::error('Data donasi tidak ditemukan', 'ERR-DON-03', 404);
         }
 
         $result = $this->service->updatePaymentStatus($id, $request->status_pembayaran);
