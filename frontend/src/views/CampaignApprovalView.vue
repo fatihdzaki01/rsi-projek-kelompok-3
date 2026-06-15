@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/services/api'
+import NavBar from '@/components/NavBar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 
 const campaigns = ref([])
@@ -72,16 +73,7 @@ onMounted(fetchCampaigns)
 
 <template>
   <main class="dashboard-page">
-    <header class="navbar">
-      <div class="brand">BERBAGIVE</div>
-
-      <nav>
-        <RouterLink to="/dashboard">Dashboard</RouterLink>
-        <RouterLink to="/dashboard/campaign-approvals" class="active">
-          Approval
-        </RouterLink>
-      </nav>
-    </header>
+    <NavBar />
 
     <section class="container">
       <div class="page-title">

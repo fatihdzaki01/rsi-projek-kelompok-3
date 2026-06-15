@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/services/api'
+import NavBar from '@/components/NavBar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 
 const activeTab = ref('review')
@@ -63,17 +64,7 @@ onMounted(fetchDisbursements)
 
 <template>
   <main class="dashboard-page">
-    <header class="navbar">
-      <div class="brand">BERBAGIVE</div>
-
-      <nav>
-        <RouterLink to="/dashboard">Dashboard</RouterLink>
-        <RouterLink to="/dashboard/campaign-approvals">Approval</RouterLink>
-        <RouterLink to="/dashboard/disbursements" class="active">
-          Pencairan
-        </RouterLink>
-      </nav>
-    </header>
+    <NavBar />
 
     <section class="container">
       <div class="page-title">
