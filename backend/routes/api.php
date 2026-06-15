@@ -55,9 +55,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/superadmin/communities', [SuperadminController::class, 'communityList']);
         Route::get('/superadmin/communities/{id}', [SuperadminController::class, 'communityDetail']);
         Route::patch('/superadmin/communities/{id}/status', [SuperadminController::class, 'communityUpdateStatus']);
+        Route::post('/superadmin/communities', [SuperadminController::class, 'communityStore']);
+        Route::get('/superadmin/community-types', [SuperadminController::class, 'communityTypes']);
 
         Route::get('/superadmin/document-templates', [SuperadminController::class, 'documentTemplateList']);
         Route::post('/superadmin/document-templates', [SuperadminController::class, 'documentTemplateStore']);
+        Route::delete('/superadmin/document-templates/{id}', [SuperadminController::class, 'documentTemplateDelete']);
 
         Route::get('/superadmin/campaign-categories', [SuperadminController::class, 'categoryList']);
         Route::post('/superadmin/campaign-categories', [SuperadminController::class, 'categoryStore']);
@@ -67,6 +70,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('/superadmin/reports/financial/export', [SuperadminController::class, 'financialExport']);
 
+        Route::get('/superadmin/donations/pending', [SuperadminController::class, 'donationPendingList']);
+        Route::patch('/superadmin/donations/{id}/status', [SuperadminController::class, 'donationUpdateStatus']);
+
         Route::get('/superadmin/community-registrations', [SuperadminController::class, 'registrationList']);
         Route::get('/superadmin/community-registrations/history', [SuperadminController::class, 'registrationHistory']);
         Route::get('/superadmin/community-registrations/{id}', [SuperadminController::class, 'registrationDetail']);
@@ -74,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/superadmin/community-registrations/{id}/reject', [SuperadminController::class, 'registrationReject']);
 
         Route::get('/superadmin/bank-account-changes', [SuperadminController::class, 'bankAccountChangeList']);
+        Route::get('/superadmin/bank-account-changes/stats', [SuperadminController::class, 'bankAccountChangeStats']);
         Route::get('/superadmin/bank-account-changes/history', [SuperadminController::class, 'bankAccountChangeHistory']);
         Route::get('/superadmin/bank-account-changes/{id}', [SuperadminController::class, 'bankAccountChangeDetail']);
         Route::post('/superadmin/bank-account-changes/{id}/approve', [SuperadminController::class, 'bankAccountChangeApprove']);

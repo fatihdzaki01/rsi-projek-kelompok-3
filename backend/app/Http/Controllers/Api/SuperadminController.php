@@ -500,6 +500,7 @@ class SuperadminController extends Controller
     {
         $perPage = min((int) $request->query('per_page', 15), 100);
         $search = $request->query('search');
+        $tierSum = '(SELECT COALESCE(SUM(nominal), 0) FROM donasi WHERE id_user = users.id_user AND status_pembayaran = \'berhasil\')';
 
         $query = DB::table('users')
             ->select(
@@ -513,7 +514,13 @@ class SuperadminController extends Controller
                 'is_verified',
                 'created_at',
                 DB::raw('(SELECT COALESCE(COUNT(*), 0) FROM donasi WHERE id_user = users.id_user AND status_pembayaran = \'berhasil\') as total_transaksi_donasi'),
-                DB::raw('(SELECT COALESCE(SUM(nominal), 0) FROM donasi WHERE id_user = users.id_user AND status_pembayaran = \'berhasil\') as total_nominal_donasi')
+                DB::raw("{$tierSum} as total_nominal_donasi"),
+                DB::raw("CASE
+                    WHEN {$tierSum} >= 10000000 THEN 'Platinum'
+                    WHEN {$tierSum} >= 2000000 THEN 'Gold'
+                    WHEN {$tierSum} >= 500000 THEN 'Silver'
+                    ELSE 'Bronze'
+                END as donor_tier")
             )
             ->where('role', 'DONATUR')
             ->whereNull('deleted_at');
@@ -530,7 +537,28 @@ class SuperadminController extends Controller
             $query->where('is_active', filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN));
         }
 
-        $data = $query->orderByDesc('created_at')->paginate($perPage);
+        if ($request->filled('created_from')) {
+            $query->whereDate('created_at', '>=', $request->created_from);
+        }
+
+        if ($request->filled('created_to')) {
+            $query->whereDate('created_at', '<=', $request->created_to);
+        }
+
+        if ($request->filled('nominal_min')) {
+            $query->whereRaw("{$tierSum} >= ?", [(int) $request->nominal_min]);
+        }
+
+        if ($request->filled('nominal_max')) {
+            $query->whereRaw("{$tierSum} <= ?", [(int) $request->nominal_max]);
+        }
+
+        $allowedSorts = ['created_at', 'total_nominal_donasi', 'total_transaksi_donasi', 'nama_lengkap'];
+        $sortBy = in_array($request->query('sort_by'), $allowedSorts) ? $request->query('sort_by') : 'created_at';
+        $sortOrder = $request->query('sort_order') === 'asc' ? 'asc' : 'desc';
+        $query->orderBy($sortBy, $sortOrder);
+
+        $data = $query->paginate($perPage);
 
         return $this->success($data, 'Daftar donatur berhasil dimuat.');
     }
@@ -602,6 +630,7 @@ class SuperadminController extends Controller
             ->select(
                 'k.id_komunitas',
                 'k.nama_lembaga',
+                'k.id_jenis_lembaga',
                 'jl.nama_jenis as jenis_lembaga',
                 'u.email',
                 'k.nomor_kontak',
@@ -623,6 +652,10 @@ class SuperadminController extends Controller
 
         if ($request->filled('status')) {
             $query->where('k.status', $request->query('status'));
+        }
+
+        if ($request->filled('id_jenis_lembaga')) {
+            $query->where('k.id_jenis_lembaga', $request->query('id_jenis_lembaga'));
         }
 
         $data = $query->orderByDesc('k.created_at')->paginate($perPage);
@@ -677,6 +710,72 @@ class SuperadminController extends Controller
         }
     }
 
+    public function communityTypes()
+    {
+        $data = DB::table('jenis_lembaga')->orderBy('nama_jenis')->get();
+
+        return $this->success($data, 'Daftar jenis lembaga berhasil dimuat.');
+    }
+
+    public function communityStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nama_lembaga' => ['required', 'string', 'max:255'],
+            'id_jenis_lembaga' => ['required', 'integer', 'exists:jenis_lembaga,id_jenis'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username'],
+            'password' => ['required', 'string', 'min:6'],
+            'nomor_kontak' => ['nullable', 'string', 'max:20'],
+            'wilayah' => ['nullable', 'string', 'max:100'],
+            'nama_bank' => ['nullable', 'string', 'max:100'],
+            'nomor_rekening' => ['nullable', 'string', 'max:50'],
+            'deskripsi' => ['nullable', 'string'],
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $maxUserId = DB::table('users')->max('id_user') ?? 0;
+            $newUserId = $maxUserId + 1;
+
+            DB::table('users')->insert([
+                'id_user' => $newUserId,
+                'username' => $validated['username'],
+                'email' => $validated['email'],
+                'password_hash' => Hash::make($validated['password']),
+                'role' => 'KOMUNITAS',
+                'is_active' => true,
+                'is_verified' => true,
+                'nama_lengkap' => $validated['nama_lembaga'],
+                'nomor_telepon' => $validated['nomor_kontak'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $maxKomId = DB::table('komunitas')->max('id_komunitas') ?? 0;
+
+            DB::table('komunitas')->insert([
+                'id_komunitas' => $maxKomId + 1,
+                'id_user' => $newUserId,
+                'nama_lembaga' => $validated['nama_lembaga'],
+                'id_jenis_lembaga' => $validated['id_jenis_lembaga'],
+                'nomor_kontak' => $validated['nomor_kontak'],
+                'nama_bank' => $validated['nama_bank'],
+                'nomor_rekening' => $validated['nomor_rekening'],
+                'deskripsi' => $validated['deskripsi'],
+                'status' => 'aktif',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::commit();
+
+            return $this->success(null, 'Komunitas berhasil ditambahkan.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
     // ========== TEMPLATE DOKUMEN ==========
 
     public function documentTemplateList(Request $request)
@@ -708,6 +807,19 @@ class SuperadminController extends Controller
         ]);
 
         return $this->success($data, 'Template dokumen berhasil ditambahkan.');
+    }
+
+    public function documentTemplateDelete(int $id)
+    {
+        $template = DB::table('jenis_dokumen')->where('id_jenis_dok', $id)->first();
+
+        if (!$template) {
+            return $this->error('Template dokumen tidak ditemukan.', 404);
+        }
+
+        DB::table('jenis_dokumen')->where('id_jenis_dok', $id)->delete();
+
+        return $this->success(null, 'Template dokumen berhasil dihapus.');
     }
 
     // ========== KATEGORI CAMPAIGN ==========
@@ -1076,9 +1188,30 @@ class SuperadminController extends Controller
             $query->where('vr.status', $request->query('status'));
         }
 
+        if ($request->filled('date_from')) {
+            $query->whereDate('vr.tanggal_keputusan', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('vr.tanggal_keputusan', '<=', $request->date_to);
+        }
+
         $data = $query->orderByDesc('vr.tanggal_keputusan')->paginate($perPage);
 
         return $this->success($data, 'Riwayat perubahan rekening berhasil dimuat.');
+    }
+
+    public function bankAccountChangeStats(Request $request)
+    {
+        $pending = DB::table('verifikasi_rekening')->where('status', 'menunggu')->count();
+        $approved = DB::table('verifikasi_rekening')->where('status', 'disetujui')->count();
+        $rejected = DB::table('verifikasi_rekening')->where('status', 'ditolak')->count();
+
+        return $this->success([
+            'pending' => $pending,
+            'approved' => $approved,
+            'rejected' => $rejected,
+        ], 'Statistik perubahan rekening berhasil dimuat.');
     }
 
     // ========== DETAIL PENCAIRAN DANA ==========
@@ -1306,5 +1439,60 @@ class SuperadminController extends Controller
         DB::table('update_campaign')->where('id_update', $updateId)->delete();
 
         return $this->success(null, 'Post update berhasil dihapus.');
+    }
+
+    // ========== VERIFIKASI PEMBAYARAN ==========
+
+    public function donationPendingList(Request $request)
+    {
+        $perPage = min((int) $request->query('per_page', 15), 100);
+
+        $query = DB::table('donasi as d')
+            ->join('users as u', 'u.id_user', '=', 'd.id_user')
+            ->join('campaign as c', 'c.id_campaign', '=', 'd.id_campaign')
+            ->select(
+                'd.id_donasi',
+                'd.id_user',
+                'd.id_campaign',
+                'd.nominal',
+                'd.metode_pembayaran',
+                'd.status_pembayaran',
+                'd.created_at',
+                'u.nama_lengkap',
+                'u.email',
+                'c.judul as judul_campaign'
+            )
+            ->where('d.status_pembayaran', 'pending')
+            ->orderByDesc('d.created_at');
+
+        $data = $query->paginate($perPage);
+
+        return $this->success($data, 'Daftar donasi pending berhasil dimuat.');
+    }
+
+    public function donationUpdateStatus(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'status_pembayaran' => ['required', 'string', 'in:berhasil,gagal'],
+        ]);
+
+        $donation = DB::table('donasi')->where('id_donasi', $id)->first();
+
+        if (!$donation) {
+            return $this->error('Donasi tidak ditemukan.', 404);
+        }
+
+        if ($donation->status_pembayaran !== 'pending') {
+            return $this->error('Hanya donasi dengan status pending yang bisa diverifikasi.', 409);
+        }
+
+        DB::table('donasi')
+            ->where('id_donasi', $id)
+            ->update([
+                'status_pembayaran' => $validated['status_pembayaran'],
+                'updated_at' => now(),
+            ]);
+
+        return $this->success(null, 'Status pembayaran berhasil diperbarui.');
     }
 }
