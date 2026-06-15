@@ -1,34 +1,7 @@
 <template>
   <div class="min-h-screen bg-[#F5F0E8] flex flex-col">
 
-    <!-- ===== NAVBAR ===== -->
-    <nav class="bg-[#F5F0E8] border-b border-stone-200 px-6 py-3 flex items-center justify-between sticky top-0 z-30">
-      <div class="flex items-center gap-6">
-        <span class="font-bold text-[#1a2744] tracking-wide text-sm">BERBAGIVE</span>
-        <div class="hidden md:flex items-center gap-1">
-          <a href="#" class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-full">Beranda</a>
-          <a href="#" class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-full">Campaign</a>
-          <a href="#" class="px-3 py-1.5 text-xs font-medium bg-[#1a2744] text-white rounded-full">Komunitas</a>
-          <a href="#" class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-full">Donasi Saya</a>
-        </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <div class="relative hidden sm:block">
-          <svg class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input type="text" placeholder="Search" class="bg-white/70 text-xs pl-8 pr-4 py-1.5 rounded-full border border-stone-200 focus:outline-none focus:ring-1 focus:ring-stone-300 w-36"/>
-        </div>
-        <button class="w-7 h-7 rounded-full bg-stone-300 flex items-center justify-center">
-          <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
-        </button>
-        <button class="text-gray-500 hover:text-gray-700">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-          </svg>
-        </button>
-      </div>
-    </nav>
+    <Navbar />
 
     <!-- ===== MAIN ===== -->
     <main class="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8">
@@ -42,7 +15,7 @@
         </button>
         <div>
           <h1 class="text-xl font-bold text-gray-900">Daftar Komunitas</h1>
-          <p class="text-xs text-gray-400 mt-0.5">{{ filteredCommunities.length }} komunitas ditemukan</p>
+          <p class="text-xs text-gray-400 mt-0.5">{{ pagination.total }} komunitas ditemukan</p>
         </div>
       </div>
 
@@ -78,16 +51,22 @@
       </div>
 
       <!-- ===== GRID ===== -->
-      <div v-if="paginatedCommunities.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+      <div v-if="!loading && allCommunities.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         <CommunityCard
-          v-for="community in paginatedCommunities"
-          :key="community.id"
+          v-for="community in allCommunities"
+          :key="community.id_komunitas"
+          :id="community.id_komunitas"
           :community="community"
           :is-guest="isGuest"
           @card-click="goToCommunityProfile"
           @follow="handleFollow"
           @unfollow="handleUnfollow"
         />
+      </div>
+
+      <!-- Loading -->
+      <div v-else-if="loading" class="flex flex-col items-center justify-center py-20 text-center">
+        <p class="text-sm text-gray-400">Memuat data...</p>
       </div>
 
       <!-- Empty state -->
@@ -107,9 +86,9 @@
 
       <!-- Pagination -->
       <PaginationBar
-        v-if="totalPages > 1"
+        v-if="pagination.last_page > 1"
         :current-page="currentPage"
-        :total-pages="totalPages"
+        :total-pages="pagination.last_page"
         @change="goToPage"
       />
 
@@ -140,14 +119,20 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '@/api/axios'
+import Navbar          from '@/components/shared/Navbar.vue'
 import CommunityCard    from '@/components/community/CommunityCard.vue'
 import LocationDropdown from '@/components/ui/LocationDropdown.vue'
 import PaginationBar    from '@/components/ui/PaginationBar.vue'
 
 // --- Config ---
+const router = useRouter()
 const itemsPerPage = 6
 const isGuest = ref(false)
+const loading = ref(false)
+const pagination = ref({ total: 0, last_page: 1 })
 
 // --- Filter state ---
 const searchQuery      = ref('')
@@ -164,99 +149,27 @@ const locations = ref([
   { value: 'makassar',   label: 'Makassar' }
 ])
 
-// --- Data ---
-const allCommunities = ref([
-  {
-    id: 1,
-    nama_komunitas: 'Komunitas Peduli Air',
-    deskripsi: 'Komunitas yang berdedikasi membantu akses air bersih di 6 wilayah Indonesia.',
-    kota: 'Jakarta Pusat',
-    foto_komunitas: '',
-    total_follower: 1840,
-    total_campaign_aktif: 3,
-    total_dana_diterima: 1200000000,
-    is_following: false
-  },
-  {
-    id: 2,
-    nama_komunitas: 'Yayasan Pendidikan Cerdas',
-    deskripsi: 'Membangun sekolah dan beasiswa untuk anak-anak kurang mampu di pelosok negeri.',
-    kota: 'Bandung',
-    foto_komunitas: '',
-    total_follower: 3210,
-    total_campaign_aktif: 5,
-    total_dana_diterima: 4500000000,
-    is_following: true
-  },
-  {
-    id: 3,
-    nama_komunitas: 'Relawan Alam Nusantara',
-    deskripsi: 'Gerakan penghijauan pesisir dan rehabilitasi hutan mangrove Indonesia.',
-    kota: 'Surabaya',
-    foto_komunitas: '',
-    total_follower: 980,
-    total_campaign_aktif: 2,
-    total_dana_diterima: 890000000,
-    is_following: false
-  },
-  {
-    id: 4,
-    nama_komunitas: 'Dokter Tanpa Batas Desa',
-    deskripsi: 'Menghadirkan layanan kesehatan gratis ke daerah terpencil yang kekurangan tenaga medis.',
-    kota: 'Yogyakarta',
-    foto_komunitas: '',
-    total_follower: 5670,
-    total_campaign_aktif: 4,
-    total_dana_diterima: 7200000000,
-    is_following: false
-  },
-  {
-    id: 5,
-    nama_komunitas: 'Aksi Cepat Jakarta',
-    deskripsi: 'Respon cepat bencana banjir dan tanggap darurat wilayah DKI Jakarta.',
-    kota: 'Jakarta Timur',
-    foto_komunitas: '',
-    total_follower: 2340,
-    total_campaign_aktif: 1,
-    total_dana_diterima: 3100000000,
-    is_following: true
-  },
-  {
-    id: 6,
-    nama_komunitas: 'Komunitas Makan Siang Gratis',
-    deskripsi: 'Menyediakan makan siang gratis untuk lansia, anak yatim, dan kaum dhuafa setiap hari.',
-    kota: 'Medan',
-    foto_komunitas: '',
-    total_follower: 720,
-    total_campaign_aktif: 2,
-    total_dana_diterima: 450000000,
-    is_following: false
+async function fetchCommunities() {
+  loading.value = true
+  try {
+    const params = { page: currentPage.value, per_page: itemsPerPage }
+    if (searchQuery.value) params.keyword = searchQuery.value
+    if (selectedLocation.value !== 'semua') params.kabupaten_kota = selectedLocation.value
+    const res = await api.get('/communities/search', { params })
+    allCommunities.value = res.data.data.items || []
+    pagination.value = res.data.data.pagination || { total: 0, last_page: 1 }
+  } catch (e) {
+    allCommunities.value = []
+  } finally {
+    loading.value = false
   }
-])
+}
 
-// --- Computed ---
-const filteredCommunities = computed(() =>
-  allCommunities.value.filter(c => {
-    const q = searchQuery.value.toLowerCase()
-    const matchSearch =
-      c.nama_komunitas.toLowerCase().includes(q) ||
-      c.deskripsi.toLowerCase().includes(q) ||
-      c.kota.toLowerCase().includes(q)
-    const matchLocation =
-      selectedLocation.value === 'semua' ||
-      c.kota.toLowerCase().includes(selectedLocation.value)
-    return matchSearch && matchLocation
-  })
-)
+onMounted(fetchCommunities)
+watch([searchQuery, selectedLocation, currentPage], fetchCommunities)
 
-const paginatedCommunities = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  return filteredCommunities.value.slice(start, start + itemsPerPage)
-})
-
-const totalPages = computed(() =>
-  Math.ceil(filteredCommunities.value.length / itemsPerPage)
-)
+// --- Data ---
+const allCommunities = ref([])
 
 // Reset page on filter change
 watch([searchQuery, selectedLocation], () => { currentPage.value = 1 })
@@ -268,8 +181,7 @@ function goToPage(page) {
 }
 
 function goToCommunityProfile(id) {
-  // router.push(`/komunitas/${id}`)
-  console.log('Navigate to SCR-12, community id:', id)
+  router.push(`/communities/${id}`)
 }
 
 function handleFollow(community) {

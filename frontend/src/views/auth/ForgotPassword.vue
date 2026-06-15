@@ -64,7 +64,7 @@
 <script setup>
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { forgotPassword } from "../../services/api";
+import api from "@/api/axios";
 import AuthNavbar from "../../components/auth/AuthNavbar.vue";
 import AuthFooter from "../../components/auth/AuthFooter.vue";
 
@@ -110,12 +110,12 @@ async function handleSubmit() {
   try {
     loading.value = true;
 
-    const response = await forgotPassword({
+    const response = await api.post('/auth/forgot-password', {
       email: form.email,
     });
 
     successMessage.value =
-      response.message || "Link reset password dikirim jika email terdaftar";
+      response.data?.message || "Link reset password dikirim jika email terdaftar";
 
     setTimeout(() => {
       router.push({
@@ -126,19 +126,23 @@ async function handleSubmit() {
       });
     }, 800);
   } catch (error) {
-    if (error.status === 400 || error.status === 422) {
-      if (error.errors?.email) {
-        errors.email = Array.isArray(error.errors.email)
-          ? error.errors.email[0]
-          : error.errors.email;
+    const status = error.response?.status;
+    const errData = error.response?.data?.errors || {};
+    const message = error.response?.data?.message || error.message || "";
+
+    if (status === 400 || status === 422) {
+      if (errData.email) {
+        errors.email = Array.isArray(errData.email)
+          ? errData.email[0]
+          : errData.email;
       } else {
-        globalError.value = error.message || "Format email tidak valid";
+        globalError.value = message || "Format email tidak valid";
       }
       return;
     }
 
     globalError.value =
-      error.message || "Gagal mengirim link reset password. Silakan coba lagi";
+      message || "Gagal mengirim link reset password. Silakan coba lagi";
   } finally {
     loading.value = false;
   }

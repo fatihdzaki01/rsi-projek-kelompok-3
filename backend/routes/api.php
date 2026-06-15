@@ -12,10 +12,20 @@ use App\Http\Controllers\Api\InternalNotificationController;
 use App\Http\Controllers\Api\CampaignReportController;
 use App\Http\Controllers\Api\MonitoringController;
 use App\Http\Controllers\Api\SuperadminController;
+use App\Http\Controllers\Api\KomunitasProfilController;
+use App\Http\Controllers\Api\KomunitasCampaignController;
+use App\Http\Controllers\Api\RekeningController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\KategoriCampaignController;
+use App\Http\Controllers\Api\AdminAuditController;
+use App\Http\Controllers\Api\MasterDataController;
+use App\Http\Controllers\DonationController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/register-user', [AuthController::class, 'registerUser']);
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register-komunitas', [AuthController::class, 'registerKomunitas']);
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,15');
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::post('/resend-verification', [AuthController::class, 'resendVerification'])
@@ -31,15 +41,41 @@ Route::middleware('auth:sanctum')->prefix('users')->group(function () {
     Route::get('/me/donations', [UserController::class, 'donations']);
 });
 
+Route::get('/communities/{id}/profile', [KomunitasProfilController::class, 'profilPublik']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/campaigns/{id}/public', [CampaignPublicController::class, 'show']);
+    Route::get('/campaigns/{id}/donors', [CampaignPublicController::class, 'donors']);
+    Route::post('/campaigns/{id}/complete', [CampaignPublicController::class, 'complete']);
     Route::post('/communities/{communityId}/follow', [CommunityFollowController::class, 'follow']);
     Route::delete('/communities/{communityId}/follow', [CommunityFollowController::class, 'unfollow']);
+
+    Route::patch('/communities/profile', [KomunitasProfilController::class, 'updateProfil']);
+
+    Route::get('/communities/campaigns', [KomunitasCampaignController::class, 'riwayat']);
+    Route::post('/communities/campaigns', [KomunitasCampaignController::class, 'ajukan']);
+    Route::post('/communities/campaigns/{id}/updates', [KomunitasCampaignController::class, 'updatePost']);
+    Route::post('/communities/campaigns/{id}/clarifications', [KomunitasCampaignController::class, 'klarifikasi']);
+
+    Route::get('/communities/bank-account/history', [RekeningController::class, 'riwayat']);
+    Route::post('/communities/bank-account/change', [RekeningController::class, 'ajukanPerubahan']);
+
+    Route::get('/communities/dashboard', [DashboardController::class, 'index']);
+
+    Route::post('/donations', [DonationController::class, 'store']);
+    Route::get('/donations/{id}', [DonationController::class, 'show']);
+    Route::get('/donations/{id}/receipt', [DonationController::class, 'receipt']);
+    Route::get('/donations/{id}/receipt-pdf', [DonationController::class, 'receiptPdf']);
+    Route::patch('/donations/{id}/payment-status', [DonationController::class, 'updatePaymentStatus']);
 });
 Route::post('/campaigns/updates/{updateId}/reports', [PostUpdateReportController::class, 'store']);
 
 Route::get('/campaigns/search', [SearchController::class, 'campaigns']);
 Route::get('/communities/search', [SearchController::class, 'communities']);
+Route::get('/campaign-categories', [KategoriCampaignController::class, 'index']);
+Route::get('/jenis-lembaga', [MasterDataController::class, 'jenisLembaga']);
+Route::get('/wilayah', [MasterDataController::class, 'wilayah']);
+Route::get('/jenis-dokumen', [MasterDataController::class, 'jenisDokumen']);
 
 Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
     Route::get('/', [NotificationController::class, 'index']);
@@ -104,4 +140,5 @@ Route::middleware(['auth:sanctum', 'role:SUPERADMIN'])->group(function () {
     Route::post('/superadmin/campaign-clarifications/{id}/close-permanently', [SuperadminController::class, 'clarificationClosePermanently']);
     Route::get('/campaigns/{id}/internal', [MonitoringController::class, 'internalCampaign']);
     Route::delete('/campaigns/updates/{updateId}', [SuperadminController::class, 'deleteUpdate']);
+    Route::get('/superadmin/audit-logs', [AdminAuditController::class, 'index']);
 });

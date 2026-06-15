@@ -29,17 +29,32 @@ class KomunitasProfilController extends Controller
             ->where('status', Campaign::STATUS_AKTIF)
             ->get(['id_campaign', 'judul', 'target_dana', 'dana_terkumpul', 'tanggal_selesai']);
 
+        $campaignSelesai = Campaign::where('id_komunitas', $id)
+            ->where('status', Campaign::STATUS_SELESAI)
+            ->count();
+
+        $totalFollower = $komunitas->followers()
+            ->where('is_active', true)
+            ->count();
+
+        $totalDanaDiterima = (int) Campaign::where('id_komunitas', $id)->sum('dana_terkumpul');
+
         return $this->success([
-            'id_komunitas'        => $komunitas->id_komunitas,
-            'nama_lembaga'        => $komunitas->nama_lembaga,
-            'deskripsi'           => $komunitas->deskripsi,
-            'alamat_detail'       => $komunitas->alamat_detail,
-            'nomor_kontak'        => $komunitas->nomor_kontak,
-            'link_medsos'         => $komunitas->link_medsos,
-            'foto_lembaga_url'    => $komunitas->foto_lembaga_url,
-            'kode_wilayah'        => $komunitas->kode_wilayah,
-            'status'              => $komunitas->status,
-            'daftar_campaign_aktif' => $campaignAktif,
+            'id_komunitas'           => $komunitas->id_komunitas,
+            'nama_lembaga'           => $komunitas->nama_lembaga,
+            'deskripsi'              => $komunitas->deskripsi,
+            'alamat_detail'          => $komunitas->alamat_detail,
+            'nomor_kontak'           => $komunitas->nomor_kontak,
+            'link_medsos'            => $komunitas->link_medsos,
+            'foto_lembaga_url'       => $komunitas->foto_lembaga_url,
+            'kode_wilayah'           => $komunitas->kode_wilayah,
+            'status'                 => $komunitas->status,
+            'created_at'             => $komunitas->created_at,
+            'total_follower'         => $totalFollower,
+            'total_dana_diterima'    => $totalDanaDiterima,
+            'total_campaign_aktif'   => count($campaignAktif),
+            'total_campaign_selesai' => $campaignSelesai,
+            'daftar_campaign_aktif'  => $campaignAktif,
         ]);
     }
 

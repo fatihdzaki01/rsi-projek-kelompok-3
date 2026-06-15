@@ -3,8 +3,27 @@
     <TheNavbar />
 
     <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
-      <!-- Two-column grid: left content, right sidebar -->
-      <div class="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+
+      <!-- Loading -->
+      <div v-if="loading" class="flex flex-col items-center justify-center py-20">
+        <div class="w-8 h-8 border-2 border-[#8B4513] border-t-transparent rounded-full animate-spin mb-3" />
+        <p class="text-sm text-gray-400">Memuat campaign...</p>
+      </div>
+
+      <!-- Error -->
+      <div v-else-if="error" class="flex flex-col items-center justify-center py-20 text-center">
+        <div class="w-16 h-16 rounded-full bg-stone-200 flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+          </svg>
+        </div>
+        <h2 class="text-lg font-bold text-gray-700 mb-1">Campaign tidak tersedia</h2>
+        <p class="text-sm text-gray-400">{{ error }}</p>
+      </div>
+
+      <!-- Content -->
+      <template v-else>
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
 
         <!-- ── LEFT COLUMN ─────────────────────────────────────── -->
         <div class="flex flex-col gap-5">
@@ -101,6 +120,7 @@
         <!-- ── RIGHT COLUMN (sticky sidebar) ───────────────────── -->
         <DonationSidebar :campaign-id="campaign.id_campaign" />
       </div>
+      </template>
     </main>
 
     <TheFooter />
@@ -108,36 +128,51 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { Heart, Clock } from 'lucide-vue-next'
+import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
 import DonationSidebar from '@/components/donation/DonationSidebar.vue'
 import CampaignStory from '@/components/campaign/CampaignStory.vue'
 
-const campaign = {
-  id_campaign: 1,
-  judul: "Wujudkan Mimpi Anak-Anak di Pedalaman NTT",
-  nama_lembaga: "Yayasan Pendidikan Cerdas",
-  dana_terkumpul: 125400000,
-  target_dana: 250000000,
-  foto_campaign_url:
-    "https://images.unsplash.com/photo-1541802645635-11f2286a7482?w=800&h=480&fit=crop",
-  tanggal_selesai: "2024-06-12",
-  nama_kategori: "PENDIDIKAN",
-  persentase_pencapaian: 50,
-  jumlah_donatur: 1240,
-  hari_tersisa: 12,
+const route = useRoute()
+const campaign = ref({
+  id_campaign: 0,
+  judul: '',
+  nama_lembaga: '',
+  dana_terkumpul: 0,
+  target_dana: 0,
+  foto_campaign_url: '',
+  tanggal_selesai: '',
+  nama_kategori: '',
+  progress_persen: 0,
+  jumlah_donatur: 0,
+})
+const loading = ref(true)
+const error = ref('')
+
+async function fetchCampaign() {
+  try {
+    const res = await api.get(`/campaigns/${route.params.id}/public`)
+    campaign.value = res.data.data.campaign
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Halaman tidak dapat dimuat.'
+  } finally {
+    loading.value = false
+  }
 }
 
+onMounted(fetchCampaign)
+
 const pct = computed(() => {
-  return Math.min(
-    100,
-    Math.round((campaign.dana_terkumpul / campaign.target_dana) * 100)
-  )
+  const c = campaign.value
+  if (!c.target_dana) return 0
+  return Math.min(100, Math.round((c.dana_terkumpul / c.target_dana) * 100))
 })
 
 function formatRupiah(amount) {
-  return 'Rp ' + amount.toLocaleString('id-ID')
+  return 'Rp ' + Number(amount).toLocaleString('id-ID')
 }
 </script>

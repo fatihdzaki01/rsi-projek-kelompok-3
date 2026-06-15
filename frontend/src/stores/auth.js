@@ -1,11 +1,19 @@
 import { defineStore } from 'pinia'
-import api from '@/services/api'
+import api from '@/api/axios'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('token'),
     user: JSON.parse(localStorage.getItem('user') || 'null'),
   }),
+
+  getters: {
+    isLoggedIn: (state) => !!state.token,
+    userRole: (state) => state.user?.role || null,
+    isAdmin: (state) => state.user?.role === 'SUPERADMIN',
+    isCommunity: (state) => state.user?.role === 'KOMUNITAS',
+    isDonor: (state) => state.user?.role === 'DONATUR',
+  },
 
   actions: {
     async login(email, password) {
@@ -23,12 +31,29 @@ export const useAuthStore = defineStore('auth', {
       return response.data
     },
 
-    logout() {
-      this.token = null
-      this.user = null
+    async fetchMe() {
+      try {
+        const response = await api.get('/users/me')
+        this.user = response.data.data || response.data.user || response.data
+        localStorage.setItem('user', JSON.stringify(this.user))
+        return this.user
+      } catch (error) {
+        this.logout()
+        throw error
+      }
+    },
 
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+    async logout() {
+      try {
+        if (this.token) {
+          await api.post('/auth/logout').catch(() => {})
+        }
+      } finally {
+        this.token = null
+        this.user = null
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+      }
     },
   },
 })

@@ -94,7 +94,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import { resendVerification } from "../../services/api";
+import api from "@/api/axios";
 
 const route = useRoute();
 
@@ -148,28 +148,31 @@ async function handleResend() {
   try {
     loading.value = true;
 
-    const response = await resendVerification({
+    const response = await api.post('/auth/resend-verification', {
       email: userEmail.value,
     });
 
     successMessage.value =
-      response.message || "Email verifikasi baru telah dikirim.";
+      response.data?.message || "Email verifikasi baru telah dikirim.";
 
     startCountdown();
   } catch (error) {
-    if (error.status === 400 || error.status === 409) {
-      errorMessage.value = error.message || "Akun sudah terverifikasi.";
+    const status = error.response?.status;
+    const message = error.response?.data?.message || error.message || "";
+
+    if (status === 400 || status === 409) {
+      errorMessage.value = message || "Akun sudah terverifikasi.";
       return;
     }
 
-    if (error.status === 429) {
+    if (status === 429) {
       errorMessage.value =
         "Batas pengiriman ulang email verifikasi telah tercapai.";
       return;
     }
 
     errorMessage.value =
-      error.message || "Gagal mengirim ulang email verifikasi.";
+      message || "Gagal mengirim ulang email verifikasi.";
   } finally {
     loading.value = false;
   }

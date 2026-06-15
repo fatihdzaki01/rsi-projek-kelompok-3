@@ -35,8 +35,14 @@
       </div>
     </nav>
 
+    <!-- ===== LOADING ===== -->
+    <div v-if="loading" class="flex-1 flex flex-col items-center justify-center py-20">
+      <div class="w-8 h-8 border-2 border-[#8B4513] border-t-transparent rounded-full animate-spin mb-3" />
+      <p class="text-sm text-gray-400">Memuat profil komunitas...</p>
+    </div>
+
     <!-- ===== COMMUNITY INACTIVE STATE ===== -->
-    <div v-if="!community.is_active" class="flex-1 flex flex-col items-center justify-center px-4 py-20 text-center">
+    <div v-else-if="!community.is_active" class="flex-1 flex flex-col items-center justify-center px-4 py-20 text-center">
       <div class="w-16 h-16 rounded-full bg-stone-200 flex items-center justify-center mb-4">
         <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
@@ -73,9 +79,14 @@
           <h2 class="text-sm font-bold text-gray-900">Campaign</h2>
         </div>
         <CampaignTabList
+          v-if="campaigns.aktif.length > 0 || campaigns.selesai.length > 0"
           :campaigns="campaigns"
           v-model:activeTab="activeTab"
         />
+        <div v-else class="flex flex-col items-center justify-center py-10 text-center">
+          <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center mb-2 text-lg">📢</div>
+          <p class="text-sm font-medium text-gray-400">Belum ada campaign</p>
+        </div>
       </div>
 
       <!-- ===== SECTION 3: Update Feed ===== -->
@@ -84,7 +95,13 @@
           <div class="w-1 h-4 bg-[#8B4513] rounded-full" />
           <h2 class="text-sm font-bold text-gray-900">Update Terbaru dari Komunitas</h2>
         </div>
-        <CommunityUpdateFeed :updates="updates" />
+        <div v-if="updates.length > 0">
+          <CommunityUpdateFeed :updates="updates" />
+        </div>
+        <div v-else class="flex flex-col items-center justify-center py-10 text-center">
+          <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center mb-2 text-lg">📝</div>
+          <p class="text-sm font-medium text-gray-400">Belum ada update</p>
+        </div>
       </div>
 
     </main>
@@ -120,71 +137,102 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import api from '@/api/axios'
 import CommunityProfileCard from '@/components/community/CommunityProfileCard.vue'
-import CampaignTabList from '@/components/community/CampaignTabList.vue'
+import CampaignTabList from '@/components/campaign/CampaignTabList.vue'
 import CommunityUpdateFeed from '@/components/community/CommunityUpdateFeed.vue'
 import UnfollowModal from '@/components/community/UnfollowModal.vue'
 
+const route = useRoute()
+
 // --- State ---
+const loading = ref(true)
 const isFollowing = ref(false)
 const showUnfollowModal = ref(false)
-const activeTab = ref('aktif') // 'aktif' | 'selesai'
-const isGuest = ref(false) // replace with auth store later
+const activeTab = ref('aktif')
+const isGuest = ref(false)
 
 const community = ref({
   foto_komunitas: '',
-  nama_komunitas: 'Komunitas Peduli Air',
-  deskripsi_komunitas: 'Komunitas yang berdedikasi untuk membantu bersih 6 wilayah di Indonesia sejak 2021.',
-  alamat_lengkap: 'Komunitas Air No.12, Jakarta Pusat',
-  nomor_kontak: '08123456789',
-  tanggal_bergabung: '2021-01-01',
-  total_follower: 1840,
-  total_dana_diterima: 1200000000,
-  total_campaign_aktif: 3,
-  total_campaign_selesai: 12,
-  status_follow_user: false,
+  nama_komunitas: '',
+  deskripsi_komunitas: '',
+  alamat_lengkap: '',
+  nomor_kontak: '',
+  tanggal_bergabung: '',
+  total_follower: 0,
+  total_dana_diterima: 0,
+  total_campaign_aktif: 0,
+  total_campaign_selesai: 0,
   is_active: true
 })
 
-const campaigns = ref({
-  aktif: [
-    { id: 1, judul: 'Clean Water for Sumba Village', dana_terkumpul: 128400000, target_dana: 200000000, persentase: 64 },
-    { id: 2, judul: 'Irigasi Sawah Flores', dana_terkumpul: 63000000, target_dana: 150000000, persentase: 42 },
-    { id: 3, judul: 'Sumur Air Sumbawa', dana_terkumpul: 90000000, target_dana: 120000000, persentase: 75 }
-  ],
-  selesai: [
-    { id: 4, judul: 'Penjernihan Air Lombok', dana_terkumpul: 45200000, target_dana: 45000000, persentase: 100 }
-  ]
-})
+const campaigns = ref({ aktif: [], selesai: [] })
+const updates = ref([])
 
-const updates = ref([
-  {
-    id: 1,
-    campaign_name: 'Clean Water for Sumba Village',
-    title: 'Pembangunan sumur tahap 1 selesai',
-    body: 'Alhamdulillah, sumur pertama sudah berhasil dibangun dan siap digunakan warga. Proses konstruksi berjalan lancar berkat dukungan para donatur.',
-    created_at: '2024-06-01'
+// --- Fetch ---
+async function fetchProfile() {
+  try {
+    const res = await api.get(`/communities/${route.params.id}/profile`)
+    const data = res.data.data
+
+    community.value = {
+      foto_komunitas: data.foto_lembaga_url || '',
+      nama_komunitas: data.nama_lembaga || '',
+      deskripsi_komunitas: data.deskripsi || '',
+      alamat_lengkap: data.alamat_detail || '',
+      nomor_kontak: data.nomor_kontak || '',
+      tanggal_bergabung: data.created_at || '',
+      total_follower: data.total_follower || 0,
+      total_dana_diterima: data.total_dana_diterima || 0,
+      total_campaign_aktif: data.total_campaign_aktif || 0,
+      total_campaign_selesai: data.total_campaign_selesai || 0,
+      is_active: data.status === 'aktif'
+    }
+
+    campaigns.value.aktif = (data.daftar_campaign_aktif || []).map(c => ({
+      id: c.id_campaign,
+      judul: c.judul,
+      dana_terkumpul: c.dana_terkumpul,
+      target_dana: c.target_dana,
+      persentase: c.target_dana > 0 ? Math.round((c.dana_terkumpul / c.target_dana) * 100) : 0
+    }))
+  } catch (err) {
+    if (err.response?.status === 404) {
+      community.value.is_active = false
+    }
+  } finally {
+    loading.value = false
   }
-])
+}
+
+onMounted(fetchProfile)
 
 // --- Actions ---
-function handleFollow() {
-  if (isGuest.value) {
-    // router.push('/login')
-    return
+async function handleFollow() {
+  if (isGuest.value) return
+  try {
+    await api.post(`/communities/${route.params.id}/follow`)
+    isFollowing.value = true
+    community.value.total_follower++
+  } catch (e) {
+    // silent
   }
-  isFollowing.value = true
-  community.value.total_follower++
 }
 
 function handleUnfollowClick() {
   showUnfollowModal.value = true
 }
 
-function confirmUnfollow() {
-  isFollowing.value = false
-  community.value.total_follower--
+async function confirmUnfollow() {
+  try {
+    await api.delete(`/communities/${route.params.id}/follow`)
+    isFollowing.value = false
+    community.value.total_follower--
+  } catch (e) {
+    // silent
+  }
   showUnfollowModal.value = false
 }
 

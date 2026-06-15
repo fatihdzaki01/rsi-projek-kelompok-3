@@ -1,27 +1,5 @@
 <template>
   <div class="login-page">
-    <header class="navbar">
-      <div class="brand">BERBAGIVE</div>
-
-      <nav class="nav-menu">
-        <a href="/" class="nav-link">Beranda</a>
-        <a href="/campaign" class="nav-link">Campaign</a>
-        <a href="/komunitas" class="nav-link">Komunitas</a>
-        <a href="/donasi-saya" class="nav-link">Donasi Saya</a>
-      </nav>
-
-      <div class="nav-right">
-        <div class="search-box">
-          <span class="search-icon">⌕</span>
-          <input type="text" placeholder="Search" />
-        </div>
-
-        <a href="/profile" class="icon-link">👤</a>
-        <a href="/messages" class="icon-link">✉</a>
-        <a href="/logout" class="icon-link logout-icon">↩</a>
-      </div>
-    </header>
-
     <main class="login-main">
       <section class="login-card">
         <div class="side-panel"></div>
@@ -136,9 +114,11 @@
 <script setup>
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { loginUser } from "../../services/api";
+import { useAuthStore } from "@/stores/auth";
+import api from "@/api/axios";
 
 const router = useRouter();
+const auth = useAuthStore();
 
 const form = reactive({
   email: "",
@@ -194,20 +174,30 @@ async function handleSubmit() {
     loading.value = true;
     resetErrors();
 
-    const response = await loginUser({
+    const response = await api.post('/auth/login', {
       email: form.email,
       password: form.password,
     });
 
-    const token = response.data?.token;
-    const user = response.data?.user;
+    const token = response.data.data?.token || response.data?.token;
+    const user = response.data.data?.user || response.data?.user;
+
+    const userRole = user?.role
+    const roleDashboard = {
+      SUPERADMIN: '/dashboard',
+      KOMUNITAS: '/communities/dashboard',
+      DONATUR: '/my-dashboard',
+    }
+    const dashboard = roleDashboard[userRole] || '/campaigns'
 
     if (token) {
-      localStorage.setItem("auth_token", token);
+      localStorage.setItem("token", token);
+      auth.token = token;
     }
 
     if (user) {
       localStorage.setItem("user", JSON.stringify(user));
+      auth.user = user;
     }
 
     if (rememberMe.value) {
@@ -216,12 +206,7 @@ async function handleSubmit() {
       localStorage.removeItem("remember_me");
     }
 
-    router.push({
-      path: "/login-result",
-      query: {
-        status: "success",
-      },
-    });
+    router.push({ path: '/login-result', query: { status: 'success', redirect: dashboard } });
   } catch (error) {
     handleApiError(error);
   } finally {
@@ -232,120 +217,42 @@ async function handleSubmit() {
 function handleApiError(error) {
   resetErrors();
 
-  if (error.status === 401) {
-    router.push({
-      path: "/login-result",
-      query: {
-        status: "failed",
-        reason: "wrong_credentials",
-      },
-    });
+  const status = error.response?.status;
+  const message = error.response?.data?.message || error.message || "";
+
+  if (status === 401) {
+    errors.email = "Email atau password salah";
+    errors.password = "Email atau password salah";
     return;
   }
 
-  if (error.status === 403) {
-    const message = (error.message || "").toLowerCase();
+  if (status === 423) {
+    errors.email = "Akun terkunci. Coba lagi nanti.";
+    return;
+  }
 
-    if (
-      message.includes("verifikasi") ||
-      message.includes("review") ||
-      message.includes("proses")
-    ) {
-      router.push({
-        path: "/login-result",
-        query: {
-          status: "failed",
-          reason: "verification",
-        },
-      });
+  if (status === 403) {
+    if (message.includes("verifikasi") || message.includes("review") || message.includes("proses")) {
+      errors.email = "Akun belum terverifikasi";
       return;
     }
-
-    if (
-      message.includes("tidak aktif") ||
-      message.includes("nonaktif") ||
-      message.includes("inactive")
-    ) {
-      router.push({
-        path: "/login-result",
-        query: {
-          status: "failed",
-          reason: "inactive",
-        },
-      });
+    if (message.includes("tidak aktif") || message.includes("nonaktif") || message.includes("inactive")) {
+      errors.email = "Akun tidak aktif";
       return;
     }
-
-    router.push({
-      path: "/login-result",
-      query: {
-        status: "failed",
-        reason: "verification",
-      },
-    });
+    errors.email = "Akun belum terverifikasi";
     return;
   }
 
-  if (error.status === 423) {
-    router.push({
-      path: "/login-result",
-      query: {
-        status: "failed",
-        reason: "locked",
-      },
-    });
+  if (status === 400 || status === 422) {
+    const errData = error.response?.data?.errors || {};
+    if (errData.email) errors.email = Array.isArray(errData.email) ? errData.email[0] : errData.email;
+    if (errData.password) errors.password = Array.isArray(errData.password) ? errData.password[0] : errData.password;
+    if (!errors.email && !errors.password) errors.email = "Email atau password salah";
     return;
   }
 
-  if (error.status === 400 || error.status === 422) {
-    if (error.errors) {
-      if (error.errors.email) {
-        errors.email = Array.isArray(error.errors.email)
-          ? error.errors.email[0]
-          : error.errors.email;
-      }
-
-      if (error.errors.password) {
-        errors.password = Array.isArray(error.errors.password)
-          ? error.errors.password[0]
-          : error.errors.password;
-      }
-    }
-
-    if (!errors.email && !errors.password) {
-      router.push({
-        path: "/login-result",
-        query: {
-          status: "failed",
-          reason: "wrong_credentials",
-        },
-      });
-    }
-
-    return;
-  }
-
-  router.push({
-    path: "/login-result",
-    query: {
-      status: "failed",
-      reason: "server",
-    },
-  });
-}
-
-function redirectByRole(role) {
-  if (role === "SUPERADMIN" || role === "superadmin") {
-    router.push("/dashboard-superadmin");
-    return;
-  }
-
-  if (role === "KOMUNITAS" || role === "komunitas") {
-    router.push("/dashboard-komunitas");
-    return;
-  }
-
-  router.push("/dashboard");
+  errors.email = "Terjadi kesalahan. Coba lagi.";
 }
 </script>
 
@@ -365,102 +272,14 @@ a {
   text-decoration: none;
 }
 
-/* NAVBAR */
-
-.navbar {
-  width: 100%;
-  height: 72px;
-  padding: 18px 34px;
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  background: #eadfce;
-}
-
-.brand {
-  font-size: 25px;
-  letter-spacing: 4px;
-  font-weight: 800;
-  color: #b08160;
-  margin-right: 10px;
-}
-
-.nav-menu {
-  display: flex;
-  align-items: center;
-  gap: 34px;
-}
-
-.nav-link {
-  min-width: 115px;
-  height: 42px;
-  padding: 0 24px;
-  border-radius: 9px;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: white;
-  background: #b07f5e;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.search-box {
-  width: 365px;
-  height: 46px;
-  padding: 0 16px;
-  border-radius: 24px;
-  background: #d6c6b5;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.search-icon {
-  color: #1f1f1f;
-  font-size: 22px;
-}
-
-.search-box input {
-  width: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 16px;
-  color: #2b2b2b;
-}
-
-.search-box input::placeholder {
-  color: #2d2d2d;
-}
-
-.icon-link {
-  color: #b07f5e;
-  font-size: 34px;
-  line-height: 1;
-}
-
-.logout-icon {
-  font-size: 42px;
-  transform: translateY(-2px);
-}
-
 /* MAIN */
 
 .login-main {
-  min-height: calc(100vh - 170px);
+  min-height: calc(100vh - 118px);
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 85px 20px 100px;
+  padding: 60px 20px;
 }
 
 .login-card {
@@ -732,20 +551,6 @@ a {
 /* RESPONSIVE */
 
 @media (max-width: 1180px) {
-  .navbar {
-    height: auto;
-    flex-wrap: wrap;
-  }
-
-  .nav-right {
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .search-box {
-    flex: 1;
-  }
-
   .login-card {
     width: 95%;
   }
@@ -765,16 +570,6 @@ a {
   }
 
   .login-content {
-    width: 100%;
-  }
-
-  .nav-menu,
-  .nav-right {
-    flex-wrap: wrap;
-  }
-
-  .nav-link,
-  .search-box {
     width: 100%;
   }
 

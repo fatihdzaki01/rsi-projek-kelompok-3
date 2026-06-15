@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CampaignUpdate;
+use App\Models\UpdateCampaign;
 use App\Models\PostReport;
 use Illuminate\Http\Request;
 
@@ -17,7 +17,7 @@ class PostUpdateReportController extends Controller
             'alasan_laporan.required' => 'Alasan laporan wajib dipilih',
         ]);
 
-        $update = CampaignUpdate::where('id_update', $updateId)->first();
+        $update = UpdateCampaign::where('id_update', $updateId)->first();
 
         if (!$update) {
             return response()->json([

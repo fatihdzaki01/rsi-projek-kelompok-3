@@ -23,12 +23,22 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
             if ($request->is('api/*')) {
+                $message = 'Terlalu banyak permintaan. Silakan coba lagi nanti.';
+                $code = 429;
+
+                if ($request->is('api/v1/auth/login') || $request->is('api/auth/login')) {
+                    $message = 'Akun dikunci sementara selama 15 menit';
+                    $code = 423;
+                } elseif ($request->is('*resend-verification*')) {
+                    $message = 'Batas pengiriman ulang email verifikasi telah tercapai. Silakan coba lagi nanti.';
+                }
+
                 return response()->json([
                     'status' => 'error',
                     'data' => null,
-                    'message' => 'Batas pengiriman ulang link verifikasi telah tercapai. Silakan coba lagi nanti.',
+                    'message' => $message,
                     'errors' => null,
-                ], 429);
+                ], $code);
             }
         });
     })->create();

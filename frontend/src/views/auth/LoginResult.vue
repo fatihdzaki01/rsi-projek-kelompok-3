@@ -88,21 +88,12 @@ const secondaryText = computed(() => {
 });
 
 function handlePrimaryAction() {
-  if (isSuccess.value) {
-    router.push("/dashboard");
-    return;
-  }
-
-  router.push("/login");
+  const redirect = route.query.redirect || "/campaigns";
+  router.push(redirect);
 }
 
 function handleSecondaryAction() {
-  if (isSuccess.value) {
-    router.push("/dashboard");
-    return;
-  }
-
-  router.push("/forgot-password");
+  router.push(isSuccess.value ? "/campaigns" : "/forgot-password");
 }
 </script>
 

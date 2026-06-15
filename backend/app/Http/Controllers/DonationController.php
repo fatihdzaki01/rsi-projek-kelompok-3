@@ -63,12 +63,16 @@ class DonationController extends Controller
 
         $donasi = $this->service->createDonation($userId, $payload);
 
+        $paymentToken = (string) \Illuminate\Support\Str::uuid();
+
         return ApiResponse::success([
             'id_donasi'              => $donasi->id_donasi,
             'nomor_transaksi'        => $donasi->nomor_transaksi,
             'status_pembayaran'      => $donasi->status_pembayaran,
             'batas_waktu_pembayaran' => now()->addHours(24)->toIso8601String(),
             'metode_pembayaran'      => $donasi->metode_pembayaran,
+            'payment_token'          => $paymentToken,
+            'mock_payment_url'       => url('/api/v1/donations/' . $donasi->id_donasi . '/mock-pay?token=' . $paymentToken),
         ], 'Donasi berhasil dibuat', 201);
     }
 
@@ -99,6 +103,11 @@ class DonationController extends Controller
             return ApiResponse::error('Anda tidak memiliki akses ke bukti donasi ini', 403, 'ERR-DON-04');
         }
 
+        if (!$receipt->bukti_pdf_url && $receipt->status_pembayaran === 'berhasil') {
+            $url = $this->service->generateReceiptPdf($id);
+            $receipt->bukti_pdf_url = $url ?? $receipt->bukti_pdf_url;
+        }
+
         return ApiResponse::success([
             'id_donasi'          => $receipt->id_donasi,
             'nomor_transaksi'    => $receipt->nomor_transaksi,
@@ -109,6 +118,27 @@ class DonationController extends Controller
             'nama_tampil'        => $receipt->nama_tampil,
             'bukti_pdf_url'      => $receipt->bukti_pdf_url,
         ], 'Bukti donasi berhasil ditemukan');
+    }
+
+    public function receiptPdf(Request $request, int $id): \Illuminate\Http\Response
+    {
+        $receipt = $this->service->getReceipt($id);
+
+        if (!$receipt) {
+            return ApiResponse::error('Bukti donasi tidak ditemukan', 404, 'ERR-DON-05');
+        }
+
+        if ($receipt->id_user !== auth()->user()->id_user) {
+            return ApiResponse::error('Anda tidak memiliki akses ke bukti donasi ini', 403, 'ERR-DON-04');
+        }
+
+        $pdf = $this->service->downloadReceiptPdf($id);
+
+        if (!$pdf) {
+            return ApiResponse::error('Gagal membuat bukti donasi', 500, 'ERR-DON-08');
+        }
+
+        return $pdf->download('bukti-donasi-' . $id . '.pdf');
     }
 
     public function updatePaymentStatus(UpdatePaymentStatusRequest $request, int $id): JsonResponse

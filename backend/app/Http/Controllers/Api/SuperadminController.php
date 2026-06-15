@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,31 +11,11 @@ use Illuminate\Validation\ValidationException;
 
 class SuperadminController extends Controller
 {
-    private function success($data, string $message = 'Berhasil')
-    {
-        return response()->json([
-            'status' => 'success',
-            'data' => $data,
-            'message' => $message,
-            'errors' => null,
-        ]);
-    }
-
-    private function error(string $message, int $code = 400, $errors = null)
-    {
-        return response()->json([
-            'status' => 'error',
-            'data' => null,
-            'message' => $message,
-            'errors' => $errors,
-        ], $code);
-    }
-
     public function profile(Request $request)
     {
         $user = $request->user();
 
-        return $this->success([
+        return ApiResponse::success([
             'id_user' => $user->id_user,
             'username' => $user->username,
             'email' => $user->email,
@@ -49,7 +30,7 @@ class SuperadminController extends Controller
     public function updateProfile(Request $request)
     {
         if ($request->has('email')) {
-            return $this->error('Email superadmin tidak dapat diubah dari halaman profil.', 422, [
+            return ApiResponse::error('Email superadmin tidak dapat diubah dari halaman profil.', 422, [
                 'email' => ['Email tidak dapat diubah.'],
             ]);
         }
@@ -62,7 +43,7 @@ class SuperadminController extends Controller
         $user = $request->user();
         $user->update($validated);
 
-        return $this->success([
+        return ApiResponse::success([
             'id_user' => $user->id_user,
             'username' => $user->username,
             'email' => $user->email,
@@ -87,7 +68,7 @@ class SuperadminController extends Controller
         }
 
         if (Hash::check($validated['new_password'], $user->password_hash)) {
-            return $this->error('Password baru tidak boleh sama dengan password lama.', 422, [
+            return ApiResponse::error('Password baru tidak boleh sama dengan password lama.', 422, [
                 'new_password' => ['Password baru tidak boleh sama dengan password lama.'],
             ]);
         }
@@ -103,7 +84,7 @@ class SuperadminController extends Controller
                 ->delete();
         }
 
-        return $this->success(null, 'Password superadmin berhasil diperbarui.');
+        return ApiResponse::success(null, 'Password superadmin berhasil diperbarui.');
     }
 
     public function campaignReviewList(Request $request)
@@ -135,7 +116,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('c.created_at')->paginate($perPage);
 
-        return $this->success($data, 'Daftar campaign review berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar campaign review berhasil dimuat.');
     }
 
     public function campaignDetail(int $id)
@@ -156,10 +137,10 @@ class SuperadminController extends Controller
             ->first();
 
         if (!$campaign) {
-            return $this->error('Campaign tidak ditemukan.', 404);
+            return ApiResponse::error('Campaign tidak ditemukan.', 404);
         }
 
-        return $this->success($campaign, 'Detail campaign berhasil dimuat.');
+        return ApiResponse::success($campaign, 'Detail campaign berhasil dimuat.');
     }
 
     public function approveCampaign(Request $request, int $id)
@@ -167,11 +148,11 @@ class SuperadminController extends Controller
         $campaign = DB::table('campaign')->where('id_campaign', $id)->first();
 
         if (!$campaign) {
-            return $this->error('Campaign tidak ditemukan.', 404);
+            return ApiResponse::error('Campaign tidak ditemukan.', 404);
         }
 
         if ($campaign->status !== 'menunggu_review') {
-            return $this->error('Campaign sudah direview sebelumnya.', 409);
+            return ApiResponse::error('Campaign sudah direview sebelumnya.', 409);
         }
 
         DB::table('campaign')
@@ -183,7 +164,7 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return $this->success(null, 'Campaign berhasil disetujui.');
+        return ApiResponse::success(null, 'Campaign berhasil disetujui.');
     }
 
     public function rejectCampaign(Request $request, int $id)
@@ -195,11 +176,11 @@ class SuperadminController extends Controller
         $campaign = DB::table('campaign')->where('id_campaign', $id)->first();
 
         if (!$campaign) {
-            return $this->error('Campaign tidak ditemukan.', 404);
+            return ApiResponse::error('Campaign tidak ditemukan.', 404);
         }
 
         if ($campaign->status !== 'menunggu_review') {
-            return $this->error('Campaign sudah direview sebelumnya.', 409);
+            return ApiResponse::error('Campaign sudah direview sebelumnya.', 409);
         }
 
         DB::table('campaign')
@@ -211,7 +192,7 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return $this->success(null, 'Campaign berhasil ditolak.');
+        return ApiResponse::success(null, 'Campaign berhasil ditolak.');
     }
 
     public function campaignReviewHistory(Request $request)
@@ -238,7 +219,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('c.updated_at')->paginate($perPage);
 
-        return $this->success($data, 'Riwayat review campaign berhasil dimuat.');
+        return ApiResponse::success($data, 'Riwayat review campaign berhasil dimuat.');
     }
 
     public function disbursementList(Request $request)
@@ -273,7 +254,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('pd.tanggal_pengajuan')->paginate($perPage);
 
-        return $this->success($data, 'Daftar pengajuan pencairan berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar pengajuan pencairan berhasil dimuat.');
     }
 
     public function approveDisbursement(Request $request, int $id)
@@ -286,9 +267,9 @@ class SuperadminController extends Controller
                 null,
             ]);
 
-            return $this->success(null, 'Pengajuan pencairan berhasil disetujui.');
+            return ApiResponse::success(null, 'Pengajuan pencairan berhasil disetujui.');
         } catch (\Throwable $e) {
-            return $this->error($e->getMessage(), 422);
+            return ApiResponse::error($e->getMessage(), 422);
         }
     }
 
@@ -306,9 +287,9 @@ class SuperadminController extends Controller
                 $validated['alasan_penolakan'],
             ]);
 
-            return $this->success(null, 'Pengajuan pencairan berhasil ditolak.');
+            return ApiResponse::success(null, 'Pengajuan pencairan berhasil ditolak.');
         } catch (\Throwable $e) {
-            return $this->error($e->getMessage(), 422);
+            return ApiResponse::error($e->getMessage(), 422);
         }
     }
 
@@ -342,7 +323,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('pd.tanggal_pengajuan')->paginate($perPage);
 
-        return $this->success($data, 'Riwayat pencairan dana berhasil dimuat.');
+        return ApiResponse::success($data, 'Riwayat pencairan dana berhasil dimuat.');
     }
 
     public function dashboard(Request $request)
@@ -375,7 +356,7 @@ class SuperadminController extends Controller
             ->limit(10)
             ->get();
 
-        return $this->success([
+        return ApiResponse::success([
             'summary' => $summary,
             'campaign_status_breakdown' => $campaignStatusBreakdown,
             'recent_donations' => $recentDonations,
@@ -423,7 +404,7 @@ class SuperadminController extends Controller
             ->limit(5)
             ->get();
 
-        return $this->success([
+        return ApiResponse::success([
             'daily_stats' => $dailyStats,
             'top_campaigns' => $topCampaigns,
             'top_communities' => $topCommunities,
@@ -439,7 +420,7 @@ class SuperadminController extends Controller
             ->limit($perPage)
             ->get();
 
-        return $this->success($activities, 'Aktivitas dashboard berhasil dimuat.');
+        return ApiResponse::success($activities, 'Aktivitas dashboard berhasil dimuat.');
     }
 
     public function platformAnalytics(Request $request)
@@ -484,7 +465,7 @@ class SuperadminController extends Controller
             ->orderByDesc('total')
             ->get();
 
-        return $this->success([
+        return ApiResponse::success([
             'platform_daily' => $platformData,
             'financial_report' => $financialReport,
             'financial_summary' => $financialSummary,
@@ -532,7 +513,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('created_at')->paginate($perPage);
 
-        return $this->success($data, 'Daftar donatur berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar donatur berhasil dimuat.');
     }
 
     public function donorDetail(int $id)
@@ -559,7 +540,7 @@ class SuperadminController extends Controller
             ->first();
 
         if (!$donor) {
-            return $this->error('Donatur tidak ditemukan.', 404);
+            return ApiResponse::error('Donatur tidak ditemukan.', 404);
         }
 
         $donationHistory = DB::table('v_user_donation_history')
@@ -568,7 +549,7 @@ class SuperadminController extends Controller
             ->limit(50)
             ->get();
 
-        return $this->success([
+        return ApiResponse::success([
             'donor' => $donor,
             'donation_history' => $donationHistory,
         ], 'Detail donatur berhasil dimuat.');
@@ -583,9 +564,9 @@ class SuperadminController extends Controller
                 $request->user()->id_user,
             ]);
 
-            return $this->success(null, 'Status donatur berhasil diperbarui.');
+            return ApiResponse::success(null, 'Status donatur berhasil diperbarui.');
         } catch (\Throwable $e) {
-            return $this->error($e->getMessage(), 422);
+            return ApiResponse::error($e->getMessage(), 422);
         }
     }
 
@@ -627,7 +608,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('k.created_at')->paginate($perPage);
 
-        return $this->success($data, 'Daftar komunitas berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar komunitas berhasil dimuat.');
     }
 
     public function communityDetail(int $id)
@@ -641,7 +622,7 @@ class SuperadminController extends Controller
             ->first();
 
         if (!$community) {
-            return $this->error('Komunitas tidak ditemukan.', 404);
+            return ApiResponse::error('Komunitas tidak ditemukan.', 404);
         }
 
         $campaigns = DB::table('campaign')
@@ -655,7 +636,7 @@ class SuperadminController extends Controller
             ->where('dk.id_komunitas', $id)
             ->get();
 
-        return $this->success([
+        return ApiResponse::success([
             'community' => $community,
             'campaigns' => $campaigns,
             'documents' => $documents,
@@ -671,9 +652,9 @@ class SuperadminController extends Controller
                 $request->user()->id_user,
             ]);
 
-            return $this->success(null, 'Status komunitas berhasil diperbarui.');
+            return ApiResponse::success(null, 'Status komunitas berhasil diperbarui.');
         } catch (\Throwable $e) {
-            return $this->error($e->getMessage(), 422);
+            return ApiResponse::error($e->getMessage(), 422);
         }
     }
 
@@ -685,7 +666,7 @@ class SuperadminController extends Controller
             ->orderBy('nama_dokumen')
             ->get();
 
-        return $this->success($data, 'Daftar template dokumen berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar template dokumen berhasil dimuat.');
     }
 
     public function documentTemplateStore(Request $request)
@@ -707,7 +688,7 @@ class SuperadminController extends Controller
             'is_opsional' => $validated['is_opsional'] ?? false,
         ]);
 
-        return $this->success($data, 'Template dokumen berhasil ditambahkan.');
+        return ApiResponse::success($data, 'Template dokumen berhasil ditambahkan.');
     }
 
     // ========== KATEGORI CAMPAIGN ==========
@@ -718,7 +699,7 @@ class SuperadminController extends Controller
             ->orderBy('nama_kategori')
             ->get();
 
-        return $this->success($data, 'Daftar kategori campaign berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar kategori campaign berhasil dimuat.');
     }
 
     public function categoryStore(Request $request)
@@ -737,7 +718,7 @@ class SuperadminController extends Controller
             'is_active' => true,
         ], 'id_kategori');
 
-        return $this->success(['id_kategori' => $maxId + 1], 'Kategori campaign berhasil ditambahkan.');
+        return ApiResponse::success(['id_kategori' => $maxId + 1], 'Kategori campaign berhasil ditambahkan.');
     }
 
     public function categoryUpdate(Request $request, int $id)
@@ -745,7 +726,7 @@ class SuperadminController extends Controller
         $category = DB::table('kategori_campaign')->where('id_kategori', $id)->first();
 
         if (!$category) {
-            return $this->error('Kategori tidak ditemukan.', 404);
+            return ApiResponse::error('Kategori tidak ditemukan.', 404);
         }
 
         $validated = $request->validate([
@@ -757,7 +738,7 @@ class SuperadminController extends Controller
             ->where('id_kategori', $id)
             ->update($validated);
 
-        return $this->success(null, 'Kategori campaign berhasil diperbarui.');
+        return ApiResponse::success(null, 'Kategori campaign berhasil diperbarui.');
     }
 
     public function categoryToggleStatus(Request $request, int $id)
@@ -765,14 +746,14 @@ class SuperadminController extends Controller
         $category = DB::table('kategori_campaign')->where('id_kategori', $id)->first();
 
         if (!$category) {
-            return $this->error('Kategori tidak ditemukan.', 404);
+            return ApiResponse::error('Kategori tidak ditemukan.', 404);
         }
 
         DB::table('kategori_campaign')
             ->where('id_kategori', $id)
             ->update(['is_active' => !$category->is_active]);
 
-        return $this->success(null, 'Status kategori campaign berhasil diperbarui.');
+        return ApiResponse::success(null, 'Status kategori campaign berhasil diperbarui.');
     }
 
     public function categoryDelete(int $id)
@@ -818,7 +799,7 @@ class SuperadminController extends Controller
             ]);
         }
 
-        return $this->success([
+        return ApiResponse::success([
             'periode' => ['month' => $month, 'year' => $year],
             'saldo_akhir' => $saldoAkhir->saldo_akhir ?? 0,
             'transactions' => $reportData,
@@ -851,7 +832,7 @@ class SuperadminController extends Controller
             ->orderByDesc('k.created_at')
             ->paginate($perPage);
 
-        return $this->success($data, 'Daftar pendaftaran komunitas berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar pendaftaran komunitas berhasil dimuat.');
     }
 
     public function registrationDetail(int $id)
@@ -865,7 +846,7 @@ class SuperadminController extends Controller
             ->first();
 
         if (!$registration) {
-            return $this->error('Pendaftaran tidak ditemukan.', 404);
+            return ApiResponse::error('Pendaftaran tidak ditemukan.', 404);
         }
 
         $documents = DB::table('dokumen_komunitas as dk')
@@ -874,7 +855,7 @@ class SuperadminController extends Controller
             ->where('dk.id_komunitas', $id)
             ->get();
 
-        return $this->success([
+        return ApiResponse::success([
             'registration' => $registration,
             'documents' => $documents,
         ], 'Detail pendaftaran komunitas berhasil dimuat.');
@@ -885,11 +866,11 @@ class SuperadminController extends Controller
         $komunitas = DB::table('komunitas')->where('id_komunitas', $id)->first();
 
         if (!$komunitas) {
-            return $this->error('Pendaftaran tidak ditemukan.', 404);
+            return ApiResponse::error('Pendaftaran tidak ditemukan.', 404);
         }
 
         if ($komunitas->status !== 'menunggu') {
-            return $this->error('Pendaftaran sudah direview sebelumnya.', 409);
+            return ApiResponse::error('Pendaftaran sudah direview sebelumnya.', 409);
         }
 
         DB::table('komunitas')
@@ -901,7 +882,7 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return $this->success(null, 'Pendaftaran komunitas berhasil disetujui.');
+        return ApiResponse::success(null, 'Pendaftaran komunitas berhasil disetujui.');
     }
 
     public function registrationReject(Request $request, int $id)
@@ -913,11 +894,11 @@ class SuperadminController extends Controller
         $komunitas = DB::table('komunitas')->where('id_komunitas', $id)->first();
 
         if (!$komunitas) {
-            return $this->error('Pendaftaran tidak ditemukan.', 404);
+            return ApiResponse::error('Pendaftaran tidak ditemukan.', 404);
         }
 
         if ($komunitas->status !== 'menunggu') {
-            return $this->error('Pendaftaran sudah direview sebelumnya.', 409);
+            return ApiResponse::error('Pendaftaran sudah direview sebelumnya.', 409);
         }
 
         DB::table('komunitas')
@@ -929,7 +910,7 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return $this->success(null, 'Pendaftaran komunitas berhasil ditolak.');
+        return ApiResponse::success(null, 'Pendaftaran komunitas berhasil ditolak.');
     }
 
     public function registrationHistory(Request $request)
@@ -958,7 +939,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('k.updated_at')->paginate($perPage);
 
-        return $this->success($data, 'Riwayat review pendaftaran berhasil dimuat.');
+        return ApiResponse::success($data, 'Riwayat review pendaftaran berhasil dimuat.');
     }
 
     // ========== REVIEW PERUBAHAN REKENING ==========
@@ -983,7 +964,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('vr.created_at')->paginate($perPage);
 
-        return $this->success($data, 'Daftar perubahan rekening berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar perubahan rekening berhasil dimuat.');
     }
 
     public function bankAccountChangeDetail(int $id)
@@ -995,10 +976,10 @@ class SuperadminController extends Controller
             ->first();
 
         if (!$change) {
-            return $this->error('Perubahan rekening tidak ditemukan.', 404);
+            return ApiResponse::error('Perubahan rekening tidak ditemukan.', 404);
         }
 
-        return $this->success($change, 'Detail perubahan rekening berhasil dimuat.');
+        return ApiResponse::success($change, 'Detail perubahan rekening berhasil dimuat.');
     }
 
     public function bankAccountChangeApprove(Request $request, int $id)
@@ -1006,11 +987,11 @@ class SuperadminController extends Controller
         $change = DB::table('verifikasi_rekening')->where('id_verif', $id)->first();
 
         if (!$change) {
-            return $this->error('Perubahan rekening tidak ditemukan.', 404);
+            return ApiResponse::error('Perubahan rekening tidak ditemukan.', 404);
         }
 
         if ($change->status !== 'menunggu') {
-            return $this->error('Perubahan rekening sudah direview sebelumnya.', 409);
+            return ApiResponse::error('Perubahan rekening sudah direview sebelumnya.', 409);
         }
 
         DB::transaction(function () use ($change, $request, $id) {
@@ -1031,7 +1012,7 @@ class SuperadminController extends Controller
                 ]);
         });
 
-        return $this->success(null, 'Perubahan rekening berhasil disetujui.');
+        return ApiResponse::success(null, 'Perubahan rekening berhasil disetujui.');
     }
 
     public function bankAccountChangeReject(Request $request, int $id)
@@ -1043,11 +1024,11 @@ class SuperadminController extends Controller
         $change = DB::table('verifikasi_rekening')->where('id_verif', $id)->first();
 
         if (!$change) {
-            return $this->error('Perubahan rekening tidak ditemukan.', 404);
+            return ApiResponse::error('Perubahan rekening tidak ditemukan.', 404);
         }
 
         if ($change->status !== 'menunggu') {
-            return $this->error('Perubahan rekening sudah direview sebelumnya.', 409);
+            return ApiResponse::error('Perubahan rekening sudah direview sebelumnya.', 409);
         }
 
         DB::table('verifikasi_rekening')
@@ -1059,7 +1040,7 @@ class SuperadminController extends Controller
                 'tanggal_keputusan' => now(),
             ]);
 
-        return $this->success(null, 'Perubahan rekening berhasil ditolak.');
+        return ApiResponse::success(null, 'Perubahan rekening berhasil ditolak.');
     }
 
     public function bankAccountChangeHistory(Request $request)
@@ -1078,7 +1059,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('vr.tanggal_keputusan')->paginate($perPage);
 
-        return $this->success($data, 'Riwayat perubahan rekening berhasil dimuat.');
+        return ApiResponse::success($data, 'Riwayat perubahan rekening berhasil dimuat.');
     }
 
     // ========== DETAIL PENCAIRAN DANA ==========
@@ -1105,10 +1086,10 @@ class SuperadminController extends Controller
             ->first();
 
         if (!$disbursement) {
-            return $this->error('Pencairan dana tidak ditemukan.', 404);
+            return ApiResponse::error('Pencairan dana tidak ditemukan.', 404);
         }
 
-        return $this->success($disbursement, 'Detail pencairan dana berhasil dimuat.');
+        return ApiResponse::success($disbursement, 'Detail pencairan dana berhasil dimuat.');
     }
 
     // ========== LAPORAN CAMPAIGN ==========
@@ -1140,7 +1121,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('c.updated_at')->paginate($perPage);
 
-        return $this->success($data, 'Daftar laporan campaign berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar laporan campaign berhasil dimuat.');
     }
 
     public function campaignReportDetail(int $id)
@@ -1155,10 +1136,10 @@ class SuperadminController extends Controller
             ->first();
 
         if (!$campaign) {
-            return $this->error('Campaign tidak ditemukan.', 404);
+            return ApiResponse::error('Campaign tidak ditemukan.', 404);
         }
 
-        return $this->success($campaign, 'Detail laporan campaign berhasil dimuat.');
+        return ApiResponse::success($campaign, 'Detail laporan campaign berhasil dimuat.');
     }
 
     public function campaignReportIgnore(Request $request, int $id)
@@ -1166,11 +1147,11 @@ class SuperadminController extends Controller
         $campaign = DB::table('campaign')->where('id_campaign', $id)->first();
 
         if (!$campaign) {
-            return $this->error('Campaign tidak ditemukan.', 404);
+            return ApiResponse::error('Campaign tidak ditemukan.', 404);
         }
 
         if ($campaign->status !== 'menunggu_review') {
-            return $this->error('Hanya campaign dengan status menunggu review yang bisa diabaikan.', 409);
+            return ApiResponse::error('Hanya campaign dengan status menunggu review yang bisa diabaikan.', 409);
         }
 
         DB::table('campaign')
@@ -1182,7 +1163,7 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return $this->success(null, 'Laporan campaign diabaikan, campaign diaktifkan.');
+        return ApiResponse::success(null, 'Laporan campaign diabaikan, campaign diaktifkan.');
     }
 
     public function campaignDisable(Request $request, int $id)
@@ -1190,11 +1171,11 @@ class SuperadminController extends Controller
         $campaign = DB::table('campaign')->where('id_campaign', $id)->first();
 
         if (!$campaign) {
-            return $this->error('Campaign tidak ditemukan.', 404);
+            return ApiResponse::error('Campaign tidak ditemukan.', 404);
         }
 
         if ($campaign->status === 'nonaktif') {
-            return $this->error('Campaign sudah nonaktif.', 409);
+            return ApiResponse::error('Campaign sudah nonaktif.', 409);
         }
 
         DB::table('campaign')
@@ -1205,7 +1186,7 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return $this->success(null, 'Campaign berhasil dinonaktifkan.');
+        return ApiResponse::success(null, 'Campaign berhasil dinonaktifkan.');
     }
 
     // ========== KLARIFIKASI CAMPAIGN ==========
@@ -1237,7 +1218,7 @@ class SuperadminController extends Controller
 
         $data = $query->orderByDesc('c.updated_at')->paginate($perPage);
 
-        return $this->success($data, 'Daftar klarifikasi campaign berhasil dimuat.');
+        return ApiResponse::success($data, 'Daftar klarifikasi campaign berhasil dimuat.');
     }
 
     public function clarificationDetail(int $id)
@@ -1250,11 +1231,11 @@ class SuperadminController extends Controller
         $campaign = DB::table('campaign')->where('id_campaign', $id)->first();
 
         if (!$campaign) {
-            return $this->error('Campaign tidak ditemukan.', 404);
+            return ApiResponse::error('Campaign tidak ditemukan.', 404);
         }
 
         if ($campaign->status !== 'nonaktif') {
-            return $this->error('Hanya campaign nonaktif yang bisa diaktifkan kembali.', 409);
+            return ApiResponse::error('Hanya campaign nonaktif yang bisa diaktifkan kembali.', 409);
         }
 
         DB::table('campaign')
@@ -1266,7 +1247,7 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return $this->success(null, 'Campaign berhasil diaktifkan kembali.');
+        return ApiResponse::success(null, 'Campaign berhasil diaktifkan kembali.');
     }
 
     public function clarificationClosePermanently(Request $request, int $id)
@@ -1274,11 +1255,11 @@ class SuperadminController extends Controller
         $campaign = DB::table('campaign')->where('id_campaign', $id)->first();
 
         if (!$campaign) {
-            return $this->error('Campaign tidak ditemukan.', 404);
+            return ApiResponse::error('Campaign tidak ditemukan.', 404);
         }
 
         if ($campaign->status === 'ditutup_permanen') {
-            return $this->error('Campaign sudah ditutup permanen.', 409);
+            return ApiResponse::error('Campaign sudah ditutup permanen.', 409);
         }
 
         DB::table('campaign')
@@ -1289,7 +1270,7 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return $this->success(null, 'Campaign berhasil ditutup permanen.');
+        return ApiResponse::success(null, 'Campaign berhasil ditutup permanen.');
     }
 
     // ========== HAPUS POST UPDATE ==========
@@ -1299,12 +1280,12 @@ class SuperadminController extends Controller
         $update = DB::table('update_campaign')->where('id_update', $updateId)->first();
 
         if (!$update) {
-            return $this->error('Update tidak ditemukan.', 404);
+            return ApiResponse::error('Update tidak ditemukan.', 404);
         }
 
         DB::table('foto_update')->where('id_update', $updateId)->delete();
         DB::table('update_campaign')->where('id_update', $updateId)->delete();
 
-        return $this->success(null, 'Post update berhasil dihapus.');
+        return ApiResponse::success(null, 'Post update berhasil dihapus.');
     }
 }

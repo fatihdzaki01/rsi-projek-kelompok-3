@@ -1,12 +1,13 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import api from '@/services/api'
+import api from '@/api/axios'
 
 const route = useRoute()
 
 const campaign = ref(null)
 const loading = ref(true)
+const actionLoading = ref(false)
 const errorMessage = ref('')
 
 const fetchCampaignDetail = async () => {
@@ -21,6 +22,32 @@ const fetchCampaignDetail = async () => {
       error.response?.data?.message || 'Gagal memuat detail campaign.'
   } finally {
     loading.value = false
+  }
+}
+
+const approveCampaign = async () => {
+  actionLoading.value = true
+  try {
+    await api.post(`/superadmin/campaigns/${route.params.id}/approve`)
+    campaign.value.status = 'aktif'
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || 'Gagal menyetujui campaign.'
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const rejectCampaign = async () => {
+  const reason = prompt('Alasan penolakan:')
+  if (!reason) return
+  actionLoading.value = true
+  try {
+    await api.post(`/superadmin/campaigns/${route.params.id}/reject`, { alasan_penolakan: reason })
+    campaign.value.status = 'ditolak'
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || 'Gagal menolak campaign.'
+  } finally {
+    actionLoading.value = false
   }
 }
 
@@ -118,12 +145,23 @@ onMounted(fetchCampaignDetail)
 
           <aside class="card action-card">
             <h2>Aksi Review</h2>
-            <p>
-              Tombol approve dan reject belum diaktifkan agar data tidak berubah saat testing.
-            </p>
+            <p v-if="campaign.status === 'menunggu_review'">Setujui atau tolak campaign ini.</p>
+            <p v-else>Keputusan telah diambil untuk campaign ini.</p>
 
-            <button class="approve-btn" disabled>Approve Request</button>
-            <button class="reject-btn" disabled>Reject Campaign</button>
+            <button
+              class="approve-btn"
+              :disabled="actionLoading || campaign.status !== 'menunggu_review'"
+              @click="approveCampaign"
+            >
+              {{ actionLoading ? 'Memproses...' : 'Approve Request' }}
+            </button>
+            <button
+              class="reject-btn"
+              :disabled="actionLoading || campaign.status !== 'menunggu_review'"
+              @click="rejectCampaign"
+            >
+              {{ actionLoading ? 'Memproses...' : 'Reject Campaign' }}
+            </button>
 
             <RouterLink
               class="monitor-link"

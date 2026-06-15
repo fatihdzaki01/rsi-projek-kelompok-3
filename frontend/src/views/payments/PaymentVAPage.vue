@@ -1,130 +1,7 @@
-<template>
-  <div class="min-h-screen bg-[#F5F0E8] flex flex-col">
-
-    <!-- Navbar -->
-    <nav class="bg-[#F5F0E8] border-b border-stone-200 px-6 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-6">
-        <span class="font-bold text-[#1a2744] tracking-wide text-sm">BERBAGIVE</span>
-        <div class="hidden md:flex items-center gap-1">
-          <a href="#" class="px-3 py-1.5 text-xs font-medium bg-[#1a2744] text-white rounded-full">Beranda</a>
-          <a href="#" class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-full">Campaign</a>
-          <a href="#" class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-full">Komunitas</a>
-          <a href="#" class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-full">Donasi Saya</a>
-        </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <div class="relative hidden sm:block">
-          <svg class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search"
-            class="bg-white/70 text-xs pl-8 pr-4 py-1.5 rounded-full border border-stone-200 focus:outline-none focus:ring-1 focus:ring-stone-300 w-36"
-          />
-        </div>
-        <!-- User icon -->
-        <button class="w-7 h-7 rounded-full bg-stone-300 flex items-center justify-center">
-          <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
-          </svg>
-        </button>
-        <!-- Mail icon -->
-        <button class="text-gray-500 hover:text-gray-700">
-          <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-          </svg>
-        </button>
-        <!-- Logout icon -->
-        <button class="text-gray-500 hover:text-gray-700">
-          <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
-          </svg>
-        </button>
-      </div>
-    </nav>
-
-    <!-- Main content -->
-    <main class="flex-1 flex flex-col items-center px-4 py-10">
-
-      <div v-if="loading" class="text-sm text-gray-500">Memuat data donasi...</div>
-
-      <template v-if="!loading">
-
-      <!-- Page Header -->
-      <div class="text-center mb-7">
-        <h1 class="text-2xl font-bold text-[#1a1a1a] mb-1">Selesaikan Pembayaran</h1>
-        <p class="text-sm text-gray-500">Terima kasih atas kontribusi Anda untuk kebaikan.</p>
-      </div>
-
-      <!-- Payment Method Tab -->
-      <div class="w-full max-w-sm mb-4">
-        <div class="inline-flex items-center gap-2 bg-white rounded-xl px-4 py-2.5 shadow-sm border border-stone-100">
-          <!-- Bank icon -->
-          <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 10v11M12 10v11M16 10v11"/>
-          </svg>
-          <span class="text-sm font-medium text-gray-700">{{ paymentMethod }}</span>
-          <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide bg-amber-700 text-white px-2.5 py-0.5 rounded-full">TERPILIH</span>
-        </div>
-      </div>
-
-      <!-- Payment Info Card -->
-      <div class="w-full max-w-sm mb-5">
-        <PaymentInfoCard
-          :transaction-id="transactionId"
-          :total-amount="totalAmount"
-          :formatted-time="formattedTime"
-        />
-      </div>
-
-      </template>
-
-      <!-- Action Buttons -->
-      <div class="w-full max-w-sm flex flex-col items-center gap-2">
-        <button
-          @click="checkStatus"
-          class="w-full bg-[#1a2744] text-white text-sm font-semibold rounded-xl px-8 py-3 hover:bg-[#22325a] transition-colors duration-150 active:scale-[0.98]"
-        >
-          Cek Status Pembayaran
-        </button>
-        <button
-          @click="changeMethod"
-          class="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-150 mt-1"
-        >
-          ← Ganti metode pembayaran
-        </button>
-      </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-stone-200 bg-[#F5F0E8] px-6 py-6">
-      <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <p class="font-bold text-[#1a2744] text-sm mb-0.5">Berbagive</p>
-          <p class="text-[10px] text-gray-400">© 2024 Berbagive. Part of The Human Archive project.</p>
-        </div>
-        <div class="flex items-center gap-5 text-xs text-gray-500">
-          <a href="#" class="hover:text-gray-700">Kebijakan Privasi</a>
-          <a href="#" class="hover:text-gray-700">Syarat &amp; Ketentuan</a>
-          <a href="#" class="hover:text-gray-700">Hubungi Kami</a>
-          <a href="#" class="hover:text-gray-700">FAQ</a>
-          <button class="hover:text-gray-700">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </footer>
-
-  </div>
-</template>
-
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import PaymentInfoCard from '@/components/payment/PaymentInfoCard.vue'
+import Navbar from '@/components/shared/Navbar.vue'
 import api from '@/api/axios'
 
 const route = useRoute()
@@ -133,62 +10,170 @@ const router = useRouter()
 const donationId = ref(route.params.id)
 const transactionId = ref('')
 const totalAmount = ref(0)
-const paymentMethod = ref('Bank Transfer')
-const timeLeft = ref(23 * 60 + 45)
+const paymentMethod = ref('bca')
 const loading = ref(true)
+const paying = ref(false)
+const error = ref('')
+const copied = ref(false)
+
+const timeLeft = ref(14 * 60 + 60) // ~15 minutes
 let timer = null
+
+const vaNumber = computed(() => {
+  const rand = Math.floor(1000000000 + Math.random() * 9000000000)
+  return '8801' + rand
+})
 
 const formattedTime = computed(() => {
   const m = Math.floor(timeLeft.value / 60).toString().padStart(2, '0')
   const s = (timeLeft.value % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
+  return m + ':' + s
+})
+
+const formattedAmount = computed(() => 'Rp ' + totalAmount.value.toLocaleString('id-ID'))
+
+const methodLabel = computed(() => {
+  const labels = { bca: 'BCA', mandiri: 'Bank Mandiri', bni: 'BNI', bri: 'BRI', btn: 'BTN' }
+  return labels[paymentMethod.value] || 'Bank Transfer'
 })
 
 onMounted(async () => {
   await fetchDonation()
-  timer = setInterval(() => {
-    if (timeLeft.value > 0) timeLeft.value--
-  }, 1000)
+  timer = setInterval(() => { if (timeLeft.value > 0) timeLeft.value-- }, 1000)
 })
 
 onUnmounted(() => clearInterval(timer))
 
 async function fetchDonation() {
   try {
-    const res = await api.get(`/donations/${donationId.value}`)
+    const res = await api.get('/donations/' + donationId.value)
     const data = res.data.data
     transactionId.value = data.nomor_transaksi ?? data.id_donasi
     totalAmount.value = data.nominal
-    const methodMap = {
-      bca: 'BCA', mandiri: 'Bank Mandiri', bni: 'BNI',
-      bri: 'BRI', btn: 'BTN', syariah: 'Bank Syariah',
-    }
-    paymentMethod.value = methodMap[data.metode_pembayaran] ?? 'Bank Transfer'
+    paymentMethod.value = data.metode_pembayaran || 'bca'
   } catch {
-    alert('Gagal memuat data donasi')
-    router.back()
+    error.value = 'Gagal memuat data donasi'
   } finally {
     loading.value = false
   }
 }
 
-async function checkStatus() {
+async function handlePaySuccess() {
+  paying.value = true
   try {
-    const res = await api.get(`/donations/${donationId.value}`)
-    const data = res.data.data
-    if (data.status_pembayaran === 'berhasil') {
-      router.push(`/donations/success/${donationId.value}`)
-    } else if (data.status_pembayaran === 'gagal') {
-      router.push(`/donations/failed/${donationId.value}`)
-    } else {
-      alert('Pembayaran masih pending. Silakan selesaikan pembayaran Anda.')
-    }
+    await api.patch('/donations/' + donationId.value + '/payment-status', { status_pembayaran: 'berhasil' })
+    router.push('/donations/success/' + donationId.value)
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Gagal mengecek status pembayaran')
+    error.value = e.response?.data?.message || 'Gagal memproses'
+  } finally {
+    paying.value = false
   }
 }
 
-function changeMethod() {
-  router.back()
+async function handlePayCancel() {
+  paying.value = true
+  try {
+    await api.patch('/donations/' + donationId.value + '/payment-status', { status_pembayaran: 'gagal' })
+  } catch {}
+  router.push('/donations/failed/' + donationId.value)
+}
+
+async function copyVA() {
+  try {
+    await navigator.clipboard.writeText(vaNumber.value)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch {}
 }
 </script>
+
+<template>
+  <div class="min-h-screen bg-[#F5F0E8] flex flex-col">
+    <Navbar />
+
+    <main class="flex-1 flex flex-col items-center px-4 py-8">
+      <div v-if="loading" class="text-sm text-gray-500 pt-10">Memuat data donasi...</div>
+
+      <template v-else-if="!error">
+        <div class="text-center mb-6">
+          <h1 class="text-2xl font-bold text-[#2C2C2C]">Selesaikan Pembayaran</h1>
+          <p class="text-sm text-gray-500 mt-1">Transfer via Virtual Account {{ methodLabel }}</p>
+        </div>
+
+        <!-- Method badge -->
+        <div class="inline-flex items-center gap-2 bg-white rounded-xl px-4 py-2.5 shadow-sm border border-stone-100 mb-6">
+          <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 10v11M12 10v11M16 10v11"/>
+          </svg>
+          <span class="text-sm font-medium text-gray-700">{{ methodLabel }}</span>
+          <span class="text-[10px] font-semibold uppercase bg-[#8B4513] text-white px-2.5 py-0.5 rounded-full">TERPILIH</span>
+        </div>
+
+        <div class="w-full max-w-sm">
+          <div class="bg-white rounded-2xl shadow-md p-6">
+            <!-- Transaction ID -->
+            <div class="text-center mb-4">
+              <p class="text-[10px] uppercase tracking-widest text-gray-400 mb-1">ID Transaksi</p>
+              <p class="text-base font-bold text-[#2C2C2C]">#{{ transactionId }}</p>
+            </div>
+
+            <!-- Total -->
+            <div class="bg-[#F5E6D8] rounded-xl px-4 py-4 text-center mb-4">
+              <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Total Pembayaran</p>
+              <p class="text-2xl font-bold text-[#2C2C2C]">{{ formattedAmount }}</p>
+            </div>
+
+            <!-- Countdown -->
+            <div class="flex items-center justify-center gap-1.5 mb-4">
+              <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span class="text-xs text-rose-500 font-medium">Sisa waktu: {{ formattedTime }}</span>
+            </div>
+
+            <!-- VA Number -->
+            <div class="bg-[#6B3A2A] rounded-xl p-5 text-center mb-4">
+              <p class="text-xs text-white/70 mb-2">Nomor Virtual Account</p>
+              <p class="text-xl font-bold text-white tracking-wider select-all">{{ vaNumber }}</p>
+              <button @click="copyVA" class="mt-3 px-5 py-1.5 bg-white/20 text-white text-xs rounded-lg hover:bg-white/30 transition-colors">
+                {{ copied ? 'Tersalin!' : 'Salin Nomor VA' }}
+              </button>
+            </div>
+
+            <p class="text-xs text-center text-gray-500 mb-4 leading-relaxed">
+              Transfer sejumlah <strong>{{ formattedAmount }}</strong> ke nomor VA di atas melalui {{ methodLabel }}.
+            </p>
+
+            <!-- Steps -->
+            <div class="space-y-2 text-xs text-gray-500 bg-[#FDF0E8] rounded-xl p-3">
+              <p class="font-medium text-gray-700 mb-1">Langkah pembayaran:</p>
+              <p>1. Buka aplikasi {{ methodLabel }}</p>
+              <p>2. Pilih menu Transfer &gt; Virtual Account</p>
+              <p>3. Masukkan nomor VA: <strong class="text-[#2C2C2C]">{{ vaNumber }}</strong></p>
+              <p>4. Konfirmasi transfer</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col items-center gap-3 mt-6 w-full max-w-sm">
+          <p v-if="error" class="text-sm text-red-500">{{ error }}</p>
+          <button
+            @click="handlePaySuccess"
+            :disabled="paying"
+            class="w-full py-3 rounded-xl font-semibold text-white text-sm bg-green-700 hover:bg-green-800 disabled:opacity-60 transition-colors"
+          >
+            {{ paying ? 'Memproses...' : 'Saya Sudah Bayar' }}
+          </button>
+          <button
+            @click="handlePayCancel"
+            :disabled="paying"
+            class="w-full py-3 rounded-xl font-semibold text-gray-600 text-sm border border-gray-300 hover:bg-gray-50 disabled:opacity-60 transition-colors"
+          >
+            Batal Bayar
+          </button>
+        </div>
+      </template>
+    </main>
+  </div>
+</template>

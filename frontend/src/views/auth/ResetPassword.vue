@@ -110,7 +110,7 @@
 <script setup>
 import { reactive, ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { resetPassword } from "../../services/api";
+import api from "@/api/axios";
 import AuthNavbar from "../../components/auth/AuthNavbar.vue";
 import AuthFooter from "../../components/auth/AuthFooter.vue";
 
@@ -190,7 +190,7 @@ async function handleSubmit() {
   try {
     loading.value = true;
 
-    await resetPassword({
+    await api.post('/auth/reset-password', {
       email: form.email,
       token: form.token,
       password_baru: form.password_baru,
@@ -212,26 +212,26 @@ async function handleSubmit() {
 
 function handleApiError(error) {
   resetErrors();
+  const status = error.response?.status;
+  const errData = error.response?.data?.errors || {};
 
-  if (error.status === 400 || error.status === 422) {
-    if (error.errors) {
-      if (error.errors.email) {
-        errors.email = Array.isArray(error.errors.email)
-          ? error.errors.email[0]
-          : error.errors.email;
-      }
+  if (status === 400 || status === 422) {
+    if (errData.email) {
+      errors.email = Array.isArray(errData.email)
+        ? errData.email[0]
+        : errData.email;
+    }
 
-      if (error.errors.password_baru) {
-        errors.password_baru = Array.isArray(error.errors.password_baru)
-          ? error.errors.password_baru[0]
-          : error.errors.password_baru;
-      }
+    if (errData.password_baru) {
+      errors.password_baru = Array.isArray(errData.password_baru)
+        ? errData.password_baru[0]
+        : errData.password_baru;
+    }
 
-      if (error.errors.konfirmasi_password) {
-        errors.konfirmasi_password = Array.isArray(error.errors.konfirmasi_password)
-          ? error.errors.konfirmasi_password[0]
-          : error.errors.konfirmasi_password;
-      }
+    if (errData.konfirmasi_password) {
+      errors.konfirmasi_password = Array.isArray(errData.konfirmasi_password)
+        ? errData.konfirmasi_password[0]
+        : errData.konfirmasi_password;
     }
 
     if (!errors.email && !errors.password_baru && !errors.konfirmasi_password) {
@@ -247,7 +247,7 @@ function handleApiError(error) {
     return;
   }
 
-  if (error.status === 410) {
+  if (status === 410) {
     router.push({
       path: "/password-result",
       query: {

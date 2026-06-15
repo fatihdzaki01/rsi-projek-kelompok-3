@@ -39,7 +39,14 @@
     <!-- ===== MAIN CONTENT ===== -->
     <main class="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6">
 
-      <!-- ===== MOBILE: List view ===== -->
+      <!-- Loading -->
+      <div v-if="loading" class="flex flex-col items-center justify-center py-20">
+        <div class="w-8 h-8 border-2 border-[#8B4513] border-t-transparent rounded-full animate-spin mb-3" />
+        <p class="text-sm text-gray-400">Memuat notifikasi...</p>
+      </div>
+
+    <template v-else>
+    <!-- ===== MOBILE: List view ===== -->
       <div v-if="!mobileShowDetail" class="lg:hidden">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
@@ -137,6 +144,7 @@
         </div>
       </div>
 
+    </template>
     </main>
 
     <!-- ===== FOOTER ===== -->
@@ -159,78 +167,32 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import NotificationItem       from '@/components/notifications/NotificationItem.vue'
-import NotificationDetail     from '@/components/notifications/NotificationDetail.vue'
-import NotificationFilterTabs from '@/components/notifications/NotificationFilterTabs.vue'
+import { ref, computed, onMounted } from 'vue'
+import api from '@/api/axios'
+import NotificationItem       from '@/components/notification/NotificationItem.vue'
+import NotificationDetail     from '@/components/notification/NotificationDetail.vue'
+import NotificationFilterTabs from '@/components/notification/NotificationFilterTabs.vue'
 
 // --- State ---
 const activeFilter      = ref('semua')
 const selectedNotif     = ref(null)
 const mobileShowDetail  = ref(false)
 
-const notifications = ref([
-  {
-    id: 1,
-    type: 'transaksi_berhasil',
-    title: 'Donasi Berhasil Diproses',
-    preview: 'Donasi Rp 500.000 ke Bantuan Sumatera berhasil.',
-    body: 'Terima kasih! Donasi kamu sebesar Rp 500.000 untuk campaign "Bantuan Sumatera" telah berhasil diproses dan diteruskan ke komunitas.',
-    is_read: false,
-    created_at: '2024-06-10T10:42:00',
-    meta: { id_transaksi: 'BRB-99201', nominal: 500000, campaign: 'Bantuan Sumatera', metode: 'QRIS' }
-  },
-  {
-    id: 2,
-    type: 'transaksi_gagal',
-    title: 'Donasi Gagal Diproses',
-    preview: 'Donasi Rp 250.000 ke Sekolah Untuk Semua gagal.',
-    body: 'Maaf, donasi kamu sebesar Rp 250.000 untuk campaign "Sekolah Untuk Semua" tidak dapat diproses. Silakan coba lagi atau gunakan metode pembayaran lain.',
-    is_read: false,
-    created_at: '2024-06-10T09:15:00',
-    meta: { id_transaksi: 'BRB-99200', nominal: 250000, campaign: 'Sekolah Untuk Semua', metode: 'Bank BCA' }
-  },
-  {
-    id: 3,
-    type: 'campaign_baru',
-    title: 'Campaign Baru dari Komunitas Peduli Air',
-    preview: 'Ada campaign baru: Sumur Bersih NTT.',
-    body: 'Komunitas yang kamu ikuti, Komunitas Peduli Air, baru saja meluncurkan campaign baru: "Sumur Bersih NTT". Yuk dukung sekarang!',
-    is_read: false,
-    created_at: '2024-06-09T14:00:00',
-    meta: { id_campaign: 7, nama_campaign: 'Sumur Bersih NTT', komunitas: 'Komunitas Peduli Air' }
-  },
-  {
-    id: 4,
-    type: 'campaign_hampir_selesai',
-    title: 'Campaign Hampir Selesai!',
-    preview: 'Hijaukan Pesisir berakhir dalam 3 hari.',
-    body: 'Campaign "Hijaukan Pesisir" dari Relawan Alam Nusantara yang kamu ikuti akan berakhir dalam 3 hari lagi. Masih ada kesempatan untuk berdonasi!',
-    is_read: true,
-    created_at: '2024-06-08T08:00:00',
-    meta: { id_campaign: 3, nama_campaign: 'Hijaukan Pesisir', sisa_hari: 3 }
-  },
-  {
-    id: 5,
-    type: 'update_campaign',
-    title: 'Update dari Campaign Kesehatan Pelosok',
-    preview: 'Pembangunan klinik tahap 1 telah selesai.',
-    body: 'Dokter Tanpa Batas Desa membagikan update terbaru untuk campaign "Kesehatan Pelosok": Pembangunan klinik tahap 1 telah selesai dan sudah mulai melayani pasien.',
-    is_read: true,
-    created_at: '2024-06-07T16:30:00',
-    meta: { id_campaign: 4, nama_campaign: 'Kesehatan Pelosok' }
-  },
-  {
-    id: 6,
-    type: 'sistem',
-    title: 'Selamat Datang di Berbagive!',
-    preview: 'Akun kamu telah berhasil dibuat.',
-    body: 'Halo! Akun Berbagive kamu telah berhasil dibuat. Mulai jelajahi campaign dan bergabung bersama komunitas untuk membuat perubahan nyata.',
-    is_read: true,
-    created_at: '2024-06-01T09:00:00',
-    meta: {}
+const notifications = ref([])
+const loading = ref(true)
+
+async function fetchNotifications() {
+  try {
+    const res = await api.get('/notifications')
+    notifications.value = res.data.data.data || []
+  } catch (e) {
+    notifications.value = []
+  } finally {
+    loading.value = false
   }
-])
+}
+
+onMounted(fetchNotifications)
 
 // --- Computed ---
 const unreadCount = computed(() => notifications.value.filter(n => !n.is_read).length)
@@ -250,13 +212,23 @@ const filteredNotifications = computed(() =>
 )
 
 // --- Actions ---
-function markAsRead(id) {
-  const n = notifications.value.find(n => n.id === id)
-  if (n) n.is_read = true
+async function markAsRead(id) {
+  try {
+    await api.patch(`/notifications/${id}/read`)
+    const n = notifications.value.find(n => n.id === id)
+    if (n) n.is_read = true
+  } catch (e) {
+    // silent
+  }
 }
 
-function markAllAsRead() {
-  notifications.value.forEach(n => n.is_read = true)
+async function markAllAsRead() {
+  try {
+    await api.patch('/notifications/read-all')
+    notifications.value.forEach(n => n.is_read = true)
+  } catch (e) {
+    // silent
+  }
 }
 
 function selectNotif(notif) {

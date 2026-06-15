@@ -6,7 +6,9 @@ use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterUserRequest;
+use App\Http\Requests\RegisterKomunitasRequest;
 use App\Models\User;
+use App\Models\Komunitas;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\ResetPasswordRequest;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Http\Requests\ResendVerificationRequest;
+use App\Notifications\VerifyEmail;
 
 
 class AuthController extends Controller
@@ -35,6 +38,17 @@ class AuthController extends Controller
             'is_verified' => false,
         ]);
 
+        $verificationToken = Str::random(64);
+        DB::table('email_verifications')->insert([
+            'id_user'    => $user->id_user,
+            'email'      => $user->email,
+            'token'      => $verificationToken,
+            'expires_at' => now()->addHours(24),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $user->notify(new VerifyEmail($verificationToken, $user->email));
+
         return ApiResponse::success([
             'id_user' => $user->id_user,
             'username' => $user->username,
@@ -49,6 +63,22 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password_hash)) {
             return ApiResponse::error('Email atau password salah', null, 401);
+        }
+
+        if ($user->role === User::ROLE_KOMUNITAS) {
+            $komunitas = $user->komunitas;
+            if (!$komunitas) {
+                return ApiResponse::error('Data komunitas tidak ditemukan', null, 403);
+            }
+            if ($komunitas->status === Komunitas::STATUS_MENUNGGU) {
+                return ApiResponse::error('Akun sedang dalam proses review', null, 403);
+            }
+            if ($komunitas->status === Komunitas::STATUS_DITOLAK) {
+                return ApiResponse::error('Pendaftaran komunitas ditolak', null, 403);
+            }
+            if ($komunitas->status === Komunitas::STATUS_DINONAKTIFKAN) {
+                return ApiResponse::error('Akun tidak aktif', null, 403);
+            }
         }
 
         if (!$user->is_verified) {
@@ -154,15 +184,60 @@ class AuthController extends Controller
             return ApiResponse::error('Email sudah terverifikasi', null, 409);
         }
 
+        DB::table('email_verifications')
+            ->where('email', $user->email)
+            ->delete();
+
         $verificationToken = Str::random(64);
 
-        $verificationUrl = env('FRONTEND_URL', 'http://localhost:5173')
-            . '/verify-email?email=' . urlencode($user->email)
-            . '&token=' . urlencode($verificationToken);
+        DB::table('email_verifications')->insert([
+            'id_user'    => $user->id_user,
+            'email'      => $user->email,
+            'token'      => $verificationToken,
+            'expires_at' => now()->addHours(24),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $user->notify(new VerifyEmail($verificationToken, $user->email));
+
+        return ApiResponse::success(null, 'Link verifikasi dikirim jika email terdaftar');
+    }
+
+    public function registerKomunitas(RegisterKomunitasRequest $request)
+    {
+        $user = DB::transaction(function () use ($request) {
+            $user = User::create([
+                'username'      => $request->nama_lembaga,
+                'email'         => $request->email,
+                'password_hash' => Hash::make($request->password),
+                'role'          => User::ROLE_KOMUNITAS,
+                'is_active'     => true,
+                'is_verified'   => false,
+            ]);
+
+            Komunitas::create([
+                'id_user'          => $user->id_user,
+                'id_jenis_lembaga' => $request->id_jenis_lembaga,
+                'nama_lembaga'     => $request->nama_lembaga,
+                'deskripsi'        => $request->deskripsi,
+                'kode_wilayah'     => $request->kode_wilayah,
+                'alamat_detail'    => $request->alamat_detail,
+                'nomor_kontak'     => $request->nomor_kontak,
+                'link_medsos'      => $request->link_medsos,
+                'foto_lembaga_url' => $request->foto_lembaga_url,
+                'status'           => Komunitas::STATUS_MENUNGGU,
+            ]);
+
+            return $user;
+        });
 
         return ApiResponse::success([
-            'verification_url' => $verificationUrl,
-        ], 'Link verifikasi dikirim jika email terdaftar');
+            'id_user'     => $user->id_user,
+            'email'       => $user->email,
+            'nama_lembaga' => $request->nama_lembaga,
+            'role'        => $user->role,
+        ], 'Registrasi komunitas berhasil. Silakan tunggu verifikasi superadmin.', 201);
     }
 
     public function logout()

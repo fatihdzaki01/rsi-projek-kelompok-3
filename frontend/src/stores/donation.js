@@ -16,7 +16,7 @@ export const useDonationStore = defineStore('donation', () => {
       if (search) params.search = search
       if (status && status !== 'semua') params.status = status
 
-      const res = await api.get('/donations/history', { params })
+      const res = await api.get('/users/me/donations', { params })
       donations.value = res.data.data.data
       pagination.value = res.data.data.pagination
     } catch (e) {

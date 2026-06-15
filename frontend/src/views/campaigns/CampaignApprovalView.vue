@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import api from '@/services/api'
+import api from '@/api/axios'
 import AppFooter from '@/components/shared/AppFooter.vue'
 
 const campaigns = ref([])

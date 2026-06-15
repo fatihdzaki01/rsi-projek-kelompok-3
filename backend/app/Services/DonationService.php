@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class DonationService
 {
@@ -88,13 +90,16 @@ class DonationService
 
     public function getReceipt(int $idDonasi): ?object
     {
-        return DB::selectOne(
-            'SELECT id_donasi, nomor_transaksi, tanggal_transaksi, judul_campaign,
-                    nominal, metode_pembayaran, nama_tampil, bukti_pdf_url, id_user
-             FROM v_donation_receipt
-             WHERE id_donasi = ?',
+        $row = DB::selectOne(
+            'SELECT d.id_donasi, r.nomor_transaksi, r.tanggal_transaksi, r.judul_campaign,
+                    r.nominal, r.metode_pembayaran, r.nama_tampil, r.bukti_pdf_url, r.id_user,
+                    d.status_pembayaran
+             FROM v_donation_receipt r
+             JOIN donasi d ON d.id_donasi = r.id_donasi
+             WHERE r.id_donasi = ?',
             [$idDonasi]
-        ) ?: null;
+        );
+        return $row ?: null;
     }
 
     public function updatePaymentStatus(int $idDonasi, string $status): object
@@ -121,6 +126,8 @@ class DonationService
                     auth()->user()->id_user,
                 ]);
             }
+
+            $this->generateReceiptPdf($idDonasi);
         } else {
             DB::statement('CALL sp_fail_payment(?)', [$idDonasi]);
         }
@@ -135,5 +142,65 @@ class DonationService
             'status_pembayaran'  => $donasi->status_pembayaran,
             'tanggal_verifikasi' => now()->toIso8601String(),
         ];
+    }
+
+    public function generateReceiptPdf(int $idDonasi): ?string
+    {
+        $receipt = DB::selectOne(
+            'SELECT id_donasi, nomor_transaksi, tanggal_transaksi, judul_campaign,
+                    nominal, metode_pembayaran, nama_tampil, bukti_pdf_url
+             FROM v_donation_receipt
+             WHERE id_donasi = ?',
+            [$idDonasi]
+        );
+
+        if (!$receipt || $receipt->bukti_pdf_url) {
+            return $receipt?->bukti_pdf_url;
+        }
+
+        $pdf = Pdf::loadView('pdf.donation-receipt', [
+            'nomor_transaksi'   => $receipt->nomor_transaksi,
+            'tanggal_transaksi' => $receipt->tanggal_transaksi,
+            'judul_campaign'    => $receipt->judul_campaign,
+            'nominal'           => $receipt->nominal,
+            'metode_pembayaran' => $receipt->metode_pembayaran,
+            'nama_tampil'       => $receipt->nama_tampil,
+        ]);
+
+        $filename = 'receipts/donation-' . $idDonasi . '.pdf';
+        $path = 'public/' . $filename;
+
+        Storage::put($path, $pdf->output());
+
+        $url = Storage::url($filename);
+
+        DB::update(
+            'UPDATE donasi SET bukti_pdf_url = ? WHERE id_donasi = ?',
+            [$url, $idDonasi]
+        );
+
+        return $url;
+    }
+
+    public function downloadReceiptPdf(int $idDonasi): ?\Barryvdh\DomPDF\PDF
+    {
+        $receipt = DB::selectOne(
+            'SELECT id_donasi, nomor_transaksi, tanggal_transaksi, judul_campaign,
+                    nominal, metode_pembayaran, nama_tampil
+             FROM v_donation_receipt
+             WHERE id_donasi = ?',
+            [$idDonasi]
+        );
+
+        if (!$receipt) return null;
+
+        return Pdf::loadView('pdf.donation-receipt', [
+            'nomor_transaksi'   => $receipt->nomor_transaksi,
+            'tanggal_transaksi' => $receipt->tanggal_transaksi,
+            'judul_campaign'    => $receipt->judul_campaign,
+            'nominal'           => $receipt->nominal,
+            'metode_pembayaran' => $receipt->metode_pembayaran,
+            'nama_tampil'       => $receipt->nama_tampil,
+        ]);
     }
 }
