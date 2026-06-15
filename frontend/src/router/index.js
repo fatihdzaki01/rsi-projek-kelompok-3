@@ -29,22 +29,23 @@ const routes = [
   { path: '/donations/success/:id', component: DonationSuccessPage },
   { path: '/donations/failed/:id', component: DonationFailedPage },
   { path: '/communities', name: 'CommunityList', component: CommunityListPage },
-  { path: '/communities/:id', name: 'CommunityProfile', component: CommunityProfilePage },
-  { path: '/search', component: () => import('@/views/search/SearchResultsPage.vue') },
-
-  { path: '/profile', component: () => import('@/views/user/UserProfilePage.vue'), meta: { requiresAuth: true } },
-  { path: '/donations/history', component: () => import('@/views/donations/DonationHistory.vue'), meta: { requiresAuth: true } },
-  { path: '/notifications', name: 'Notifications', component: () => import('@/views/notifications/NotificationsPage.vue'), meta: { requiresAuth: true } },
-  { path: '/campaigns/:id/monitoring', name: 'CampaignMonitoring', component: () => import('@/views/dashboard/MonitoringInternalView.vue'), meta: { requiresAuth: true } },
-  { path: '/payments/checkout/:id', component: () => import('@/views/payments/PaymentCheckoutPage.vue'), meta: { requiresAuth: true } },
-  { path: '/payments/va/:id', component: () => import('@/views/payments/PaymentVAPage.vue'), meta: { requiresAuth: true } },
-
-  // Community routes
+  // Community static routes harus sebelum :id agar tidak konflik
   { path: '/communities/dashboard', component: () => import('@/views/community/CommunityDashboardPage.vue'), meta: { requiresAuth: true, role: 'KOMUNITAS' } },
   { path: '/communities/campaigns/updates/create', component: () => import('@/views/community/CampaignUpdatePage.vue'), meta: { requiresAuth: true, role: 'KOMUNITAS' } },
   { path: '/communities/profile/edit', component: () => import('@/views/community/CommunityProfileEditPage.vue'), meta: { requiresAuth: true, role: 'KOMUNITAS' } },
   { path: '/communities/campaigns/create', component: () => import('@/views/community/CampaignCreatePage.vue'), meta: { requiresAuth: true, role: 'KOMUNITAS' } },
   { path: '/communities/withdrawals', component: () => import('@/views/community/WithdrawalRequestPage.vue'), meta: { requiresAuth: true, role: 'KOMUNITAS' } },
+  { path: '/communities/:id', name: 'CommunityProfile', component: CommunityProfilePage },
+  { path: '/search', component: () => import('@/views/search/SearchResultsPage.vue') },
+
+  { path: '/profile', component: () => import('@/views/user/UserProfilePage.vue'), meta: { requiresAuth: true } },
+  { path: '/profile/edit', component: () => import('@/views/profile/UserProfilePage.vue'), meta: { requiresAuth: true } },
+  { path: '/profile/change-password', component: () => import('@/views/profile/ChangePasswordPage.vue'), meta: { requiresAuth: true } },
+  { path: '/donations/history', component: () => import('@/views/donations/DonationHistory.vue'), meta: { requiresAuth: true } },
+  { path: '/notifications', name: 'Notifications', component: () => import('@/views/notifications/NotificationPage.vue'), meta: { requiresAuth: true } },
+  { path: '/campaigns/:id/monitoring', name: 'CampaignMonitoring', component: () => import('@/views/dashboard/MonitoringInternalView.vue'), meta: { requiresAuth: true } },
+  { path: '/payments/checkout/:id', component: () => import('@/views/payments/PaymentCheckoutPage.vue'), meta: { requiresAuth: true } },
+  { path: '/payments/va/:id', component: () => import('@/views/payments/PaymentVAPage.vue'), meta: { requiresAuth: true } },
 
   // Superadmin routes
   { path: '/dashboard', name: 'Dashboard', component: () => import('@/views/dashboard/DashboardView.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },

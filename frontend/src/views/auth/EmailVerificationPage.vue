@@ -1,15 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import axios from 'axios'
 import { MailCheck, Clock, Loader2 } from 'lucide-vue-next'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/auth'
+import api from '@/api/axios'
 
 const authStore = useAuthStore()
 const email = computed(() => authStore.pendingEmail || 'user@email.com')
-
-const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api/v1`,
-})
 
 const countdown = ref(30)
 const COUNTDOWN_START = 30

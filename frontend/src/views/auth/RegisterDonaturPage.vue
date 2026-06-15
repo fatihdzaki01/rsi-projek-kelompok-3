@@ -1,16 +1,12 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import { User, AtSign, Lock, Loader2 } from 'lucide-vue-next'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/auth'
+import api from '@/api/axios'
 
 const router = useRouter()
 const authStore = useAuthStore()
-
-const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api/v1`,
-})
 
 const form = reactive({
   username: '',

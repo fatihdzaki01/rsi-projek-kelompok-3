@@ -117,6 +117,16 @@ onMounted(() => {
         </template>
         <template v-else>
           <router-link to="/login" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors">Donasi Saya</router-link>
+          <router-link to="/login" class="text-gray-700 transition-colors hover:text-[#8B4513]" aria-label="Profil">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="4" /><path stroke-linecap="round" d="M4 20c0-4 3.5-6 8-6s8 2 8 6" />
+            </svg>
+          </router-link>
+          <router-link to="/login" class="text-gray-700 transition-colors hover:text-[#8B4513]" aria-label="Notifikasi">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </router-link>
           <router-link to="/login" class="text-sm font-medium text-[#8B4513] hover:text-[#6b3410]">Masuk</router-link>
           <router-link to="/register" class="rounded-full bg-[#8B4513] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#6b3410]">Daftar</router-link>
         </template>
@@ -180,12 +190,15 @@ onMounted(() => {
           </button>
         </template>
         <template v-else>
-          <router-link
-            to="/login"
-            class="rounded-lg px-3 py-2 text-sm transition-colors hover:text-[#8B4513] text-gray-700"
-            @click="isMobileMenuOpen = false"
-          >
-            Donasi Saya
+          <router-link to="/login" class="text-gray-700" aria-label="Profil" @click="isMobileMenuOpen = false">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="4" /><path stroke-linecap="round" d="M4 20c0-4 3.5-6 8-6s8 2 8 6" />
+            </svg>
+          </router-link>
+          <router-link to="/login" class="text-gray-700" aria-label="Notifikasi" @click="isMobileMenuOpen = false">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
           </router-link>
           <router-link to="/login" class="text-sm font-medium text-[#8B4513]" @click="isMobileMenuOpen = false">Masuk</router-link>
           <router-link to="/register" class="rounded-full bg-[#8B4513] px-4 py-1.5 text-sm font-medium text-white" @click="isMobileMenuOpen = false">Daftar</router-link>
