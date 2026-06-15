@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -14,7 +15,7 @@ class CampaignReportController extends Controller
         $user = $request->user();
         $userId = $user->id_user ?? $user->id;
 
-        if (($user->role ?? null) !== 'user') {
+        if (($user->role ?? null) !== User::ROLE_DONATUR) {
             return response()->json([
                 'status' => 'error',
                 'data' => null,

@@ -30,18 +30,26 @@ class SuperadminController extends Controller
     public function updateProfile(Request $request)
     {
         if ($request->has('email')) {
-            return ApiResponse::error('Email superadmin tidak dapat diubah dari halaman profil.', 422, [
-                'email' => ['Email tidak dapat diubah.'],
-            ]);
+            return ApiResponse::error('Email superadmin tidak dapat diubah dari halaman profil.', ['email' => ['Email tidak dapat diubah.']], 422);
         }
 
         $validated = $request->validate([
             'nama_lengkap' => ['nullable', 'string', 'max:150'],
+            'foto_profil' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'foto_profil_url' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user = $request->user();
-        $user->update($validated);
+        $fotoProfilUrl = $user->foto_profil_url;
+        if ($request->hasFile('foto_profil')) {
+            $path = $request->file('foto_profil')->store('profile-photos', 'public');
+            $fotoProfilUrl = '/storage/' . $path;
+        }
+
+        $user->update([
+            'nama_lengkap' => $validated['nama_lengkap'] ?? $user->nama_lengkap,
+            'foto_profil_url' => $fotoProfilUrl,
+        ]);
 
         return ApiResponse::success([
             'id_user' => $user->id_user,

@@ -45,10 +45,21 @@
             </div>
           </div>
 
-          <!-- Campaign title -->
-          <h1 class="text-2xl font-bold text-foreground text-balance leading-snug">
-            {{ campaign.judul }}
-          </h1>
+          <!-- Campaign title + report button -->
+          <div class="flex items-start justify-between gap-3">
+            <h1 class="text-2xl font-bold text-foreground text-balance leading-snug">
+              {{ campaign.judul }}
+            </h1>
+            <button
+              v-if="authStore.isLoggedIn && authStore.isDonor"
+              @click="showReportModal = true"
+              class="shrink-0 flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors mt-1"
+              title="Laporkan campaign ini"
+            >
+              <Flag class="size-4" />
+              Laporkan
+            </button>
+          </div>
 
           <!-- Fund progress row -->
           <div class="flex flex-col gap-2">
@@ -113,6 +124,24 @@
             </div>
           </div>
 
+          <!-- Report success alert -->
+          <div
+            v-if="reportAlert"
+            class="text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-3 py-2"
+          >
+            {{ reportAlert }}
+          </div>
+
+          <!-- Monitoring link for authenticated users -->
+          <div v-if="authStore.isLoggedIn" class="flex items-center gap-2">
+            <button
+              @click="router.push(`/campaigns/${campaign.id_campaign}/monitoring`)"
+              class="text-xs font-medium text-[#8B4513] hover:text-[#6b3410] underline-offset-2 hover:underline transition-colors"
+            >
+              Lihat Monitoring Campaign
+            </button>
+          </div>
+
           <!-- Campaign story -->
           <CampaignStory />
         </div>
@@ -121,6 +150,13 @@
         <DonationSidebar :campaign-id="campaign.id_campaign" />
       </div>
       </template>
+      <!-- Report Modal -->
+      <ReportCampaignModal
+        :show="showReportModal"
+        :campaign-id="campaign.id_campaign"
+        @close="showReportModal = false"
+        @success="handleReportSuccess"
+      />
     </main>
 
     <TheFooter />
@@ -129,15 +165,20 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { Heart, Clock } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { Heart, Clock, Flag } from 'lucide-vue-next'
 import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
 import DonationSidebar from '@/components/donation/DonationSidebar.vue'
 import CampaignStory from '@/components/campaign/CampaignStory.vue'
+import ReportCampaignModal from '@/components/campaign/ReportCampaignModal.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+
 const campaign = ref({
   id_campaign: 0,
   judul: '',
@@ -152,6 +193,9 @@ const campaign = ref({
 })
 const loading = ref(true)
 const error = ref('')
+const showReportModal = ref(false)
+const reportSuccess = ref(false)
+const reportAlert = ref('')
 
 async function fetchCampaign() {
   try {
@@ -174,5 +218,14 @@ const pct = computed(() => {
 
 function formatRupiah(amount) {
   return 'Rp ' + Number(amount).toLocaleString('id-ID')
+}
+
+function handleReportSuccess() {
+  reportSuccess.value = true
+  reportAlert.value = 'Laporan berhasil dikirim. Terima kasih atas partisipasi Anda.'
+  setTimeout(() => {
+    reportSuccess.value = false
+    reportAlert.value = ''
+  }, 5000)
 }
 </script>

@@ -28,6 +28,63 @@ class MonitoringController extends Controller
         ], $code);
     }
 
+    public function publicCampaign(Request $request, int $id)
+    {
+        $campaign = DB::table('campaign as c')
+            ->join('komunitas as k', 'k.id_komunitas', '=', 'c.id_komunitas')
+            ->leftJoin('kategori_campaign as kc', 'kc.id_kategori', '=', 'c.id_kategori')
+            ->select(
+                'c.id_campaign',
+                'c.judul',
+                'c.deskripsi',
+                'c.status',
+                'c.target_dana',
+                'c.dana_terkumpul',
+                'c.tanggal_mulai',
+                'c.tanggal_selesai',
+                'c.created_at',
+                'k.id_komunitas',
+                'k.nama_lembaga',
+                'kc.nama_kategori'
+            )
+            ->where('c.id_campaign', $id)
+            ->first();
+
+        if (!$campaign) {
+            return $this->error('Campaign tidak ditemukan.', 404);
+        }
+
+        $jumlahDonatur = DB::table('donasi')
+            ->where('id_campaign', $id)
+            ->where('status_pembayaran', 'success')
+            ->distinct('id_user')
+            ->count('id_user');
+
+        $daysRemaining = 0;
+        if ($campaign->tanggal_selesai) {
+            $daysRemaining = max(0, now()->diffInDays(\Carbon\Carbon::parse($campaign->tanggal_selesai), false));
+        }
+
+        $progressPersen = $campaign->target_dana > 0
+            ? min(100, round(($campaign->dana_terkumpul / $campaign->target_dana) * 100, 2))
+            : 0;
+
+        return $this->success([
+            'id_campaign'      => $campaign->id_campaign,
+            'judul'            => $campaign->judul,
+            'status'           => $campaign->status,
+            'nama_lembaga'     => $campaign->nama_lembaga,
+            'nama_kategori'    => $campaign->nama_kategori,
+            'target_dana'      => (int) $campaign->target_dana,
+            'dana_terkumpul'   => (int) $campaign->dana_terkumpul,
+            'progress_persen'  => $progressPersen,
+            'jumlah_donatur'   => $jumlahDonatur,
+            'hari_tersisa'     => $daysRemaining,
+            'tanggal_mulai'    => $campaign->tanggal_mulai,
+            'tanggal_selesai'  => $campaign->tanggal_selesai,
+        ], 'Monitoring campaign berhasil dimuat.');
+    }
+
     public function internalCampaign(Request $request, int $id)
     {
         $summary = DB::table('v_campaign_internal_detail')

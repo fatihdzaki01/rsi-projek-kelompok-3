@@ -1,119 +1,122 @@
 <template>
-  <div class="min-h-screen bg-[#F5F0E8] flex flex-col">
-
+  <div class="min-h-screen flex flex-col" style="background-color: #F5F0E8;">
     <Navbar />
 
-    <!-- ===== MAIN ===== -->
-    <main class="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8">
-
-      <!-- Page header -->
-      <div class="flex items-center gap-3 mb-6">
-        <button class="w-8 h-8 rounded-full bg-white border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors shadow-sm flex-shrink-0">
-          <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-          </svg>
-        </button>
-        <div>
-          <h1 class="text-xl font-bold text-gray-900">Daftar Komunitas</h1>
-          <p class="text-xs text-gray-400 mt-0.5">{{ pagination.total }} komunitas ditemukan</p>
+    <!-- Hero Section (same style as Campaign) -->
+    <section class="bg-gradient-to-br from-[#8B4513] to-[#6b3410] text-white">
+      <div class="max-w-5xl mx-auto px-6 py-12 text-center">
+        <h1 class="text-3xl font-bold mb-2">Komunitas Sosial</h1>
+        <p class="text-sm text-white/80 mb-6 max-w-xl mx-auto">
+          Temukan komunitas yang bergerak di bidang sosial dan kemanusiaan. Bergabunglah dan bersama-sama kita berbagi kebaikan.
+        </p>
+        <div class="flex items-center justify-center gap-6 text-sm">
+          <div>
+            <p class="text-xl font-bold">{{ stats.total_komunitas }}</p>
+            <p class="text-white/60">Komunitas</p>
+          </div>
+          <div class="w-px h-8 bg-white/20" />
+          <div>
+            <p class="text-xl font-bold">{{ stats.total_campaign }}</p>
+            <p class="text-white/60">Campaign Aktif</p>
+          </div>
+          <div class="w-px h-8 bg-white/20" />
+          <div>
+            <p class="text-xl font-bold">{{ stats.total_donasi }}</p>
+            <p class="text-white/60">Total Donasi</p>
+          </div>
         </div>
       </div>
+    </section>
 
-      <!-- Search & filter row -->
+    <div class="max-w-5xl mx-auto w-full px-6 py-8">
+
+      <!-- Search & Filter (same style as Campaign) -->
       <div class="flex items-center gap-3 mb-8">
-        <!-- Search -->
-        <div class="relative flex-1">
-          <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
+        <div class="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2.5 shadow-sm">
+          <svg class="w-4 h-4 shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input
-            v-model="searchQuery"
+            v-model="searchInput"
+            @input="handleSearchInput"
             type="text"
             placeholder="Cari komunitas..."
-            class="w-full bg-white border border-stone-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8B4513]/20 focus:border-[#8B4513] transition-all shadow-sm"
+            class="flex-1 bg-transparent text-sm outline-none placeholder-gray-400"
+            style="color: #1a2744;"
           />
-          <button
-            v-if="searchQuery"
-            @click="searchQuery = ''"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
         </div>
-
-        <!-- Location filter -->
         <LocationDropdown
           v-model="selectedLocation"
           :locations="locations"
         />
       </div>
 
-      <!-- ===== GRID ===== -->
-      <div v-if="!loading && allCommunities.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        <CommunityCard
+      <!-- Community Grid (same card layout as Campaign) -->
+      <div
+        v-if="!loading && allCommunities.length > 0"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+      >
+        <div
           v-for="community in allCommunities"
           :key="community.id_komunitas"
-          :id="community.id_komunitas"
-          :community="community"
-          :is-guest="isGuest"
-          @card-click="goToCommunityProfile"
-          @follow="handleFollow"
-          @unfollow="handleUnfollow"
-        />
+          @click="goToCommunityProfile(community.id_komunitas)"
+          class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden cursor-pointer"
+        >
+          <div class="h-36 bg-gradient-to-br from-[#c4783c] via-[#8B4513] to-[#5c2d0a] flex items-center justify-center text-white text-3xl font-bold">
+            {{ (community.nama_lembaga || 'K').charAt(0) }}
+          </div>
+          <div class="p-4 flex flex-col gap-1.5">
+            <h3 class="text-sm font-bold text-[#2C2C2C] leading-snug">{{ community.nama_lembaga }}</h3>
+            <p class="text-xs text-gray-500 line-clamp-2">{{ community.deskripsi || 'Komunitas sosial kemanusiaan' }}</p>
+            <div class="grid grid-cols-3 gap-1 border-t border-stone-100 pt-3 mt-1">
+              <div class="text-center">
+                <p class="text-sm font-bold text-gray-900">{{ formatNumber(community.total_follower) }}</p>
+                <p class="text-[10px] text-gray-400">Follower</p>
+              </div>
+              <div class="text-center border-x border-stone-100">
+                <p class="text-sm font-bold text-gray-900">{{ community.total_campaign_aktif || 0 }}</p>
+                <p class="text-[10px] text-gray-400">Campaign</p>
+              </div>
+              <div class="text-center">
+                <p class="text-sm font-bold text-[#8B4513]">{{ formatRupiah(community.total_dana_diterima) }}</p>
+                <p class="text-[10px] text-gray-400">Terkumpul</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Loading -->
-      <div v-else-if="loading" class="flex flex-col items-center justify-center py-20 text-center">
-        <p class="text-sm text-gray-400">Memuat data...</p>
+      <div v-else-if="loading" class="flex flex-col items-center justify-center py-20 gap-3">
+        <p class="text-sm font-medium" style="color: #9e8e80;">Memuat data...</p>
       </div>
 
-      <!-- Empty state -->
-      <div v-else class="flex flex-col items-center justify-center py-20 text-center">
-        <div class="w-16 h-16 rounded-full bg-stone-200 flex items-center justify-center mb-4 text-3xl">
-          🔍
-        </div>
-        <h3 class="text-base font-bold text-gray-600 mb-1">Komunitas tidak ditemukan</h3>
-        <p class="text-sm text-gray-400">Coba kata kunci atau filter lokasi yang lain</p>
+      <!-- Empty State -->
+      <div v-else class="flex flex-col items-center justify-center py-20 gap-3">
+        <svg class="w-12 h-12 text-gray-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <p class="text-sm font-medium" style="color: #9e8e80;">Tidak ada komunitas ditemukan</p>
         <button
-          @click="searchQuery = ''; selectedLocation = 'semua'"
-          class="mt-4 text-xs font-medium text-[#8B4513] underline underline-offset-2 hover:opacity-70 transition-opacity"
+          class="text-xs underline"
+          style="color: #8B4513;"
+          @click="searchInput = ''; searchQuery = ''; selectedLocation = 'semua'"
         >
-          Reset pencarian
+          Reset filter
         </button>
       </div>
 
       <!-- Pagination -->
       <PaginationBar
         v-if="pagination.last_page > 1"
-        :current-page="currentPage"
-        :total-pages="pagination.last_page"
-        @change="goToPage"
+        :currentPage="currentPage"
+        :totalPages="pagination.last_page"
+        @update:currentPage="goToPage"
       />
 
-    </main>
+    </div>
 
-    <!-- ===== FOOTER ===== -->
-    <footer class="border-t border-stone-200 bg-[#F5F0E8] px-6 py-6 mt-4">
-      <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <p class="font-bold text-[#1a2744] text-sm mb-0.5">Berbagive</p>
-          <p class="text-[10px] text-gray-400">© 2024 Berbagive. Part of The Human Archive project.</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-5 text-xs text-gray-500">
-          <a href="#" class="hover:text-gray-700">Kebijakan Privasi</a>
-          <a href="#" class="hover:text-gray-700">Syarat &amp; Ketentuan</a>
-          <a href="#" class="hover:text-gray-700">Hubungi Kami</a>
-          <a href="#" class="hover:text-gray-700">FAQ</a>
-          <button class="hover:text-gray-700">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </footer>
+    <Footer />
 
   </div>
 </template>
@@ -123,21 +126,24 @@ import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 import Navbar          from '@/components/shared/Navbar.vue'
-import CommunityCard    from '@/components/community/CommunityCard.vue'
 import LocationDropdown from '@/components/ui/LocationDropdown.vue'
 import PaginationBar    from '@/components/ui/PaginationBar.vue'
+import Footer           from '@/components/shared/Footer.vue'
 
-// --- Config ---
 const router = useRouter()
-const itemsPerPage = 6
-const isGuest = ref(false)
-const loading = ref(false)
-const pagination = ref({ total: 0, last_page: 1 })
 
-// --- Filter state ---
-const searchQuery      = ref('')
+const itemsPerPage = 6
+const loading = ref(false)
+const allCommunities = ref([])
+const pagination = ref({ total: 0, last_page: 1 })
+const stats = ref({ total_komunitas: 0, total_campaign: 0, total_donasi: 0 })
+
+const searchQuery = ref('')
+const searchInput = ref('')
 const selectedLocation = ref('semua')
-const currentPage      = ref(1)
+const currentPage = ref(1)
+
+let searchTimer = null
 
 const locations = ref([
   { value: 'semua',      label: 'Semua Lokasi' },
@@ -146,8 +152,23 @@ const locations = ref([
   { value: 'surabaya',   label: 'Surabaya' },
   { value: 'yogyakarta', label: 'Yogyakarta' },
   { value: 'medan',      label: 'Medan' },
-  { value: 'makassar',   label: 'Makassar' }
+  { value: 'makassar',   label: 'Makassar' },
 ])
+
+function handleSearchInput() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    searchQuery.value = searchInput.value
+  }, 400)
+}
+
+async function fetchStats() {
+  try {
+    const res = await api.get('/communities/search', { params: { per_page: 1 } })
+    const total = res.data.data?.pagination?.total || 0
+    stats.value.total_komunitas = total
+  } catch {}
+}
 
 async function fetchCommunities() {
   loading.value = true
@@ -158,23 +179,13 @@ async function fetchCommunities() {
     const res = await api.get('/communities/search', { params })
     allCommunities.value = res.data.data.items || []
     pagination.value = res.data.data.pagination || { total: 0, last_page: 1 }
-  } catch (e) {
+  } catch {
     allCommunities.value = []
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchCommunities)
-watch([searchQuery, selectedLocation, currentPage], fetchCommunities)
-
-// --- Data ---
-const allCommunities = ref([])
-
-// Reset page on filter change
-watch([searchQuery, selectedLocation], () => { currentPage.value = 1 })
-
-// --- Actions ---
 function goToPage(page) {
   currentPage.value = page
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -184,17 +195,27 @@ function goToCommunityProfile(id) {
   router.push(`/communities/${id}`)
 }
 
-function handleFollow(community) {
-  if (isGuest.value) {
-    // router.push('/login')
-    return
-  }
-  community.is_following = true
-  community.total_follower++
+function formatNumber(n) {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K'
+  return (n || 0).toString()
 }
 
-function handleUnfollow(community) {
-  community.is_following = false
-  community.total_follower--
+function formatRupiah(n) {
+  n = n || 0
+  if (n >= 1000000000) return 'Rp ' + (n / 1000000000).toFixed(1) + 'M'
+  if (n >= 1000000) return 'Rp ' + (n / 1000000).toFixed(1) + 'Jt'
+  return 'Rp ' + n.toLocaleString('id-ID')
 }
+
+onMounted(() => {
+  fetchStats()
+  fetchCommunities()
+})
+
+watch([searchQuery, selectedLocation], () => {
+  currentPage.value = 1
+  fetchCommunities()
+})
+
+watch(currentPage, fetchCommunities)
 </script>

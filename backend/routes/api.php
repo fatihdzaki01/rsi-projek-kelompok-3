@@ -47,22 +47,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/campaigns/{id}/public', [CampaignPublicController::class, 'show']);
     Route::get('/campaigns/{id}/donors', [CampaignPublicController::class, 'donors']);
     Route::post('/campaigns/{id}/complete', [CampaignPublicController::class, 'complete']);
+    Route::get('/campaigns/{id}/monitoring', [MonitoringController::class, 'publicCampaign']);
     Route::post('/communities/{communityId}/follow', [CommunityFollowController::class, 'follow']);
     Route::delete('/communities/{communityId}/follow', [CommunityFollowController::class, 'unfollow']);
 
-    Route::patch('/communities/profile', [KomunitasProfilController::class, 'updateProfil']);
+    // KOMUNITAS-only routes
+    Route::middleware('role:KOMUNITAS')->group(function () {
+        Route::patch('/communities/profile', [KomunitasProfilController::class, 'updateProfil']);
+        Route::post('/communities/profile', [KomunitasProfilController::class, 'updateProfil']);
+        Route::get('/communities/profile', [KomunitasProfilController::class, 'profilSaya']);
 
-    Route::get('/communities/campaigns', [KomunitasCampaignController::class, 'riwayat']);
-    Route::post('/communities/campaigns', [KomunitasCampaignController::class, 'ajukan']);
-    Route::post('/communities/campaigns/{id}/updates', [KomunitasCampaignController::class, 'updatePost']);
-    Route::post('/communities/campaigns/{id}/clarifications', [KomunitasCampaignController::class, 'klarifikasi']);
+        Route::get('/communities/campaigns', [KomunitasCampaignController::class, 'riwayat']);
+        Route::post('/communities/campaigns', [KomunitasCampaignController::class, 'ajukan']);
+        Route::post('/communities/campaigns/{id}/updates', [KomunitasCampaignController::class, 'updatePost']);
+        Route::post('/communities/campaigns/{id}/clarifications', [KomunitasCampaignController::class, 'klarifikasi']);
 
-    Route::get('/communities/bank-account/history', [RekeningController::class, 'riwayat']);
-    Route::post('/communities/bank-account/change', [RekeningController::class, 'ajukanPerubahan']);
+        Route::get('/communities/bank-account/history', [RekeningController::class, 'riwayat']);
+        Route::post('/communities/bank-account/change', [RekeningController::class, 'ajukanPerubahan']);
 
-    Route::get('/communities/profile', [KomunitasProfilController::class, 'profilSaya']);
-
-    Route::get('/communities/dashboard', [DashboardController::class, 'index']);
+        Route::get('/communities/dashboard', [DashboardController::class, 'index']);
+    });
 
     Route::post('/donations', [DonationController::class, 'store']);
     Route::get('/donations/{id}', [DonationController::class, 'show']);
@@ -93,6 +97,7 @@ Route::middleware('auth:sanctum')->post('/campaigns/{id}/reports', [CampaignRepo
 Route::middleware(['auth:sanctum', 'role:SUPERADMIN'])->group(function () {
     Route::get('/superadmin/profile', [SuperadminController::class, 'profile']);
     Route::patch('/superadmin/profile', [SuperadminController::class, 'updateProfile']);
+    Route::post('/superadmin/profile', [SuperadminController::class, 'updateProfile']);
     Route::patch('/superadmin/profile/password', [SuperadminController::class, 'changePassword']);
     Route::get('/superadmin/dashboard', [SuperadminController::class, 'dashboard']);
     Route::get('/superadmin/dashboard/statistics', [SuperadminController::class, 'dashboardStatistics']);

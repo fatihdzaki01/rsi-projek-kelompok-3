@@ -2,27 +2,27 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
+use App\Models\FollowKomunitas;
 use App\Models\Komunitas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class KomunitasProfilController extends Controller
 {
-    use ApiResponse;
-
     /**
      * b. GET /api/v1/komunitas/{id}/profil-publik  (Public)
      */
-    public function profilPublik(int $id): JsonResponse
+    public function profilPublik(Request $request, int $id): JsonResponse
     {
         $komunitas = Komunitas::where('id_komunitas', $id)
             ->where('status', Komunitas::STATUS_AKTIF)
             ->first();
 
         if (!$komunitas) {
-            return $this->error('ERR-PROF-01', 'Komunitas tidak tersedia', 404);
+            return ApiResponse::error('Komunitas tidak tersedia', null, 404);
         }
 
         $campaignAktif = Campaign::where('id_komunitas', $id)
@@ -39,7 +39,17 @@ class KomunitasProfilController extends Controller
 
         $totalDanaDiterima = (int) Campaign::where('id_komunitas', $id)->sum('dana_terkumpul');
 
-        return $this->success([
+        $isFollowing = false;
+        $user = $request->user();
+        if ($user) {
+            $follow = FollowKomunitas::where('id_user', $user->id_user ?? $user->id)
+                ->where('id_komunitas', $id)
+                ->where('is_active', true)
+                ->first();
+            $isFollowing = $follow !== null;
+        }
+
+        return ApiResponse::success([
             'id_komunitas'           => $komunitas->id_komunitas,
             'nama_lembaga'           => $komunitas->nama_lembaga,
             'deskripsi'              => $komunitas->deskripsi,
@@ -55,6 +65,7 @@ class KomunitasProfilController extends Controller
             'total_campaign_aktif'   => count($campaignAktif),
             'total_campaign_selesai' => $campaignSelesai,
             'daftar_campaign_aktif'  => $campaignAktif,
+            'is_following'           => $isFollowing,
         ]);
     }
 
@@ -65,7 +76,7 @@ class KomunitasProfilController extends Controller
     {
         $komunitas = $request->user()->komunitas;
         if (!$komunitas) {
-            return $this->error('ERR-PROF-01', 'Data komunitas tidak ditemukan', 404);
+            return ApiResponse::error('Data komunitas tidak ditemukan', null, 404);
         }
 
         $id = $komunitas->id_komunitas;
@@ -84,7 +95,7 @@ class KomunitasProfilController extends Controller
 
         $totalDanaDiterima = (int) Campaign::where('id_komunitas', $id)->sum('dana_terkumpul');
 
-        return $this->success([
+        return ApiResponse::success([
             'id_komunitas'           => $komunitas->id_komunitas,
             'nama_lembaga'           => $komunitas->nama_lembaga,
             'deskripsi'              => $komunitas->deskripsi,
@@ -111,28 +122,41 @@ class KomunitasProfilController extends Controller
     {
         $komunitas = $request->user()->komunitas;
         if (!$komunitas) {
-            return $this->error('ERR-EDIT-KOM-01', 'Mohon lengkapi profil yang wajib diisi', 400);
+            return ApiResponse::error('Hanya akun komunitas yang dapat mengakses fitur ini', ['error_code' => 'ERR-EDIT-KOM-01'], 403);
         }
 
         // ERR-EDIT-KOM-02: perubahan nama organisasi harus via superadmin
         if ($request->has('nama_lembaga')) {
-            return $this->error('ERR-EDIT-KOM-02', 'Perubahan nama organisasi harus diajukan ke superadmin', 403);
+            return ApiResponse::error('Perubahan nama organisasi harus diajukan ke superadmin', ['error_code' => 'ERR-EDIT-KOM-02'], 403);
         }
 
         $data = $request->validate([
             'deskripsi'        => ['sometimes', 'nullable', 'string'],
+            'alamat_detail'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'nomor_kontak'     => ['sometimes', 'nullable', 'string', 'max:20'],
             'link_medsos'      => ['sometimes', 'nullable', 'string', 'max:255'],
+            'foto_lembaga'     => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'foto_lembaga_url' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
-        if (empty($data)) {
-            return $this->error('ERR-EDIT-KOM-01', 'Mohon lengkapi profil yang wajib diisi', 400);
+        $fotoLembagaUrl = $komunitas->foto_lembaga_url;
+        if ($request->hasFile('foto_lembaga')) {
+            $path = $request->file('foto_lembaga')->store('community-photos', 'public');
+            $fotoLembagaUrl = '/storage/' . $path;
         }
 
-        $komunitas->fill($data)->save();
+        $updateData = array_merge(
+            array_intersect_key($data, array_flip(['deskripsi', 'alamat_detail', 'nomor_kontak', 'link_medsos'])),
+            ['foto_lembaga_url' => $fotoLembagaUrl]
+        );
 
-        return $this->success([
+        if (empty($updateData)) {
+            return ApiResponse::error('Mohon lengkapi profil yang wajib diisi', ['error_code' => 'ERR-EDIT-KOM-01'], 400);
+        }
+
+        $komunitas->fill($updateData)->save();
+
+        return ApiResponse::success([
             'message'        => 'Profil berhasil diperbarui',
             'updated_fields' => array_keys($data),
         ]);

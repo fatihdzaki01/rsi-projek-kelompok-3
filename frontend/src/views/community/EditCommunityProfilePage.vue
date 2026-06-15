@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Loader2 } from 'lucide-vue-next'
-import AppNavbarKomunitas from '@/components/shared/AppNavbarKomunitas.vue'
+import Navbar from '@/components/shared/Navbar.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/axios'
@@ -11,14 +11,12 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const form = reactive({
-  nama_komunitas: '',
+  nama_lembaga: '',
   email: '',
   nomor_kontak: '',
   deskripsi: '',
-  visi_misi: '',
-  alamat: '',
-  instagram: '',
-  website: '',
+  alamat_detail: '',
+  link_medsos: '',
 })
 
 const errors = reactive({})
@@ -53,15 +51,12 @@ const handleSubmit = async () => {
 
   try {
     const fd = new FormData()
-    fd.append('nama_komunitas', form.nama_komunitas)
     fd.append('nomor_kontak', form.nomor_kontak || '')
     fd.append('deskripsi', form.deskripsi || '')
-    fd.append('visi_misi', form.visi_misi || '')
-    fd.append('alamat', form.alamat || '')
-    fd.append('instagram', form.instagram || '')
-    fd.append('website', form.website || '')
-    if (logoFile.value) fd.append('logo', logoFile.value)
-    fd.append('_method', 'PUT')
+    fd.append('alamat_detail', form.alamat_detail || '')
+    fd.append('link_medsos', form.link_medsos || '')
+    if (logoFile.value) fd.append('foto_lembaga', logoFile.value)
+    fd.append('_method', 'PATCH')
 
     const res = await api.post('/communities/profile', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -94,11 +89,12 @@ onMounted(async () => {
     const res = await api.get('/communities/profile')
     const p = res.data.data
     profile.value = p
-    form.nama_komunitas = p?.nama_lembaga || ''
+    form.nama_lembaga = p?.nama_lembaga || ''
+    form.email = p?.email || p?.user?.email || ''
     form.nomor_kontak = p?.nomor_kontak || ''
     form.deskripsi = p?.deskripsi || ''
-    form.alamat = p?.alamat_detail || ''
-    form.instagram = (p?.link_medsos || '').replace(/^@/, '')
+    form.alamat_detail = p?.alamat_detail || ''
+    form.link_medsos = (p?.link_medsos || '').replace(/^@/, '')
     if (p?.foto_lembaga_url) logoPreview.value = p.foto_lembaga_url
   } catch (e) {
     if (e.response?.status === 401) router.push('/login')
@@ -108,7 +104,7 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-[#E8DDD0] flex flex-col">
-    <AppNavbarKomunitas />
+    <Navbar />
 
     <main class="flex-1 px-4 py-6">
       <div class="max-w-xl mx-auto">
@@ -164,12 +160,13 @@ onMounted(async () => {
             <div>
               <label class="block text-xs font-semibold tracking-widest text-gray-500 mb-1">NAMA KOMUNITAS</label>
               <input
-                v-model="form.nama_komunitas"
+                :value="form.nama_lembaga"
                 type="text"
                 maxlength="100"
-                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-[#FDF5EE]/40 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/30"
+                disabled
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
               />
-              <p v-if="errors.nama_komunitas" class="mt-1 text-xs text-red-500">{{ errors.nama_komunitas }}</p>
+              <p class="mt-1 text-xs text-gray-400">Perubahan nama organisasi harus diajukan ke superadmin</p>
             </div>
 
             <!-- Email (disabled) -->
@@ -207,50 +204,32 @@ onMounted(async () => {
 
             <!-- Visi Misi -->
             <div>
-              <label class="block text-xs font-semibold tracking-widest text-gray-500 mb-1">VISI &amp; MISI</label>
-              <textarea
-                v-model="form.visi_misi"
-                rows="3"
-                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2744]/30 resize-none"
-              ></textarea>
-              <p v-if="errors.visi_misi" class="mt-1 text-xs text-red-500">{{ errors.visi_misi }}</p>
+              <label class="block text-xs font-semibold tracking-widest text-gray-500 mb-1">LINK MEDIA SOSIAL</label>
             </div>
 
             <!-- Alamat -->
             <div>
               <label class="block text-xs font-semibold tracking-widest text-gray-500 mb-1">ALAMAT</label>
               <input
-                v-model="form.alamat"
+                v-model="form.alamat_detail"
                 type="text"
                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2744]/30"
               />
-              <p v-if="errors.alamat" class="mt-1 text-xs text-red-500">{{ errors.alamat }}</p>
+              <p v-if="errors.alamat_detail" class="mt-1 text-xs text-red-500">{{ errors.alamat_detail }}</p>
             </div>
 
             <!-- Instagram & Website -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block text-xs font-semibold tracking-widest text-gray-500 mb-1">INSTAGRAM</label>
-                <div class="relative">
-                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 text-sm">@</span>
-                  <input
-                    v-model="form.instagram"
+                <input
+                    v-model="form.link_medsos"
                     type="text"
-                    placeholder="username"
-                    class="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2744]/30"
+                    placeholder="@username atau URL"
+                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2744]/30"
                   />
                 </div>
-                <p v-if="errors.instagram" class="mt-1 text-xs text-red-500">{{ errors.instagram }}</p>
-              </div>
-              <div>
-                <label class="block text-xs font-semibold tracking-widest text-gray-500 mb-1">WEBSITE</label>
-                <input
-                  v-model="form.website"
-                  type="text"
-                  placeholder="www.example.org"
-                  class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2744]/30"
-                />
-                <p v-if="errors.website" class="mt-1 text-xs text-red-500">{{ errors.website }}</p>
+                <p v-if="errors.link_medsos" class="mt-1 text-xs text-red-500">{{ errors.link_medsos }}</p>
               </div>
             </div>
 

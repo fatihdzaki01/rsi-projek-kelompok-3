@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronRight, FolderOpen } from 'lucide-vue-next'
-import AppNavbarKomunitas from '@/components/shared/AppNavbarKomunitas.vue'
+import Navbar from '@/components/shared/Navbar.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/axios'
@@ -74,7 +74,7 @@ const goCampaign = (id) => router.push(`/community/campaigns/${id}`)
 
 <template>
   <div class="min-h-screen bg-[#E8DDD0] flex flex-col">
-    <AppNavbarKomunitas />
+    <Navbar />
 
     <main class="flex-1 px-4 py-6">
       <div class="max-w-xl mx-auto">

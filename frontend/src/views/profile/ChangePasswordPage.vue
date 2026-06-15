@@ -2,21 +2,26 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Eye, EyeOff, AlertTriangle } from 'lucide-vue-next'
+import api from '@/api/axios'
 import Navbar from '@/components/shared/Navbar.vue'
 import Footer from '@/components/shared/Footer.vue'
 
 const router = useRouter()
 
-const oldPassword = ref('')
-const newPassword = ref('')
-const confirmPassword = ref('')
+const passwordLama = ref('')
+const passwordBaru = ref('')
+const konfirmasiPassword = ref('')
 const showOld = ref(false)
 const showNew = ref(false)
 const showConfirm = ref(false)
 const errors = reactive({ old: '', new: '', confirm: '' })
+const apiErrors = ref({})
+const submitting = ref(false)
+const success = ref('')
+const errorMsg = ref('')
 
 const passwordStrength = computed(() => {
-  const p = newPassword.value
+  const p = passwordBaru.value
   if (!p) return 0
   let s = 0
   if (p.length >= 8) s++
@@ -33,13 +38,48 @@ const strengthTextColors = ['', 'text-red-500', 'text-yellow-600', 'text-green-5
 const segmentClass = (i) =>
   i < passwordStrength.value ? strengthColors[passwordStrength.value] : 'bg-gray-200'
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   errors.old = errors.new = errors.confirm = ''
-  if (!oldPassword.value) errors.old = 'Password lama wajib diisi.'
-  if (newPassword.value.length < 8) errors.new = 'Password baru minimal 8 karakter.'
-  if (confirmPassword.value !== newPassword.value) errors.confirm = 'Password tidak cocok.'
-  if (errors.old || errors.new || errors.confirm) return
-  alert('Password berhasil diubah')
+  apiErrors.value = {}
+  success.value = ''
+  errorMsg.value = ''
+
+  let valid = true
+  if (!passwordLama.value) { errors.old = 'Password lama wajib diisi.'; valid = false }
+  if (!passwordBaru.value) { errors.new = 'Password baru wajib diisi.'; valid = false }
+  else if (passwordBaru.value.length < 8) { errors.new = 'Password baru minimal 8 karakter.'; valid = false }
+  if (!konfirmasiPassword.value) { errors.confirm = 'Konfirmasi password wajib diisi.'; valid = false }
+  else if (konfirmasiPassword.value !== passwordBaru.value) { errors.confirm = 'Konfirmasi password tidak cocok.'; valid = false }
+  if (!valid) return
+
+  submitting.value = true
+  try {
+    await api.patch('/users/me/password', {
+      password_lama: passwordLama.value,
+      password_baru: passwordBaru.value,
+      konfirmasi_password: konfirmasiPassword.value,
+    })
+    success.value = 'Password berhasil diubah. Semua sesi lain akan diakhiri.'
+    passwordLama.value = ''
+    passwordBaru.value = ''
+    konfirmasiPassword.value = ''
+  } catch (e) {
+    const status = e.response?.status
+    const errData = e.response?.data?.errors || {}
+    const message = e.response?.data?.message || ''
+    if (status === 400 || status === 401 || status === 422) {
+      apiErrors.value = Object.fromEntries(
+        Object.entries(errData).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+      )
+      if (Object.keys(apiErrors.value).length === 0) {
+        errorMsg.value = message || 'Gagal mengubah password'
+      }
+    } else {
+      errorMsg.value = message || 'Gagal mengubah password'
+    }
+  } finally {
+    submitting.value = false
+  }
 }
 
 const labelCls = 'block text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1'
@@ -59,52 +99,51 @@ const inputCls = 'w-full h-10 pl-3 pr-10 bg-white border border-gray-200 rounded
         <h1 class="text-lg font-bold text-[#1a2744]">Ganti Password</h1>
         <p class="text-xs text-[#9CA3AF] mb-5">Masukkan password lama untuk konfirmasi identitas Anda</p>
 
+        <div v-if="success" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{{ success }}</div>
+        <div v-if="errorMsg" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{{ errorMsg }}</div>
+
         <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Password lama -->
           <div>
             <label :class="labelCls">Password Lama</label>
             <div class="relative">
-              <input v-model="oldPassword" :type="showOld ? 'text' : 'password'" :class="inputCls" />
+              <input v-model="passwordLama" :type="showOld ? 'text' : 'password'" :class="inputCls" />
               <button type="button" @click="showOld = !showOld" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
                 <EyeOff v-if="showOld" :size="16" /><Eye v-else :size="16" />
               </button>
             </div>
-            <p v-if="errors.old" class="mt-1 text-xs text-red-500">{{ errors.old }}</p>
+            <p v-if="errors.old || apiErrors.password_lama" class="mt-1 text-xs text-red-500">{{ errors.old || apiErrors.password_lama }}</p>
           </div>
 
-          <!-- Password baru -->
           <div>
             <label :class="labelCls">Password Baru</label>
             <div class="relative">
-              <input v-model="newPassword" :type="showNew ? 'text' : 'password'" :class="inputCls" />
+              <input v-model="passwordBaru" :type="showNew ? 'text' : 'password'" :class="inputCls" />
               <button type="button" @click="showNew = !showNew" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
                 <EyeOff v-if="showNew" :size="16" /><Eye v-else :size="16" />
               </button>
             </div>
 
-            <div v-if="newPassword" class="flex items-center gap-2 mt-2">
+            <div v-if="passwordBaru" class="flex items-center gap-2 mt-2">
               <div class="flex gap-1 flex-1">
                 <div v-for="i in 4" :key="i" class="h-1 flex-1 rounded-full transition-colors" :class="segmentClass(i - 1)" />
               </div>
               <span class="text-xs" :class="strengthTextColors[passwordStrength]">{{ strengthLabel }}</span>
             </div>
 
-            <p v-if="errors.new" class="mt-1 text-xs text-red-500">{{ errors.new }}</p>
+            <p v-if="errors.new || apiErrors.password_baru" class="mt-1 text-xs text-red-500">{{ errors.new || apiErrors.password_baru }}</p>
           </div>
 
-          <!-- Konfirmasi -->
           <div>
             <label :class="labelCls">Konfirmasi Password Baru</label>
             <div class="relative">
-              <input v-model="confirmPassword" :type="showConfirm ? 'text' : 'password'" :class="inputCls" />
+              <input v-model="konfirmasiPassword" :type="showConfirm ? 'text' : 'password'" :class="inputCls" />
               <button type="button" @click="showConfirm = !showConfirm" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
                 <EyeOff v-if="showConfirm" :size="16" /><Eye v-else :size="16" />
               </button>
             </div>
-            <p v-if="errors.confirm" class="mt-1 text-xs text-red-500">{{ errors.confirm }}</p>
+            <p v-if="errors.confirm || apiErrors.konfirmasi_password" class="mt-1 text-xs text-red-500">{{ errors.confirm || apiErrors.konfirmasi_password }}</p>
           </div>
 
-          <!-- Warning -->
           <div class="bg-[#FEF9C3] border border-yellow-200 rounded-lg p-3 flex items-start gap-2 mt-2">
             <AlertTriangle :size="14" class="text-[#CA8A04] shrink-0 mt-0.5" />
             <p class="text-xs text-[#92400E]">
@@ -113,12 +152,10 @@ const inputCls = 'w-full h-10 pl-3 pr-10 bg-white border border-gray-200 rounded
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button type="submit" class="bg-[#1a2744] text-white rounded-lg px-5 h-10 text-sm font-medium hover:bg-[#2a3754] transition-colors">
-              Ubah Password
+            <button type="submit" :disabled="submitting" class="bg-[#1a2744] text-white rounded-lg px-5 h-10 text-sm font-medium hover:bg-[#2a3754] transition-colors disabled:opacity-50">
+              {{ submitting ? 'Menyimpan...' : 'Ubah Password' }}
             </button>
-            <button type="button" @click="router.back()" class="bg-white border border-gray-300 text-gray-500 rounded-lg px-5 h-10 text-sm hover:bg-gray-50 transition-colors">
-              Batal
-            </button>
+            <button type="button" @click="router.back()" class="bg-white border border-gray-300 text-gray-500 rounded-lg px-5 h-10 text-sm hover:bg-gray-50 transition-colors">Batal</button>
           </div>
         </form>
       </div>

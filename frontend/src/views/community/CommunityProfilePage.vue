@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/axios'
-import AppNavbarKomunitas from '@/components/shared/AppNavbarKomunitas.vue'
+import Navbar from '@/components/shared/Navbar.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -40,7 +40,7 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-[#E8DDD0] flex flex-col">
-    <AppNavbarKomunitas @logout="handleLogout" />
+    <Navbar />
 
     <main class="flex-1 px-4 py-6">
       <div class="max-w-2xl mx-auto">
@@ -97,7 +97,7 @@ onMounted(async () => {
             </div>
 
             <button
-              @click="router.push('/community/profile/edit')"
+              @click="router.push('/communities/profile/edit')"
               class="shrink-0 border border-[#8B4513] text-[#8B4513] bg-white hover:bg-[#8B4513]/5 text-sm font-medium rounded-lg px-4 py-1.5 transition-colors"
             >
               Edit Profil

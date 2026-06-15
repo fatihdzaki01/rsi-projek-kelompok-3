@@ -40,18 +40,25 @@ class DummyDataSeeder extends Seeder
             $donaturIds[] = $id;
         }
 
-        // ===== 3 komunitas approved =====
+        // ===== 8 komunitas approved =====
         $komunitasUsers = [];
         $komData = [
             ['username' => 'YayasanSejahtera', 'email' => 'sejahtera@email.com', 'lembaga' => 'Yayasan Sejahtera Bersama', 'jenis' => 1, 'bank' => 'BCA', 'rekening' => '1234567890'],
             ['username' => 'KomunitasPeduli', 'email' => 'peduli@email.com', 'lembaga' => 'Komunitas Peduli Sesama', 'jenis' => 2, 'bank' => 'Mandiri', 'rekening' => '9876543210'],
             ['username' => 'LSMHarapan', 'email' => 'harapan@email.com', 'lembaga' => 'LSM Harapan Bangsa', 'jenis' => 3, 'bank' => 'BNI', 'rekening' => '5556667777'],
+            ['username' => 'RumahZakat', 'email' => 'rumahzakat@email.com', 'lembaga' => 'Rumah Zakat Indonesia', 'jenis' => 1, 'bank' => 'BSI', 'rekening' => '1112223334'],
+            ['username' => 'KomunitasLiterasi', 'email' => 'literasi@email.com', 'lembaga' => 'Komunitas Literasi Nusantara', 'jenis' => 2, 'bank' => 'BCA', 'rekening' => '2223334445'],
+            ['username' => 'YPantiAsuhan', 'email' => 'pantiasuhan@email.com', 'lembaga' => 'Yayasan Panti Asuhan Putra', 'jenis' => 1, 'bank' => 'Mandiri', 'rekening' => '3334445556'],
+            ['username' => 'KomunitasDifabel', 'email' => 'difabel@email.com', 'lembaga' => 'Komunitas Peduli Difabel', 'jenis' => 2, 'bank' => 'BNI', 'rekening' => '4445556667'],
+            ['username' => 'LSMPelita', 'email' => 'pelita@email.com', 'lembaga' => 'LSM Pelita Harapan', 'jenis' => 3, 'bank' => 'BSI', 'rekening' => '5556667778'],
         ];
 
         $superadminId = DB::table('users')->where('email', 'superadmin@berbagive.com')->value('id_user');
 
+        $wilayahKomunitas = ['3101', '3201', '3501', '3102', '3202', '3302', '3502', '5101'];
+
         $komunitasIds = [];
-        foreach ($komData as $k) {
+        foreach ($komData as $i => $k) {
             $userId = DB::table('users')->insertGetId([
                 'username'      => $k['username'],
                 'email'         => $k['email'],
@@ -68,8 +75,8 @@ class DummyDataSeeder extends Seeder
                 'id_user'          => $userId,
                 'id_jenis_lembaga' => $k['jenis'],
                 'nama_lembaga'     => $k['lembaga'],
-                'deskripsi'        => 'Kami bergerak di bidang sosial kemanusiaan',
-                'kode_wilayah'     => ['3101', '3201', '3501'][array_search($k, $komData)],
+                'deskripsi'        => $i < 3 ? 'Kami bergerak di bidang sosial kemanusiaan' : (['Menyantuni anak yatim dan dhuafa di seluruh Indonesia', 'Meningkatkan minat baca dan literasi masyarakat', 'Merawat dan mendidik anak-anak panti asuhan', 'Memperjuangkan hak dan kemandirian penyandang difabel', 'Memberdayakan masyarakat melalui program sosial dan pendidikan'][$i - 3] ?? 'Kami bergerak di bidang sosial kemanusiaan'),
+                'kode_wilayah'     => $wilayahKomunitas[$i] ?? '3101',
                 'alamat_detail'    => 'Jl. Contoh No. 123',
                 'nomor_kontak'     => '08123456789',
                 'link_medsos'      => 'https://instagram.com/' . strtolower(str_replace(' ', '', $k['lembaga'])),
@@ -85,13 +92,20 @@ class DummyDataSeeder extends Seeder
             $komunitasIds[] = $komId;
         }
 
-        // ===== 5 campaign aktif =====
+        // ===== 12 campaign aktif =====
         $campaignData = [
             ['judul' => 'Bantu Pendidikan Anak Yatim', 'kom' => 0, 'kategori' => 2, 'target' => 20000000, 'dana' => 15000000, 'wilayah' => '3101'],
             ['judul' => 'Bantuan Korban Bencana Banjir', 'kom' => 1, 'kategori' => 1, 'target' => 50000000, 'dana' => 30000000, 'wilayah' => '3201'],
             ['judul' => 'Pengobatan untuk Balita Stunting', 'kom' => 2, 'kategori' => 3, 'target' => 15000000, 'dana' => 5000000, 'wilayah' => '3501'],
             ['judul' => 'Renovasi Masjid Desa', 'kom' => 0, 'kategori' => 7, 'target' => 30000000, 'dana' => 25000000, 'wilayah' => '3301'],
             ['judul' => 'Beasiswa Mahasiswa Kurang Mampu', 'kom' => 1, 'kategori' => 2, 'target' => 25000000, 'dana' => 8000000, 'wilayah' => '3202'],
+            ['judul' => 'Bantuan Sembako untuk Dhuafa', 'kom' => 3, 'kategori' => 4, 'target' => 12000000, 'dana' => 9000000, 'wilayah' => '3102'],
+            ['judul' => 'Taman Baca untuk Anak Pinggiran', 'kom' => 4, 'kategori' => 2, 'target' => 8000000, 'dana' => 3000000, 'wilayah' => '3202'],
+            ['judul' => 'Program Makan Sehat untuk Balita', 'kom' => 5, 'kategori' => 3, 'target' => 18000000, 'dana' => 12000000, 'wilayah' => '3302'],
+            ['judul' => 'Donasi Alat Bantu Difabel', 'kom' => 6, 'kategori' => 10, 'target' => 25000000, 'dana' => 7000000, 'wilayah' => '3502'],
+            ['judul' => 'Penghijauan Hutan Mangrove', 'kom' => 2, 'kategori' => 5, 'target' => 40000000, 'dana' => 22000000, 'wilayah' => '3501'],
+            ['judul' => 'Bedah Rumah untuk Lansia', 'kom' => 7, 'kategori' => 4, 'target' => 35000000, 'dana' => 14000000, 'wilayah' => '5101'],
+            ['judul' => 'Kursus Keterampilan untuk Ibu Rumah Tangga', 'kom' => 4, 'kategori' => 8, 'target' => 10000000, 'dana' => 4000000, 'wilayah' => '3202'],
         ];
 
         $campaignIds = [];
@@ -118,11 +132,11 @@ class DummyDataSeeder extends Seeder
             $campaignIds[] = $id;
         }
 
-        // ===== 20 donasi mixed =====
+        // ===== 40 donasi mixed =====
         $paymentMethods = ['qris', 'gopay', 'ovo', 'shopeepay', 'bca', 'mandiri', 'bni'];
-        $statuses = ['berhasil', 'berhasil', 'berhasil', 'pending', 'gagal'];
+        $statuses = ['berhasil', 'berhasil', 'berhasil', 'berhasil', 'pending', 'gagal'];
 
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 40; $i++) {
             $donaturId = $donaturIds[array_rand($donaturIds)];
             $campaignId = $campaignIds[array_rand($campaignIds)];
             $nominal = [25000, 50000, 100000, 150000, 200000, 500000][array_rand([25000, 50000, 100000, 150000, 200000, 500000])];

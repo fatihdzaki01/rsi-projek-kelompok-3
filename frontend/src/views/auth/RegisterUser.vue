@@ -75,17 +75,20 @@ async function handleSubmit() {
   successMessage.value = ''
 
   try {
-    await api.post('/auth/register-user', {
+    const res = await api.post('/auth/register-user', {
       username: form.username,
       email: form.email,
       password: form.password,
     })
 
-    localStorage.setItem('verification_email', form.email)
-    router.push({
-      path: '/email-verification',
-      query: { email: form.email },
-    })
+    const isVerified = res.data?.data?.is_verified
+    if (isVerified) {
+      successMessage.value = 'Registrasi berhasil! Silakan login.'
+      setTimeout(() => router.push('/login'), 1000)
+    } else {
+      localStorage.setItem('verification_email', form.email)
+      router.push({ path: '/email-verification', query: { email: form.email } })
+    }
   } catch (error) {
     const status = error.response?.status
     const errData = error.response?.data?.errors || {}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Support\Facades\DB; //sementara
 use App\Models\FollowKomunitas;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ class CommunityFollowController extends Controller
         $user = $request->user();
         $userId = $user->id_user ?? $user->id;
 
-        if (($user->role ?? null) !== 'user') {
+        if (($user->role ?? null) !== User::ROLE_DONATUR) {
             return response()->json([
                 'status' => 'error',
                 'data' => null,
@@ -91,7 +92,7 @@ class CommunityFollowController extends Controller
         $user = $request->user();
         $userId = $user->id_user ?? $user->id;
 
-        if (($user->role ?? null) !== 'user') {
+        if (($user->role ?? null) !== User::ROLE_DONATUR) {
             return response()->json([
                 'status' => 'error',
                 'data' => null,

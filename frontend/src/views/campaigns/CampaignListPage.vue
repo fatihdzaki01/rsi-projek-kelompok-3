@@ -34,9 +34,10 @@ async function fetchCategories() {
   try {
     const res = await api.get('/campaign-categories')
     const raw = res.data.data || []
+    const totalAll = raw.reduce((s, c) => s + (c.total_campaign || 0), 0)
     categories.value = [
-      { value: 'semua', label: 'Semua Kategori' },
-      ...raw.map(c => ({ value: c.nama_kategori?.toLowerCase(), label: c.nama_kategori })),
+      { value: 'semua', label: 'Semua Kategori', count: totalAll },
+      ...raw.map(c => ({ value: c.nama_kategori?.toLowerCase(), label: c.nama_kategori, count: c.total_campaign || 0 })),
     ]
   } catch {
     categories.value = [
