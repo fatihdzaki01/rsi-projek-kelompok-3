@@ -6,6 +6,7 @@ use App\Helpers\ApiResponse;
 use App\Http\Requests\StoreDonationRequest;
 use App\Http\Requests\UpdatePaymentStatusRequest;
 use App\Services\DonationService;
+use App\Models\Notifikasi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,16 @@ class DonationController extends Controller
         $donasi = $this->service->createDonation($userId, $payload);
 
         $paymentToken = (string) \Illuminate\Support\Str::uuid();
+
+        // Notifikasi pending ke donatur
+        $campaignTitle = DB::table('campaign')->where('id_campaign', $payload['id_campaign'])->value('judul') ?? 'campaign ini';
+        Notifikasi::kirim([
+            'id_penerima_user' => $userId,
+            'judul' => 'Donasi menunggu pembayaran',
+            'pesan' => 'Donasi sebesar Rp ' . number_format($payload['nominal'], 0, ',', '.') . ' untuk "' . $campaignTitle . '" sedang menunggu pembayaran.',
+            'tipe' => 'donasi_pending',
+            'related_donasi_id' => $donasi->id_donasi,
+        ]);
 
         return ApiResponse::success([
             'id_donasi'              => $donasi->id_donasi,
@@ -149,6 +160,69 @@ class DonationController extends Controller
         }
 
         $result = $this->service->updatePaymentStatus($id, $request->status_pembayaran);
+
+        // Notifikasi ke donatur + komunitas + superadmin
+        $donasiData = DB::selectOne(
+            'SELECT d.id_donasi, d.id_campaign, d.id_user, d.nominal, d.metode_pembayaran, d.is_anonim,
+                    c.id_komunitas, c.judul as campaign_judul, u.nama_lengkap as donatur_nama
+             FROM donasi d
+             JOIN campaign c ON c.id_campaign = d.id_campaign
+             LEFT JOIN users u ON u.id_user = d.id_user
+             WHERE d.id_donasi = ?',
+            [$id]
+        );
+
+        if ($donasiData) {
+            $donorName = $donasiData->is_anonim ? 'Anonim' : ($donasiData->donatur_nama ?? 'Donatur');
+            $campaignJudul = $donasiData->campaign_judul ?? 'campaign';
+            $nominal = number_format($donasiData->nominal, 0, ',', '.');
+
+            if ($request->status_pembayaran === 'berhasil') {
+                // Notifikasi ke donatur
+                Notifikasi::kirim([
+                    'id_penerima_user' => $donasiData->id_user,
+                    'judul' => 'Donasi berhasil',
+                    'pesan' => 'Donasi sebesar Rp ' . $nominal . ' untuk "' . $campaignJudul . '" berhasil. Terima kasih!',
+                    'tipe' => 'donasi_berhasil',
+                    'related_donasi_id' => $donasiData->id_donasi,
+                    'related_campaign_id' => $donasiData->id_campaign,
+                ]);
+
+                // Notifikasi ke komunitas penerima
+                if ($donasiData->id_komunitas) {
+                    Notifikasi::kirim([
+                        'id_penerima_komunitas' => $donasiData->id_komunitas,
+                        'judul' => 'Donasi masuk',
+                        'pesan' => 'Donasi dari ' . $donorName . ' sebesar Rp ' . $nominal . ' dengan metode ' . ($donasiData->metode_pembayaran ?? '-') . ' untuk "' . $campaignJudul . '".',
+                        'tipe' => 'donasi_masuk',
+                        'related_donasi_id' => $donasiData->id_donasi,
+                        'related_campaign_id' => $donasiData->id_campaign,
+                    ]);
+                }
+
+                // Notifikasi ke superadmin
+                $superadminIds = \App\Models\User::where('role', 'SUPERADMIN')->pluck('id_user');
+                foreach ($superadminIds as $saId) {
+                    Notifikasi::kirim([
+                        'id_penerima_user' => $saId,
+                        'judul' => 'Donasi baru',
+                        'pesan' => 'Donasi Rp ' . $nominal . ' dari ' . $donorName . ' untuk "' . $campaignJudul . '".',
+                        'tipe' => 'donasi_masuk',
+                        'related_donasi_id' => $donasiData->id_donasi,
+                        'related_campaign_id' => $donasiData->id_campaign,
+                    ]);
+                }
+            } else {
+                // Notifikasi gagal ke donatur
+                Notifikasi::kirim([
+                    'id_penerima_user' => $donasiData->id_user,
+                    'judul' => 'Donasi gagal',
+                    'pesan' => 'Donasi untuk "' . $campaignJudul . '" gagal diproses.',
+                    'tipe' => 'donasi_gagal',
+                    'related_donasi_id' => $donasiData->id_donasi,
+                ]);
+            }
+        }
 
         return ApiResponse::success($result, 'Status pembayaran berhasil diperbarui');
     }

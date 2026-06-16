@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\Notifikasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -172,6 +173,15 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
+        // Notifikasi ke komunitas pemilik campaign
+        Notifikasi::kirim([
+            'id_penerima_komunitas' => $campaign->id_komunitas,
+            'judul' => 'Campaign disetujui',
+            'pesan' => 'Campaign "' . $campaign->judul . '" telah disetujui dan sekarang aktif.',
+            'tipe' => 'campaign_disetujui',
+            'related_campaign_id' => $id,
+        ]);
+
         return ApiResponse::success(null, 'Campaign berhasil disetujui.');
     }
 
@@ -199,6 +209,15 @@ class SuperadminController extends Controller
                 'direview_oleh' => $request->user()->id_user,
                 'updated_at' => now(),
             ]);
+
+        // Notifikasi ke komunitas pemilik campaign
+        Notifikasi::kirim([
+            'id_penerima_komunitas' => $campaign->id_komunitas,
+            'judul' => 'Campaign ditolak',
+            'pesan' => 'Campaign "' . $campaign->judul . '" ditolak. Alasan: ' . $validated['alasan_penolakan'],
+            'tipe' => 'campaign_ditolak',
+            'related_campaign_id' => $id,
+        ]);
 
         return ApiResponse::success(null, 'Campaign berhasil ditolak.');
     }
@@ -1194,6 +1213,15 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
+        // Notifikasi peringatan ke komunitas
+        Notifikasi::kirim([
+            'id_penerima_komunitas' => $campaign->id_komunitas,
+            'judul' => 'Peringatan: Campaign dinonaktifkan',
+            'pesan' => 'Campaign "' . $campaign->judul . '" telah dinonaktifkan oleh superadmin. Silakan periksa halaman campaign Anda.',
+            'tipe' => 'peringatan',
+            'related_campaign_id' => $id,
+        ]);
+
         return ApiResponse::success(null, 'Campaign berhasil dinonaktifkan.');
     }
 
@@ -1277,6 +1305,15 @@ class SuperadminController extends Controller
                 'direview_oleh' => $request->user()->id_user,
                 'updated_at' => now(),
             ]);
+
+        // Notifikasi peringatan ke komunitas
+        Notifikasi::kirim([
+            'id_penerima_komunitas' => $campaign->id_komunitas,
+            'judul' => 'Peringatan: Campaign ditutup permanen',
+            'pesan' => 'Campaign "' . $campaign->judul . '" telah ditutup permanen oleh superadmin.',
+            'tipe' => 'peringatan',
+            'related_campaign_id' => $id,
+        ]);
 
         return ApiResponse::success(null, 'Campaign berhasil ditutup permanen.');
     }

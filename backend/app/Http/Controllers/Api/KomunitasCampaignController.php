@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\FotoUpdate;
 use App\Models\Notifikasi;
 use App\Models\UpdateCampaign;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -101,6 +102,21 @@ class KomunitasCampaignController extends Controller
                 'created_at'            => now(),
                 'expires_at'            => Carbon::now()->addDays(Notifikasi::ttlDaysFor('campaign')),
             ]);
+
+            // Notifikasi ke semua superadmin
+            $superadminIds = User::where('role', 'SUPERADMIN')->pluck('id_user');
+            foreach ($superadminIds as $saId) {
+                Notifikasi::create([
+                    'id_penerima_user'    => $saId,
+                    'judul'               => 'Campaign baru diajukan',
+                    'pesan'               => 'Campaign "' . $campaign->judul . '" dari ' . ($komunitas->nama_lembaga ?? 'Komunitas') . ' menunggu review.',
+                    'tipe'                => 'campaign_menunggu',
+                    'related_campaign_id' => $campaign->id_campaign,
+                    'is_read'             => false,
+                    'created_at'          => now(),
+                    'expires_at'          => Carbon::now()->addDays(Notifikasi::ttlDaysFor('campaign_menunggu')),
+                ]);
+            }
 
             return $campaign;
         });

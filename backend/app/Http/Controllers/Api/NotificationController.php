@@ -34,7 +34,7 @@ class NotificationController extends Controller
         $perPage = $request->input('per_page', 10);
 
         $query = Notifikasi::query()
-            ->where('id_user', $userId);
+            ->where('id_penerima_user', $userId);
 
         if ($request->status === 'read') {
             $query->where('is_read', true);
@@ -48,7 +48,7 @@ class NotificationController extends Controller
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
-        $unreadCount = Notifikasi::where('id_user', $userId)
+        $unreadCount = Notifikasi::where('id_penerima_user', $userId)
             ->where('is_read', false)
             ->count();
 
@@ -92,7 +92,7 @@ class NotificationController extends Controller
         $user = $request->user();
         $userId = $user->id_user ?? $user->id;
 
-        $notification = Notifikasi::where('id_notifikasi', $notificationId)->first();
+        $notification = Notifikasi::where('id_notif', $notificationId)->first();
 
         if (!$notification) {
             return response()->json([
@@ -105,7 +105,7 @@ class NotificationController extends Controller
             ], 404);
         }
 
-        if ((int) $notification->id_user !== (int) $userId) {
+        if ((int) $notification->id_penerima_user !== (int) $userId) {
             return response()->json([
                 'status' => 'error',
                 'data' => null,
@@ -124,7 +124,7 @@ class NotificationController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => [
-                'id_notifikasi' => $notification->id_notifikasi,
+                'id_notif' => $notification->id_notif,
                 'is_read' => true,
                 'read_at' => $notification->read_at,
             ],
@@ -138,7 +138,7 @@ class NotificationController extends Controller
         $user = $request->user();
         $userId = $user->id_user ?? $user->id;
 
-        $updatedCount = Notifikasi::where('id_user', $userId)
+        $updatedCount = Notifikasi::where('id_penerima_user', $userId)
             ->where('is_read', false)
             ->update([
                 'is_read' => true,

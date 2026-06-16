@@ -85,10 +85,10 @@ class InternalNotificationController extends Controller
 
         foreach ($followers as $userId) {
             Notifikasi::create([
-                'id_user' => $userId,
+                'id_penerima_user' => $userId,
                 'judul' => $payload['judul'],
-                'isi' => $payload['isi'],
-                'jenis' => $request->event_type,
+                'pesan' => $payload['isi'],
+                'tipe' => $request->event_type,
                 'is_read' => false,
                 'read_at' => null,
             ]);

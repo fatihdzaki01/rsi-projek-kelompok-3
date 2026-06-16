@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Notifikasi;
 use Illuminate\Support\Facades\DB; //sementara
 use App\Models\FollowKomunitas;
 use Illuminate\Http\Request;
@@ -74,6 +75,16 @@ class CommunityFollowController extends Controller
                 'unfollowed_at' => null,
             ]);
         }
+
+        // Notifikasi ke komunitas
+        $donorName = $user->nama_lengkap ?? $user->username ?? 'Seseorang';
+        Notifikasi::kirim([
+            'id_penerima_komunitas' => $communityId,
+            'id_pengirim_user' => $userId,
+            'judul' => 'Pengikut baru',
+            'pesan' => $donorName . ' mulai mengikuti komunitas Anda.',
+            'tipe' => 'follow_baru',
+        ]);
 
         return response()->json([
             'status' => 'success',

@@ -8,15 +8,19 @@ export const useNotificationStore = defineStore('notification', {
     loading: false,
     error: null,
     filter: 'all',
+    mutedTypes: JSON.parse(localStorage.getItem('mutedNotificationTypes') || '[]'),
   }),
 
   getters: {
     unread: (state) => state.items.filter((n) => !n.is_read),
     filtered: (state) => {
-      if (state.filter === 'unread') return state.items.filter((n) => !n.is_read)
-      if (state.filter === 'read') return state.items.filter((n) => n.is_read)
-      return state.items
+      let list = state.items
+      if (state.filter === 'unread') list = list.filter((n) => !n.is_read)
+      if (state.filter === 'read') list = list.filter((n) => n.is_read)
+      list = list.filter((n) => !state.mutedTypes.includes(n.type))
+      return list
     },
+    isMuted: (state) => (type) => state.mutedTypes.includes(type),
   },
 
   actions: {
@@ -26,8 +30,21 @@ export const useNotificationStore = defineStore('notification', {
       try {
         const response = await api.get('/notifications')
         const data = response.data.data || response.data
-        this.items = Array.isArray(data) ? data : data.items || []
-        this.unreadCount = this.unread.length
+        const items = Array.isArray(data) ? data : data.items || []
+
+        this.items = items.map((n) => ({
+          id: n.id_notif,
+          title: n.judul,
+          message: n.pesan,
+          type: n.tipe,
+          is_read: n.is_read,
+          created_at: n.created_at,
+          related_campaign_id: n.related_campaign_id,
+          related_donasi_id: n.related_donasi_id,
+          related_update_id: n.related_update_id,
+        }))
+
+        this.unreadCount = data.unread_count ?? this.unread.length
       } catch (e) {
         this.error = e.response?.data?.message || e.message
       } finally {
@@ -58,6 +75,16 @@ export const useNotificationStore = defineStore('notification', {
 
     setFilter(filter) {
       this.filter = filter
+    },
+
+    toggleMute(type) {
+      const idx = this.mutedTypes.indexOf(type)
+      if (idx >= 0) {
+        this.mutedTypes.splice(idx, 1)
+      } else {
+        this.mutedTypes.push(type)
+      }
+      localStorage.setItem('mutedNotificationTypes', JSON.stringify(this.mutedTypes))
     },
   },
 })

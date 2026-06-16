@@ -9,6 +9,7 @@ use App\Http\Requests\RegisterUserRequest;
 use App\Http\Requests\RegisterKomunitasRequest;
 use App\Models\User;
 use App\Models\Komunitas;
+use App\Models\Notifikasi;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\ResetPasswordRequest;
@@ -49,6 +50,24 @@ class AuthController extends Controller
             'updated_at' => now(),
         ]);
         $user->notify(new VerifyEmail($verificationToken, $user->email));
+        }
+
+        Notifikasi::kirim([
+            'id_penerima_user' => $user->id_user,
+            'judul' => 'Selamat datang di Berbagive!',
+            'pesan' => 'Hai ' . ($request->username ?? $request->nama_lengkap ?? '') . ', selamat datang di Berbagive. Mulai donasi atau ikuti komunitas favoritmu!',
+            'tipe' => 'welcome',
+        ]);
+
+        // Notifikasi ke superadmin
+        $superadminIds = User::where('role', User::ROLE_SUPERADMIN)->pluck('id_user');
+        foreach ($superadminIds as $saId) {
+            Notifikasi::kirim([
+                'id_penerima_user' => $saId,
+                'judul' => 'Donatur baru mendaftar',
+                'pesan' => 'Donatur baru: ' . ($request->username ?? '-') . ' (' . $request->email . ') telah mendaftar.',
+                'tipe' => 'user_baru',
+            ]);
         }
 
         return ApiResponse::success([
@@ -234,6 +253,29 @@ class AuthController extends Controller
 
             return $user;
         });
+
+        $komunitas = Komunitas::where('id_user', $user->id_user)->first();
+
+        // Notifikasi ke komunitas
+        if ($komunitas) {
+            Notifikasi::kirim([
+                'id_penerima_komunitas' => $komunitas->id_komunitas,
+                'judul' => 'Registrasi komunitas berhasil',
+                'pesan' => 'Komunitas "' . $request->nama_lembaga . '" berhasil didaftarkan. Menunggu verifikasi superadmin.',
+                'tipe' => 'verifikasi',
+            ]);
+        }
+
+        // Notifikasi ke semua superadmin
+        $superadminIds = User::where('role', User::ROLE_SUPERADMIN)->pluck('id_user');
+        foreach ($superadminIds as $saId) {
+            Notifikasi::kirim([
+                'id_penerima_user' => $saId,
+                'judul' => 'Komunitas baru mendaftar',
+                'pesan' => 'Komunitas "' . $request->nama_lembaga . '" (' . $request->email . ') menunggu verifikasi.',
+                'tipe' => 'komunitas_baru',
+            ]);
+        }
 
         return ApiResponse::success([
             'id_user'     => $user->id_user,

@@ -2,9 +2,11 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/axios'
+import { useNotificationStore } from '@/stores/notification'
 
 const route = useRoute()
 const router = useRouter()
+const notificationStore = useNotificationStore()
 
 const isMobileMenuOpen = ref(false)
 const searchQuery = ref('')
@@ -57,6 +59,9 @@ watch(() => route.path, updateIndicator)
 
 onMounted(() => {
   nextTick(updateIndicator)
+  if (localStorage.getItem('token')) {
+    notificationStore.fetchAll()
+  }
 })
 </script>
 
@@ -104,10 +109,16 @@ onMounted(() => {
               <circle cx="12" cy="8" r="4" /><path stroke-linecap="round" d="M4 20c0-4 3.5-6 8-6s8 2 8 6" />
             </svg>
           </router-link>
-          <router-link to="/notifications" class="text-gray-700 transition-colors hover:text-[#8B4513]" aria-label="Notifikasi">
+          <router-link to="/notifications" class="relative text-gray-700 transition-colors hover:text-[#8B4513]" aria-label="Notifikasi">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
+            <span
+              v-if="notificationStore.unreadCount > 0"
+              class="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full leading-none"
+            >
+              {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+            </span>
           </router-link>
           <button @click="handleLogout" class="text-gray-700 transition-colors hover:text-[#8B4513]" aria-label="Keluar">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
