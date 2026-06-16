@@ -162,7 +162,7 @@ onMounted(fetchDisbursements)
               </td>
 
               <td>
-                <button class="mini-btn">
+                <button class="mini-btn" disabled>
                   Detail
                 </button>
               </td>
