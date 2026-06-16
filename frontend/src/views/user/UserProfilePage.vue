@@ -128,6 +128,25 @@
             </div>
           </div>
 
+          <!-- Daftar sebagai Komunitas -->
+          <div
+            v-if="profile.role === 'DONATUR'"
+            class="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden"
+          >
+            <div class="px-6 py-5 flex items-center justify-between gap-4">
+              <div>
+                <p class="text-sm font-bold text-[#2C2C2C]">Daftar sebagai Komunitas</p>
+                <p class="text-xs text-gray-500 mt-0.5">Kelola campaign, terima donasi, dan bangun komunitas Anda.</p>
+              </div>
+              <router-link
+                to="/register/komunitas"
+                class="shrink-0 px-4 py-2 bg-[#1a2744] text-white rounded-lg text-sm font-medium hover:bg-[#2a3f64] transition-colors"
+              >
+                Daftar Komunitas
+              </router-link>
+            </div>
+          </div>
+
           <!-- Following Modal -->
           <FollowingModal
             :show="showFollowingModal"
