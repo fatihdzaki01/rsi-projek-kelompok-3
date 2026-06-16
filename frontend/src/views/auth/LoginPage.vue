@@ -1,10 +1,11 @@
 <script setup>
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { User, Lock, Eye, EyeOff } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const email = ref('')
@@ -52,13 +53,16 @@ async function handleSubmit() {
   try {
     await authStore.login(email.value, password.value)
 
-    const roleDashboard = {
-      SUPERADMIN: '/dashboard',
-      KOMUNITAS: '/communities/dashboard',
-      DONATUR: '/campaigns',
+    if (route.query.redirect) {
+      router.push(route.query.redirect)
+    } else {
+      const roleDashboard = {
+        SUPERADMIN: '/dashboard',
+        KOMUNITAS: '/communities/dashboard',
+        DONATUR: '/campaigns',
+      }
+      router.push(roleDashboard[authStore.user?.role] || '/campaigns')
     }
-    const redirect = roleDashboard[authStore.user?.role] || '/campaigns'
-    router.push(redirect)
   } catch (error) {
     const status = error.response?.status
     const message = error.response?.data?.message || ''

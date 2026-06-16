@@ -47,7 +47,7 @@ const routes = [
   { path: '/donations/history', component: () => import('@/views/donations/DonationHistory.vue'), meta: { requiresAuth: true } },
   { path: '/donations/:id', component: () => import('@/views/donations/DonationDetailPage.vue'), meta: { requiresAuth: true } },
   { path: '/notifications', name: 'Notifications', component: () => import('@/views/notifications/NotificationPage.vue'), meta: { requiresAuth: true } },
-  { path: '/campaigns/:id/monitoring', name: 'CampaignMonitoring', component: () => import('@/views/dashboard/MonitoringInternalView.vue'), meta: { requiresAuth: true } },
+  { path: '/campaigns/:id/monitoring', name: 'CampaignMonitoring', component: () => import('@/views/dashboard/MonitoringInternalView.vue') },
   { path: '/payments/checkout/:id', component: () => import('@/views/payments/PaymentCheckoutPage.vue'), meta: { requiresAuth: true } },
   { path: '/payments/va/:id', component: () => import('@/views/payments/PaymentVAPage.vue'), meta: { requiresAuth: true } },
 
@@ -106,12 +106,6 @@ router.beforeEach((to, from, next) => {
   }
 
   next()
-})
-
-router.afterEach((to, from) => {
-  if (to.path === '/forbidden' && from.path !== '/') {
-    return '/'
-  }
 })
 
 export default router

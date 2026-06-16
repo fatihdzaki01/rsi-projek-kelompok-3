@@ -204,6 +204,11 @@ function handleCustomChange(e) {
 }
 
 async function handleDonate() {
+  if (!localStorage.getItem('token')) {
+    router.push(`/login?redirect=/campaigns/${props.campaignId}`)
+    return
+  }
+
   const nominal = custom.value ? Number(custom.value) : selected.value
   if (!nominal || nominal < 5000) {
     notif.value = { type: 'error', message: 'Minimal donasi Rp 5.000' }

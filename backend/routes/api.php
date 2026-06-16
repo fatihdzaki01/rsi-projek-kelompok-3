@@ -44,11 +44,13 @@ Route::middleware('auth:sanctum')->prefix('users')->group(function () {
 
 Route::get('/communities/{id}/profile', [KomunitasProfilController::class, 'profilPublik']);
 
+// Public campaign routes — accessible without login (visitor browsing)
+Route::get('/campaigns/{id}/public', [CampaignPublicController::class, 'show']);
+Route::get('/campaigns/{id}/donors', [CampaignPublicController::class, 'donors']);
+Route::get('/campaigns/{id}/monitoring', [MonitoringController::class, 'publicCampaign']);
+
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/campaigns/{id}/public', [CampaignPublicController::class, 'show']);
-    Route::get('/campaigns/{id}/donors', [CampaignPublicController::class, 'donors']);
     Route::post('/campaigns/{id}/complete', [CampaignPublicController::class, 'complete']);
-    Route::get('/campaigns/{id}/monitoring', [MonitoringController::class, 'publicCampaign']);
     Route::post('/communities/{communityId}/follow', [CommunityFollowController::class, 'follow']);
     Route::delete('/communities/{communityId}/follow', [CommunityFollowController::class, 'unfollow']);
     Route::get('/communities/{communityId}/followers', [CommunityFollowController::class, 'followers']);
