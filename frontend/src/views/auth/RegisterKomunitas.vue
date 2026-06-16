@@ -123,7 +123,7 @@
           </form>
 
           <p class="auth-footer">
-            Sudah punya akun? <a href="/login">Masuk di sini</a>
+            Sudah memiliki akun? <a href="/login">Login sekarang</a>
           </p>
         </div>
       </section>

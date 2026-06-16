@@ -38,7 +38,7 @@ class SearchController extends Controller
         $query = DB::table('campaign')
             ->leftJoin('komunitas', 'campaign.id_komunitas', '=', 'komunitas.id_komunitas')
             ->leftJoin('kategori_campaign', 'campaign.id_kategori', '=', 'kategori_campaign.id_kategori')
-            ->leftJoin('wilayah', 'campaign.kode_wilayah', '=', 'wilayah.kode_wilayah')
+            ->leftJoin('wilayah', 'campaign.kode_wilayah', '=', 'wilayah.kode')
             ->select(
                 'campaign.id_campaign',
                 'campaign.judul',
@@ -142,7 +142,7 @@ class SearchController extends Controller
         $perPage = $request->input('per_page', 10);
 
         $query = DB::table('komunitas')
-            ->leftJoin('wilayah', 'komunitas.kode_wilayah', '=', 'wilayah.kode_wilayah')
+            ->leftJoin('wilayah', 'komunitas.kode_wilayah', '=', 'wilayah.kode')
             ->select(
                 'komunitas.id_komunitas',
                 'komunitas.nama_lembaga',

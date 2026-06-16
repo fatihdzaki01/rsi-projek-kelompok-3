@@ -7,7 +7,9 @@
         <span class="text-xs text-white/70">Panel Admin</span>
       </div>
       <div class="flex items-center gap-3">
-        <span class="text-xs text-white/60">{{ profile?.nama_lengkap || 'Admin' }}</span>
+        <router-link to="/dashboard/profile" class="text-xs text-white/60 hover:text-white transition-colors" title="Edit Profil">
+          {{ profile?.nama_lengkap || 'Admin' }}
+        </router-link>
         <button @click="handleLogout" class="text-xs text-white/70 hover:text-white px-3 py-1 rounded-full border border-white/20 hover:border-white/40 transition-colors">
           Logout
         </button>
@@ -63,6 +65,7 @@ const menuItems = [
   { path: '/dashboard/document-templates', label: 'Template Dokumen', icon: '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' },
   { path: '/dashboard/analytics', label: 'Analitik', icon: '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>' },
   { path: '/dashboard/audit-logs', label: 'Audit Log', icon: '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' },
+  { path: '/dashboard/profile', label: 'Profil Saya', icon: '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' },
 ]
 
 function isActive(path) {

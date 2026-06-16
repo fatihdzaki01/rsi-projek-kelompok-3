@@ -35,8 +35,8 @@
 
               <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Nama Lembaga</label>
-                <input v-model="form.nama_lembaga" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
-                <p v-if="errors.nama_lembaga" class="mt-1 text-xs text-red-500">{{ errors.nama_lembaga }}</p>
+                <input :value="form.nama_lembaga" type="text" disabled class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-400 cursor-not-allowed" />
+                <p class="mt-1 text-xs text-gray-400">Perubahan nama organisasi harus diajukan ke superadmin</p>
               </div>
 
               <div>
@@ -47,8 +47,8 @@
 
               <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Alamat</label>
-                <input v-model="form.alamat" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
-                <p v-if="errors.alamat" class="mt-1 text-xs text-red-500">{{ errors.alamat }}</p>
+                <input v-model="form.alamat_detail" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
+                <p v-if="errors.alamat_detail" class="mt-1 text-xs text-red-500">{{ errors.alamat_detail }}</p>
               </div>
 
               <div>
@@ -58,8 +58,9 @@
               </div>
 
               <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Website (opsional)</label>
-                <input v-model="form.website" type="url" placeholder="https://" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
+                <label class="block text-xs font-medium text-gray-500 mb-1">Link Media Sosial</label>
+                <input v-model="form.link_medsos" type="text" placeholder="@username atau URL" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
+                <p v-if="errors.link_medsos" class="mt-1 text-xs text-red-500">{{ errors.link_medsos }}</p>
               </div>
 
               <div class="flex items-center gap-3 pt-2">
@@ -93,9 +94,9 @@ const submitting = ref(false)
 const form = ref({
   nama_lembaga: '',
   deskripsi: '',
-  alamat: '',
+  alamat_detail: '',
   nomor_kontak: '',
-  website: '',
+  link_medsos: '',
 })
 
 const errors = ref({})
@@ -104,14 +105,14 @@ async function fetchProfile() {
   loading.value = true
   fetchError.value = ''
   try {
-    const res = await api.get('/users/me')
+    const res = await api.get('/communities/profile')
     const data = res.data.data || res.data
     form.value = {
       nama_lembaga: data.nama_lembaga || '',
       deskripsi: data.deskripsi || '',
-      alamat: data.alamat || '',
+      alamat_detail: data.alamat_detail || '',
       nomor_kontak: data.nomor_kontak || '',
-      website: data.website || '',
+      link_medsos: data.link_medsos || '',
     }
   } catch (e) {
     fetchError.value = e.response?.data?.message || 'Gagal memuat profil komunitas'
@@ -127,11 +128,10 @@ async function handleSubmit() {
   submitting.value = true
   try {
     await api.patch('/communities/profile', {
-      nama_lembaga: form.value.nama_lembaga,
       deskripsi: form.value.deskripsi,
-      alamat: form.value.alamat,
+      alamat_detail: form.value.alamat_detail,
       nomor_kontak: form.value.nomor_kontak,
-      website: form.value.website,
+      link_medsos: form.value.link_medsos,
     })
     success.value = 'Profil komunitas berhasil diperbarui'
   } catch (e) {

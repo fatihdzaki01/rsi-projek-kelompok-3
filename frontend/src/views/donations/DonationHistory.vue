@@ -132,11 +132,15 @@
 
               <!-- Actions -->
               <div class="flex-shrink-0 flex flex-col gap-2 ml-2">
-                <button class="px-3 py-1.5 border border-[#8B4513] text-[#8B4513] rounded-lg text-xs font-medium hover:bg-[#8B4513] hover:text-white transition-colors">
+                <button
+                  @click="viewDetail(donation.id_donasi)"
+                  class="px-3 py-1.5 border border-[#8B4513] text-[#8B4513] rounded-lg text-xs font-medium hover:bg-[#8B4513] hover:text-white transition-colors"
+                >
                   Lihat Detail
                 </button>
                 <button
                   v-if="donation.status_pembayaran === 'berhasil'"
+                  @click="viewReceipt(donation.id_donasi)"
                   class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors"
                 >
                   Lihat Bukti
@@ -210,15 +214,36 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Navbar from '@/components/shared/Navbar.vue'
 import Footer from '@/components/shared/Footer.vue'
 import { useDonationStore } from '@/stores/donation'
+import api from '@/api/axios'
 
+const router = useRouter()
 const store = useDonationStore()
 
 const searchTerm = ref('')
 const statusFilter = ref('semua')
 const currentPage = ref(1)
+
+function viewDetail(id) {
+  router.push(`/donations/${id}`)
+}
+
+async function viewReceipt(id) {
+  try {
+    const res = await api.get(`/donations/${id}/receipt`)
+    const url = res.data.data?.bukti_pdf_url
+    if (url) {
+      window.open(url, '_blank')
+    } else {
+      window.open(`/donations/${id}/receipt-pdf`, '_blank')
+    }
+  } catch {
+    window.open(`/donations/${id}/receipt-pdf`, '_blank')
+  }
+}
 
 const totalPages = computed(() =>
   store.pagination.total > 0

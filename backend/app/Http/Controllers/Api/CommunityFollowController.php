@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Support\Facades\DB; //sementara
 use App\Models\FollowKomunitas;
 use Illuminate\Http\Request;
@@ -14,7 +16,7 @@ class CommunityFollowController extends Controller
         $user = $request->user();
         $userId = $user->id_user ?? $user->id;
 
-        if (($user->role ?? null) !== 'user') {
+        if (($user->role ?? null) !== User::ROLE_DONATUR) {
             return response()->json([
                 'status' => 'error',
                 'data' => null,
@@ -91,7 +93,7 @@ class CommunityFollowController extends Controller
         $user = $request->user();
         $userId = $user->id_user ?? $user->id;
 
-        if (($user->role ?? null) !== 'user') {
+        if (($user->role ?? null) !== User::ROLE_DONATUR) {
             return response()->json([
                 'status' => 'error',
                 'data' => null,
@@ -142,5 +144,44 @@ class CommunityFollowController extends Controller
             'message' => 'Berhasil berhenti mengikuti komunitas',
             'errors' => null
         ], 200);
+    }
+
+    public function followers(Request $request, $communityId)
+    {
+        $community = DB::table('komunitas')
+            ->where('id_komunitas', $communityId)
+            ->first();
+
+        if (!$community) {
+            return response()->json([
+                'status' => 'error',
+                'data' => null,
+                'message' => 'Komunitas tidak ditemukan',
+                'errors' => ['code' => 'ERR-FOLLOW-02']
+            ], 404);
+        }
+
+        $followers = DB::table('follow_komunitas as fk')
+            ->join('users as u', 'u.id_user', '=', 'fk.id_user')
+            ->where('fk.id_komunitas', $communityId)
+            ->where('fk.is_active', true)
+            ->select(
+                'u.id_user',
+                'u.username',
+                'u.nama_lengkap',
+                'u.foto_profil_url',
+                'fk.followed_at'
+            )
+            ->orderByDesc('fk.followed_at')
+            ->limit(25)
+            ->get();
+
+        return ApiResponse::success([
+            'total_followers' => DB::table('follow_komunitas')
+                ->where('id_komunitas', $communityId)
+                ->where('is_active', true)
+                ->count(),
+            'followers' => $followers,
+        ], 'Daftar pengikut berhasil dimuat');
     }
 }

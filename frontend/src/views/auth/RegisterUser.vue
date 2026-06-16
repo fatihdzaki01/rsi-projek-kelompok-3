@@ -75,17 +75,20 @@ async function handleSubmit() {
   successMessage.value = ''
 
   try {
-    await api.post('/auth/register-user', {
+    const res = await api.post('/auth/register-user', {
       username: form.username,
       email: form.email,
       password: form.password,
     })
 
-    localStorage.setItem('verification_email', form.email)
-    router.push({
-      path: '/email-verification',
-      query: { email: form.email },
-    })
+    const isVerified = res.data?.data?.is_verified
+    if (isVerified) {
+      successMessage.value = 'Registrasi berhasil! Silakan login.'
+      setTimeout(() => router.push('/login'), 1000)
+    } else {
+      localStorage.setItem('verification_email', form.email)
+      router.push({ path: '/email-verification', query: { email: form.email } })
+    }
   } catch (error) {
     const status = error.response?.status
     const errData = error.response?.data?.errors || {}
@@ -206,7 +209,7 @@ async function handleSubmit() {
 
       <p class="mt-6 text-center text-sm text-gray-600">
         Sudah memiliki akun?
-        <button type="button" @click="router.push('/login')" class="text-[#8B4513] font-semibold hover:underline ml-0.5">Masuk ke Dashboard</button>
+        <button type="button" @click="router.push('/login')" class="text-[#8B4513] font-semibold hover:underline ml-0.5">Login sekarang</button>
       </p>
     </div>
   </div>

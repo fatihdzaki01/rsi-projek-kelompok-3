@@ -23,7 +23,7 @@ class VerifyEmail extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $verifyUrl = env('FRONTEND_URL', 'http://localhost:5173')
-            . '/verify-email?email=' . urlencode($this->email)
+            . '/email-verification?email=' . urlencode($this->email)
             . '&token=' . urlencode($this->token);
 
         return (new MailMessage)

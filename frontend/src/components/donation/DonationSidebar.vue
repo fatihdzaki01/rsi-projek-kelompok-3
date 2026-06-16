@@ -45,6 +45,48 @@
       </div>
     </div>
 
+    <!-- Anonim toggle -->
+    <div class="flex flex-col gap-1.5">
+      <label class="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+        Identitas Donasi
+      </label>
+      <div class="flex items-center gap-2">
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            v-model="isAnonim"
+            class="sr-only peer"
+          />
+          <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8B4513]" />
+        </label>
+        <span class="text-xs text-foreground">Sembunyikan nama saya (Anonim)</span>
+      </div>
+
+      <!-- Nama tampil (only when not anonim) -->
+      <input
+        v-if="!isAnonim"
+        v-model="namaTampil"
+        type="text"
+        placeholder="Nama yang ditampilkan"
+        maxlength="100"
+        class="w-full px-3 py-2 text-sm bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
+      />
+    </div>
+
+    <!-- Message / Doa -->
+    <div class="flex flex-col gap-1.5">
+      <label class="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+        Pesan / Doa (opsional)
+      </label>
+      <textarea
+        v-model="pesan"
+        rows="2"
+        placeholder="Tulis pesan atau doa untuk campaign ini..."
+        maxlength="500"
+        class="w-full px-3 py-2 text-sm bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none resize-none focus:ring-2 focus:ring-ring"
+      />
+    </div>
+
     <!-- Payment method -->
     <div class="flex flex-col gap-1.5">
       <label class="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
@@ -72,12 +114,6 @@
         @click="handleDonate"
       >
         {{ donating ? 'Memproses...' : 'Donasi Sekarang' }}
-      </button>
-      <button class="w-full py-2.5 rounded-lg bg-card border border-[#2C2C2C] text-[#2C2C2C] text-sm font-semibold hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        Lihat Monitoring
-      </button>
-      <button class="w-full py-2.5 rounded-lg bg-[#C0392B] text-white text-sm font-semibold hover:bg-[#a93226] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        Laporkan Campaign
       </button>
     </div>
 
@@ -146,6 +182,9 @@ const recentDonors = [
 
 const selected = ref(250000)
 const custom = ref('')
+const isAnonim = ref(false)
+const namaTampil = ref('')
+const pesan = ref('')
 const metodePembayaran = ref('qris')
 const donating = ref(false)
 const notif = ref(null)
@@ -178,6 +217,9 @@ async function handleDonate() {
       id_campaign: props.campaignId,
       nominal,
       metode_pembayaran: metodePembayaran.value,
+      is_anonim: isAnonim.value,
+      nama_tampil: isAnonim.value ? null : (namaTampil.value || null),
+      pesan: pesan.value || null,
     })
     const data = res.data.data
     const vaMethods = ['bca', 'mandiri', 'bni']

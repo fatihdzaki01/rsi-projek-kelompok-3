@@ -40,8 +40,8 @@
 
             <div class="px-6 py-5 space-y-4">
               <div class="flex items-center gap-3 text-sm">
-                <span class="text-gray-400 w-28 flex-shrink-0">Nomor Kontak</span>
-                <span class="text-[#2C2C2C]">{{ profile.nomor_kontak || '-' }}</span>
+                <span class="text-gray-400 w-28 flex-shrink-0">Nomor Telepon</span>
+                <span class="text-[#2C2C2C]">{{ profile.nomor_telepon || '-' }}</span>
               </div>
               <div class="flex items-center gap-3 text-sm">
                 <span class="text-gray-400 w-28 flex-shrink-0">Tanggal Bergabung</span>
@@ -71,9 +71,9 @@
                 <p v-if="editErrors.nama_lengkap" class="mt-1 text-xs text-red-500">{{ editErrors.nama_lengkap }}</p>
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Nomor Kontak</label>
-                <input v-model="editForm.nomor_kontak" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
-                <p v-if="editErrors.nomor_kontak" class="mt-1 text-xs text-red-500">{{ editErrors.nomor_kontak }}</p>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Nomor Telepon</label>
+                <input v-model="editForm.nomor_telepon" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
+                <p v-if="editErrors.nomor_telepon" class="mt-1 text-xs text-red-500">{{ editErrors.nomor_telepon }}</p>
               </div>
               <button @click="handleUpdateProfile" :disabled="editLoading" class="px-5 py-2 bg-[#8B4513] text-white rounded-lg text-sm font-medium hover:bg-[#6b3410] transition-colors disabled:opacity-50">
                 {{ editLoading ? 'Menyimpan...' : 'Simpan Perubahan' }}
@@ -102,13 +102,37 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Konfirmasi Password Baru</label>
-                <input v-model="passwordForm.password_baru_confirmation" type="password" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
+                <input v-model="passwordForm.konfirmasi_password" type="password" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
               </div>
               <button @click="handleChangePassword" :disabled="pwLoading" class="px-5 py-2 bg-[#8B4513] text-white rounded-lg text-sm font-medium hover:bg-[#6b3410] transition-colors disabled:opacity-50">
                 {{ pwLoading ? 'Menyimpan...' : 'Ubah Password' }}
               </button>
             </div>
           </div>
+
+          <!-- Komunitas Yang Diikuti -->
+          <div
+            class="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+            @click="showFollowingModal = true"
+          >
+            <div class="px-6 py-4 flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-500">Komunitas Yang Diikuti</p>
+                <p class="text-2xl font-bold text-[#2C2C2C] mt-0.5">
+                  {{ followingLoading ? '...' : following.length }}
+                </p>
+              </div>
+              <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Following Modal -->
+          <FollowingModal
+            :show="showFollowingModal"
+            @close="showFollowingModal = false"
+          />
         </template>
       </div>
     </main>
@@ -119,21 +143,29 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 import Navbar from '@/components/shared/Navbar.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
+import FollowingModal from '@/components/community/FollowingModal.vue'
+
+const router = useRouter()
 
 const loading = ref(true)
 const error = ref('')
 const profile = ref({})
 
-const editForm = ref({ nama_lengkap: '', nomor_kontak: '' })
+const following = ref([])
+const followingLoading = ref(false)
+const showFollowingModal = ref(false)
+
+const editForm = ref({ nama_lengkap: '', nomor_telepon: '' })
 const editErrors = ref({})
 const editSuccess = ref('')
 const editError = ref('')
 const editLoading = ref(false)
 
-const passwordForm = ref({ password_lama: '', password_baru: '', password_baru_confirmation: '' })
+const passwordForm = ref({ password_lama: '', password_baru: '', konfirmasi_password: '' })
 const pwSuccess = ref('')
 const pwError = ref('')
 const pwLoading = ref(false)
@@ -151,13 +183,32 @@ async function fetchProfile() {
     profile.value = res.data.data || res.data
     editForm.value = {
       nama_lengkap: profile.value.nama_lengkap || '',
-      nomor_kontak: profile.value.nomor_kontak || '',
+      nomor_telepon: profile.value.nomor_telepon || '',
     }
   } catch (e) {
     error.value = e.response?.data?.message || 'Gagal memuat profil'
   } finally {
     loading.value = false
   }
+
+  fetchFollowing()
+}
+
+async function fetchFollowing() {
+  followingLoading.value = true
+  try {
+    const res = await api.get('/users/me/following')
+    following.value = res.data.data || []
+  } catch {
+    following.value = []
+  } finally {
+    followingLoading.value = false
+  }
+}
+
+function formatDate(s) {
+  if (!s) return ''
+  return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(s))
 }
 
 async function handleUpdateProfile() {
@@ -168,11 +219,11 @@ async function handleUpdateProfile() {
   try {
     await api.patch('/users/me', {
       nama_lengkap: editForm.value.nama_lengkap,
-      nomor_kontak: editForm.value.nomor_kontak,
+      nomor_telepon: editForm.value.nomor_telepon,
     })
     editSuccess.value = 'Profil berhasil diperbarui'
     profile.value.nama_lengkap = editForm.value.nama_lengkap
-    profile.value.nomor_kontak = editForm.value.nomor_kontak
+    profile.value.nomor_telepon = editForm.value.nomor_telepon
   } catch (e) {
     const status = e.response?.status
     const errData = e.response?.data?.errors || {}
@@ -200,10 +251,10 @@ async function handleChangePassword() {
     await api.patch('/users/me/password', {
       password_lama: passwordForm.value.password_lama,
       password_baru: passwordForm.value.password_baru,
-      password_baru_confirmation: passwordForm.value.password_baru_confirmation,
+      konfirmasi_password: passwordForm.value.konfirmasi_password,
     })
     pwSuccess.value = 'Password berhasil diubah'
-    passwordForm.value = { password_lama: '', password_baru: '', password_baru_confirmation: '' }
+    passwordForm.value = { password_lama: '', password_baru: '', konfirmasi_password: '' }
   } catch (e) {
     pwError.value = e.response?.data?.message || 'Gagal mengubah password'
   } finally {

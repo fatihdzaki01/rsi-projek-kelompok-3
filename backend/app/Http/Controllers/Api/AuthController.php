@@ -35,9 +35,10 @@ class AuthController extends Controller
             'password_hash' => Hash::make($request->password),
             'role' => 'DONATUR',
             'is_active' => true,
-            'is_verified' => false,
+            'is_verified' => app()->environment('local'),
         ]);
 
+        if (!app()->environment('local')) {
         $verificationToken = Str::random(64);
         DB::table('email_verifications')->insert([
             'id_user'    => $user->id_user,
@@ -48,13 +49,15 @@ class AuthController extends Controller
             'updated_at' => now(),
         ]);
         $user->notify(new VerifyEmail($verificationToken, $user->email));
+        }
 
         return ApiResponse::success([
             'id_user' => $user->id_user,
             'username' => $user->username,
             'email' => $user->email,
             'role' => $user->role,
-        ], 'Registrasi berhasil. Silakan verifikasi email.', 201);
+            'is_verified' => $user->is_verified,
+        ], app()->environment('local') ? 'Registrasi berhasil.' : 'Registrasi berhasil. Silakan verifikasi email.', 201);
     }
 
     public function login(LoginRequest $request)

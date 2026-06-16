@@ -77,7 +77,7 @@ const pilihKomunitas = () => router.push('/register/komunitas')
           <p class="mt-6 text-xs text-gray-500">
             Sudah memiliki akun?
             <router-link to="/login" class="text-[#8B4513] font-medium hover:underline">
-              Masuk di sini
+              Login sekarang
             </router-link>
           </p>
         </div>

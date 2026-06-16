@@ -62,6 +62,12 @@ class User extends Authenticatable
         return $this->hasMany(Donasi::class, 'id_user', 'id_user');
     }
 
+    public function following(): HasMany
+    {
+        return $this->hasMany(FollowKomunitas::class, 'id_user', 'id_user')
+            ->where('is_active', true);
+    }
+
     public function isKomunitas(): bool { return $this->role === self::ROLE_KOMUNITAS; }
     public function isSuperadmin(): bool { return $this->role === self::ROLE_SUPERADMIN; }
 }

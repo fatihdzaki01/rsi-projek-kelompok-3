@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('token'),
     user: JSON.parse(localStorage.getItem('user') || 'null'),
+    pendingEmail: localStorage.getItem('verification_email') || null,
   }),
 
   getters: {
@@ -33,7 +34,15 @@ export const useAuthStore = defineStore('auth', {
 
     async fetchMe() {
       try {
-        const response = await api.get('/users/me')
+        const role = this.user?.role
+        let response
+        if (role === 'KOMUNITAS') {
+          response = await api.get('/communities/profile')
+        } else if (role === 'SUPERADMIN') {
+          response = await api.get('/superadmin/profile')
+        } else {
+          response = await api.get('/users/me')
+        }
         this.user = response.data.data || response.data.user || response.data
         localStorage.setItem('user', JSON.stringify(this.user))
         return this.user

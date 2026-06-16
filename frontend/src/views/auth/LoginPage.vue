@@ -55,7 +55,7 @@ async function handleSubmit() {
     const roleDashboard = {
       SUPERADMIN: '/dashboard',
       KOMUNITAS: '/communities/dashboard',
-      DONATUR: '/my-dashboard',
+      DONATUR: '/campaigns',
     }
     const redirect = roleDashboard[authStore.user?.role] || '/campaigns'
     router.push(redirect)
