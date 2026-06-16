@@ -47,9 +47,21 @@
 
           <!-- Campaign title + report button -->
           <div class="flex items-start justify-between gap-3">
-            <h1 class="text-2xl font-bold text-foreground text-balance leading-snug">
-              {{ campaign.judul }}
-            </h1>
+            <div class="flex flex-col gap-2">
+              <h1 class="text-2xl font-bold text-foreground text-balance leading-snug">
+                {{ campaign.judul }}
+              </h1>
+              <router-link
+                v-if="komunitas.id_komunitas"
+                :to="`/communities/${komunitas.id_komunitas}`"
+                class="inline-flex items-center gap-2 self-start px-3 py-1.5 rounded-full border border-[#8B4513]/20 bg-[#FDF5EE] text-xs font-medium text-[#8B4513] hover:bg-[#f8e8d8] transition-colors"
+              >
+                <span class="w-5 h-5 rounded-full bg-[#8B4513] text-white flex items-center justify-center text-[9px] font-bold flex-shrink-0">
+                  {{ komunitas.nama_lembaga.charAt(0).toUpperCase() }}
+                </span>
+                <span class="truncate max-w-48">{{ komunitas.nama_lembaga }}</span>
+              </router-link>
+            </div>
             <button
               v-if="authStore.isLoggedIn && authStore.isDonor"
               @click="showReportModal = true"
@@ -117,10 +129,7 @@
                 class="size-4 text-muted-foreground"
                 aria-hidden="true"
               />
-              <span>
-                <span class="font-semibold">{{ campaign.hari_tersisa }}</span>
-                Hari Lagi
-              </span>
+              <span class="font-semibold">{{ timeRemaining }}</span>
             </div>
           </div>
 
@@ -166,7 +175,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Heart, Clock, Flag } from 'lucide-vue-next'
+import { Heart, Clock, Flag, Building2 } from 'lucide-vue-next'
 import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
@@ -174,6 +183,7 @@ import DonationSidebar from '@/components/donation/DonationSidebar.vue'
 import CampaignStory from '@/components/campaign/CampaignStory.vue'
 import ReportCampaignModal from '@/components/campaign/ReportCampaignModal.vue'
 import { useAuthStore } from '@/stores/auth'
+import { formatTimeRemaining } from '@/utils/time'
 
 const route = useRoute()
 const router = useRouter()
@@ -191,6 +201,7 @@ const campaign = ref({
   progress_persen: 0,
   jumlah_donatur: 0,
 })
+const komunitas = ref({ id_komunitas: null, nama_lembaga: '' })
 const loading = ref(true)
 const error = ref('')
 const showReportModal = ref(false)
@@ -201,6 +212,7 @@ async function fetchCampaign() {
   try {
     const res = await api.get(`/campaigns/${route.params.id}/public`)
     campaign.value = res.data.data.campaign
+    komunitas.value = res.data.data.komunitas || {}
   } catch (e) {
     error.value = e.response?.data?.message || 'Halaman tidak dapat dimuat.'
   } finally {
@@ -215,6 +227,8 @@ const pct = computed(() => {
   if (!c.target_dana) return 0
   return Math.min(100, Math.round((c.dana_terkumpul / c.target_dana) * 100))
 })
+
+const timeRemaining = computed(() => formatTimeRemaining(campaign.value.tanggal_selesai))
 
 function formatRupiah(amount) {
   return 'Rp ' + Number(amount).toLocaleString('id-ID')

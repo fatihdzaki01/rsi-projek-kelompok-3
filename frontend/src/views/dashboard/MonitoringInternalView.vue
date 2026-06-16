@@ -61,8 +61,8 @@
               <p class="text-xs text-gray-500 mt-1">Donatur</p>
             </div>
             <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
-              <p class="text-2xl font-bold text-[#8B4513]">{{ data.hari_tersisa }}</p>
-              <p class="text-xs text-gray-500 mt-1">Hari Tersisa</p>
+              <p class="text-2xl font-bold text-[#8B4513]">{{ formatTimeRemaining(data.tanggal_selesai) }}</p>
+              <p class="text-xs text-gray-500 mt-1">Waktu Tersisa</p>
             </div>
           </section>
 
@@ -114,6 +114,7 @@ import { useRoute } from 'vue-router'
 import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
+import { formatTimeRemaining } from '@/utils/time'
 
 const route = useRoute()
 const campaignId = route.params.id

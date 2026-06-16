@@ -57,7 +57,7 @@
 
       <!-- Footer row: date + category badge -->
       <div class="flex items-center justify-between mt-1.5">
-        <span class="text-xs text-gray-400">{{ campaign.tanggal_selesai }}</span>
+        <span class="text-xs text-gray-400">{{ formatTimeRemaining(campaign.tanggal_selesai) }}</span>
         <span
           class="text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide"
           :class="badgeClass(campaign.nama_kategori)"
@@ -71,6 +71,8 @@
 </template>
 
 <script setup lang="ts">
+import { formatTimeRemaining } from '@/utils/time'
+
 // ── Type ──────────────────────────────────────────────────────────────────────
 export interface Campaign {
   id_campaign: number
