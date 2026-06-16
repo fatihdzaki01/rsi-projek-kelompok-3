@@ -10,10 +10,12 @@ use App\Http\Requests\RegisterKomunitasRequest;
 use App\Models\User;
 use App\Models\Komunitas;
 use App\Models\Notifikasi;
+use App\Models\DokumenKomunitas;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Http\Requests\ResendVerificationRequest;
@@ -231,6 +233,7 @@ class AuthController extends Controller
         $user = DB::transaction(function () use ($request) {
             $user = User::create([
                 'username'      => $request->nama_lembaga,
+                'nama_lengkap'  => $request->nama_pic ?? null,
                 'email'         => $request->email,
                 'password_hash' => Hash::make($request->password),
                 'role'          => User::ROLE_KOMUNITAS,
@@ -238,7 +241,7 @@ class AuthController extends Controller
                 'is_verified'   => false,
             ]);
 
-            Komunitas::create([
+            $komunitas = Komunitas::create([
                 'id_user'          => $user->id_user,
                 'id_jenis_lembaga' => $request->id_jenis_lembaga,
                 'nama_lembaga'     => $request->nama_lembaga,
@@ -250,6 +253,21 @@ class AuthController extends Controller
                 'foto_lembaga_url' => $request->foto_lembaga_url,
                 'status'           => Komunitas::STATUS_MENUNGGU,
             ]);
+
+            // Upload dokumen
+            if ($request->hasFile('dokumen')) {
+                foreach ($request->file('dokumen') as $idJenisDok => $file) {
+                    $path = $file->store('dokumen-komunitas', 'public');
+
+                    DokumenKomunitas::create([
+                        'id_komunitas'      => $komunitas->id_komunitas,
+                        'id_jenis_dok'      => (int) $idJenisDok,
+                        'file_url'          => '/storage/' . $path,
+                        'status_verifikasi' => DokumenKomunitas::STATUS_MENUNGGU,
+                        'uploaded_at'       => now(),
+                    ]);
+                }
+            }
 
             return $user;
         });
