@@ -177,6 +177,17 @@ async function handleSubmit() {
         Belum punya akun Berbagive?
         <button type="button" @click="router.push('/register')" class="text-[#8B4513] font-semibold hover:underline ml-0.5">Daftar sekarang</button>
       </p>
+
+      <div class="mt-5 pt-5 border-t border-gray-200 text-center">
+        <p class="text-sm text-gray-500 mb-2">Tidak ingin login saat ini?</p>
+        <button
+          type="button"
+          @click="router.push(route.query.redirect || '/campaigns')"
+          class="text-sm text-[#6B7280] hover:text-[#1a2744] font-medium underline underline-offset-2 transition-colors"
+        >
+          Lanjutkan sebagai Visitor
+        </button>
+      </div>
     </div>
   </div>
 </template>
