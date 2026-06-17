@@ -11,19 +11,19 @@ use App\Models\User;
 use App\Models\Komunitas;
 use App\Models\Notifikasi;
 use App\Models\DokumenKomunitas;
+use App\Traits\HasImageUpload;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
-use App\Http\Requests\ResendVerificationRequest;
-use App\Notifications\VerifyEmail;
-
+use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
 {
+    use HasImageUpload;
+
     public function registerUser(RegisterUserRequest $request)
     {
         $existingUser = User::where('email', $request->email)->first();
@@ -81,6 +81,12 @@ class AuthController extends Controller
         ], app()->environment('local') ? 'Registrasi berhasil.' : 'Registrasi berhasil. Silakan verifikasi email.', 201);
     }
 
+    #[OA\Post(
+        path: '/auth/login',
+        summary: 'Login user',
+        tags: ['Auth'],
+        responses: [new OA\Response(response: 200, description: 'Login berhasil')]
+    )]
     public function login(LoginRequest $request)
     {
         $user = User::where('email', $request->email)->first();
@@ -257,12 +263,12 @@ class AuthController extends Controller
             // Upload dokumen
             if ($request->hasFile('dokumen')) {
                 foreach ($request->file('dokumen') as $idJenisDok => $file) {
-                    $path = $file->store('dokumen-komunitas', 'public');
+                    $url = $this->uploadDocument($file, 'dokumen-komunitas');
 
                     DokumenKomunitas::create([
                         'id_komunitas'      => $komunitas->id_komunitas,
                         'id_jenis_dok'      => (int) $idJenisDok,
-                        'file_url'          => '/storage/' . $path,
+                        'file_url'          => $url,
                         'status_verifikasi' => DokumenKomunitas::STATUS_MENUNGGU,
                         'uploaded_at'       => now(),
                     ]);

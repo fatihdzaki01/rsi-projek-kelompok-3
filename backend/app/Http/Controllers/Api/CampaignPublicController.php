@@ -8,6 +8,7 @@ use App\Models\Donasi;
 use App\Models\UpdateCampaign;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CampaignPublicController extends Controller
@@ -16,30 +17,26 @@ class CampaignPublicController extends Controller
 
     public function show($id): JsonResponse
     {
-        $campaign = Campaign::with(['komunitas', 'kategori', 'wilayah'])
-            ->where('id_campaign', $id)
-            ->whereIn('status', ['aktif', 'selesai'])
-            ->first();
+        $cacheKey = "campaign:public:{$id}";
 
-        if (!$campaign) {
-            return response()->json([
-                'status' => 'error',
-                'data' => null,
-                'message' => 'Halaman tidak tersedia',
-                'errors' => ['code' => 'ERR-MON-01']
-            ], 403);
-        }
+        $data = Cache::remember($cacheKey, 600, function () use ($id) {
+            $campaign = Campaign::with(['komunitas', 'kategori', 'wilayah'])
+                ->where('id_campaign', $id)
+                ->whereIn('status', ['aktif', 'selesai'])
+                ->first();
 
-        $timelineDana = $this->getTimelineDana($campaign->id_campaign);
-        $updatePost = $this->getUpdatePost($campaign->id_campaign);
+            if (!$campaign) {
+                return null;
+            }
 
-        $hariTersisa = $campaign->tanggal_selesai
-            ? max(0, now()->diffInDays(\Carbon\Carbon::parse($campaign->tanggal_selesai), false))
-            : 0;
+            $timelineDana = $this->getTimelineDana($campaign->id_campaign);
+            $updatePost = $this->getUpdatePost($campaign->id_campaign);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
+            $hariTersisa = $campaign->tanggal_selesai
+                ? max(0, now()->diffInDays(\Carbon\Carbon::parse($campaign->tanggal_selesai), false))
+                : 0;
+
+            return [
                 'campaign' => [
                     'id_campaign' => $campaign->id_campaign,
                     'judul' => $campaign->judul,
@@ -68,9 +65,23 @@ class CampaignPublicController extends Controller
                 ],
                 'timeline_dana' => $timelineDana,
                 'update_post' => $updatePost,
-            ],
+            ];
+        });
+
+        if ($data === null) {
+            return response()->json([
+                'status' => 'error',
+                'data' => null,
+                'message' => 'Halaman tidak tersedia',
+                'errors' => ['code' => 'ERR-MON-01'],
+            ], 403);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $data,
             'message' => 'Monitoring campaign berhasil ditampilkan',
-            'errors' => null
+            'errors' => null,
         ], 200);
     }
 

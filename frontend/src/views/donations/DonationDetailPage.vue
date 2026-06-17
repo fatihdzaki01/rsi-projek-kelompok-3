@@ -143,17 +143,18 @@ async function fetchDetail() {
 }
 
 async function viewReceipt() {
+  const baseUrl = api.defaults.baseURL.replace(/\/api\/v1$/, '')
   try {
     const res = await api.get(`/donations/${route.params.id}/receipt`)
     const url = res.data.data?.bukti_pdf_url
     if (url) {
-      window.open(url, '_blank')
-    } else {
-      window.open(`/donations/${route.params.id}/receipt-pdf`, '_blank')
+      window.open(baseUrl + url, '_blank')
+      return
     }
   } catch {
-    window.open(`/donations/${route.params.id}/receipt-pdf`, '_blank')
+    // fall through to direct endpoint
   }
+  window.open(baseUrl + `/api/v1/donations/${route.params.id}/receipt-pdf`, '_blank')
 }
 
 const statusBannerClass = computed(() => {

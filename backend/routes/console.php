@@ -37,3 +37,5 @@ Schedule::call(function () {
           AND deleted_at IS NULL
     ");
 })->hourly()->name('auto-complete-funded-campaigns');
+
+Schedule::command('backup:database')->hourly()->name('auto-database-backup');

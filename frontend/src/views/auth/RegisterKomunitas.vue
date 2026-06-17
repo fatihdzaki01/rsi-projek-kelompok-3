@@ -11,11 +11,13 @@
         <!-- Row: Nama PIC + Email -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label for="nama_pic" class="block text-sm font-medium text-[#374151] mb-1">Nama PIC</label>
+            <label for="nama_pic" class="block text-sm font-medium text-[#374151] mb-1">Nama PIC <span class="text-red-500">*</span></label>
             <input
               id="nama_pic" v-model="form.nama_pic" type="text" placeholder="Nama penanggung jawab"
               class="w-full h-11 px-3 bg-[#F5F0E8] border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1a2744]/30"
+              :class="{ 'ring-2 ring-red-400': errors.nama_pic }"
             />
+            <p v-if="errors.nama_pic" class="mt-1 text-xs text-red-500">{{ errors.nama_pic }}</p>
           </div>
           <div>
             <label for="email" class="block text-sm font-medium text-[#374151] mb-1">Email</label>

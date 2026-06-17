@@ -12,28 +12,29 @@ class SearchController extends Controller
     public function campaigns(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'keyword' => ['nullable', 'string', 'max:100'],
-            'kategori' => ['nullable', 'string', 'max:100'],
-            'provinsi' => ['nullable', 'string', 'max:100'],
+            'keyword'        => ['nullable', 'string', 'max:100'],
+            'kategori'       => ['nullable', 'string', 'max:100'],
+            'provinsi'       => ['nullable', 'string', 'max:100'],
             'kabupaten_kota' => ['nullable', 'string', 'max:100'],
-            'status' => ['nullable', 'in:aktif,selesai'],
-            'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'status'         => ['nullable', 'in:aktif,selesai'],
+            'page'           => ['nullable', 'integer', 'min:1'],
+            'per_page'       => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'data' => null,
+                'status'  => 'error',
+                'data'    => null,
                 'message' => 'Parameter pencarian tidak valid',
-                'errors' => [
-                    'code' => 'ERR-SEARCH-03',
-                    'details' => $validator->errors()
-                ]
+                'errors'  => [
+                    'code'    => 'ERR-SEARCH-03',
+                    'details' => $validator->errors(),
+                ],
             ], 422);
         }
 
         $perPage = $request->input('per_page', 10);
+        $keyword = $request->input('keyword');
 
         $query = DB::table('campaign')
             ->leftJoin('komunitas', 'campaign.id_komunitas', '=', 'komunitas.id_komunitas')
@@ -54,13 +55,19 @@ class SearchController extends Controller
             )
             ->whereIn('campaign.status', ['aktif', 'selesai']);
 
-        if ($request->filled('keyword')) {
-            $keyword = $request->keyword;
+        if ($keyword) {
             $query->where(function ($q) use ($keyword) {
-                $q->where('campaign.judul', 'ILIKE', "%{$keyword}%")
-                  ->orWhere('campaign.deskripsi', 'ILIKE', "%{$keyword}%")
-                  ->orWhere('komunitas.nama_lembaga', 'ILIKE', "%{$keyword}%");
-            });
+                $q->whereRaw("campaign.search_vector @@ plainto_tsquery('indonesian', ?)", [$keyword])
+                  ->orWhereRaw("komunitas.search_vector @@ plainto_tsquery('indonesian', ?)", [$keyword]);
+            })
+            ->orderByRaw("
+                GREATEST(
+                    COALESCE(ts_rank(campaign.search_vector, plainto_tsquery('indonesian', ?)), 0),
+                    COALESCE(ts_rank(komunitas.search_vector, plainto_tsquery('indonesian', ?)), 0)
+                ) DESC
+            ", [$keyword, $keyword]);
+        } else {
+            $query->orderByDesc('campaign.created_at');
         }
 
         if ($request->filled('kategori')) {
@@ -79,67 +86,49 @@ class SearchController extends Controller
             $query->where('campaign.status', $request->status);
         }
 
-        $campaigns = $query
-            ->orderByDesc('campaign.created_at')
-            ->paginate($perPage);
-
-        if ($campaigns->isEmpty()) {
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'items' => [],
-                    'pagination' => [
-                        'current_page' => $campaigns->currentPage(),
-                        'per_page' => $campaigns->perPage(),
-                        'total' => $campaigns->total(),
-                        'last_page' => $campaigns->lastPage(),
-                    ]
-                ],
-                'message' => 'Tidak ada campaign yang sesuai dengan pencarian',
-                'errors' => null
-            ], 200);
-        }
+        $campaigns = $query->paginate($perPage);
 
         return response()->json([
-            'status' => 'success',
-            'data' => [
-                'items' => $campaigns->items(),
+            'status'  => 'success',
+            'data'    => [
+                'items'      => $campaigns->items(),
                 'pagination' => [
                     'current_page' => $campaigns->currentPage(),
-                    'per_page' => $campaigns->perPage(),
-                    'total' => $campaigns->total(),
-                    'last_page' => $campaigns->lastPage(),
-                ]
+                    'per_page'     => $campaigns->perPage(),
+                    'total'        => $campaigns->total(),
+                    'last_page'    => $campaigns->lastPage(),
+                ],
             ],
-            'message' => 'Hasil pencarian campaign berhasil ditampilkan',
-            'errors' => null
+            'message' => $campaigns->isEmpty() ? 'Tidak ada campaign yang sesuai dengan pencarian' : 'Hasil pencarian campaign berhasil ditampilkan',
+            'errors'  => null,
         ], 200);
     }
 
     public function communities(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'keyword' => ['nullable', 'string', 'max:100'],
-            'provinsi' => ['nullable', 'string', 'max:100'],
+            'keyword'        => ['nullable', 'string', 'max:100'],
+            'provinsi'       => ['nullable', 'string', 'max:100'],
             'kabupaten_kota' => ['nullable', 'string', 'max:100'],
-            'sort' => ['nullable', 'in:terbaru'],
-            'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'sort'           => ['nullable', 'in:terbaru'],
+            'page'           => ['nullable', 'integer', 'min:1'],
+            'per_page'       => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'data' => null,
+                'status'  => 'error',
+                'data'    => null,
                 'message' => 'Parameter pencarian tidak valid',
-                'errors' => [
-                    'code' => 'ERR-SEARCH-03',
-                    'details' => $validator->errors()
-                ]
+                'errors'  => [
+                    'code'    => 'ERR-SEARCH-03',
+                    'details' => $validator->errors(),
+                ],
             ], 422);
         }
 
         $perPage = $request->input('per_page', 10);
+        $keyword = $request->input('keyword');
 
         $query = DB::table('komunitas')
             ->leftJoin('wilayah', 'komunitas.kode_wilayah', '=', 'wilayah.kode')
@@ -155,12 +144,11 @@ class SearchController extends Controller
             )
             ->where('komunitas.status', 'aktif');
 
-        if ($request->filled('keyword')) {
-            $keyword = $request->keyword;
-            $query->where(function ($q) use ($keyword) {
-                $q->where('komunitas.nama_lembaga', 'ILIKE', "%{$keyword}%")
-                  ->orWhere('komunitas.deskripsi', 'ILIKE', "%{$keyword}%");
-            });
+        if ($keyword) {
+            $query->whereRaw("komunitas.search_vector @@ plainto_tsquery('indonesian', ?)", [$keyword])
+                  ->orderByRaw("ts_rank(komunitas.search_vector, plainto_tsquery('indonesian', ?)) DESC", [$keyword]);
+        } else {
+            $query->orderByDesc('komunitas.created_at');
         }
 
         if ($request->filled('provinsi')) {
@@ -171,40 +159,21 @@ class SearchController extends Controller
             $query->where('wilayah.nama', 'ILIKE', "%{$request->kabupaten_kota}%");
         }
 
-        $query->orderByDesc('komunitas.created_at');
-
         $communities = $query->paginate($perPage);
 
-        if ($communities->isEmpty()) {
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'items' => [],
-                    'pagination' => [
-                        'current_page' => $communities->currentPage(),
-                        'per_page' => $communities->perPage(),
-                        'total' => $communities->total(),
-                        'last_page' => $communities->lastPage(),
-                    ]
-                ],
-                'message' => 'Tidak ada komunitas yang sesuai dengan pencarian',
-                'errors' => null
-            ], 200);
-        }
-
         return response()->json([
-            'status' => 'success',
-            'data' => [
-                'items' => $communities->items(),
+            'status'  => 'success',
+            'data'    => [
+                'items'      => $communities->items(),
                 'pagination' => [
                     'current_page' => $communities->currentPage(),
-                    'per_page' => $communities->perPage(),
-                    'total' => $communities->total(),
-                    'last_page' => $communities->lastPage(),
-                ]
+                    'per_page'     => $communities->perPage(),
+                    'total'        => $communities->total(),
+                    'last_page'    => $communities->lastPage(),
+                ],
             ],
-            'message' => 'Hasil pencarian komunitas berhasil ditampilkan',
-            'errors' => null
+            'message' => $communities->isEmpty() ? 'Tidak ada komunitas yang sesuai dengan pencarian' : 'Hasil pencarian komunitas berhasil ditampilkan',
+            'errors'  => null,
         ], 200);
     }
 }

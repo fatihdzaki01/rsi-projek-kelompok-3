@@ -21,7 +21,7 @@ class FotoUpdate extends Model
         'uploaded_at' => 'datetime',
     ];
 
-    public function update(): BelongsTo
+    public function updatePost(): BelongsTo
     {
         return $this->belongsTo(UpdateCampaign::class, 'id_update', 'id_update');
     }

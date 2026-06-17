@@ -7,71 +7,84 @@ use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\FollowKomunitas;
 use App\Models\Komunitas;
+use App\Traits\HasImageUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class KomunitasProfilController extends Controller
 {
+    use HasImageUpload;
     /**
      * b. GET /api/v1/komunitas/{id}/profil-publik  (Public)
      */
     public function profilPublik(Request $request, int $id): JsonResponse
     {
-        $komunitas = Komunitas::where('id_komunitas', $id)
-            ->where('status', Komunitas::STATUS_AKTIF)
-            ->first();
+        $cacheKey = "community:profile:{$id}";
 
-        if (!$komunitas) {
+        $data = Cache::remember($cacheKey, 600, function () use ($request, $id) {
+            $komunitas = Komunitas::where('id_komunitas', $id)
+                ->where('status', Komunitas::STATUS_AKTIF)
+                ->first();
+
+            if (!$komunitas) {
+                return null;
+            }
+
+            $campaignAktif = Campaign::where('id_komunitas', $id)
+                ->where('status', Campaign::STATUS_AKTIF)
+                ->get(['id_campaign', 'judul', 'target_dana', 'dana_terkumpul', 'tanggal_selesai']);
+
+            $campaignSelesaiCount = Campaign::where('id_komunitas', $id)
+                ->where('status', Campaign::STATUS_SELESAI)
+                ->count();
+
+            $campaignSelesaiList = Campaign::where('id_komunitas', $id)
+                ->where('status', Campaign::STATUS_SELESAI)
+                ->get(['id_campaign', 'judul', 'target_dana', 'dana_terkumpul']);
+
+            $totalFollower = $komunitas->followers()
+                ->where('is_active', true)
+                ->count();
+
+            $totalDanaDiterima = (int) Campaign::where('id_komunitas', $id)->sum('dana_terkumpul');
+
+            $isFollowing = false;
+            $user = $request->user();
+            if ($user) {
+                $follow = FollowKomunitas::where('id_user', $user->id_user ?? $user->id)
+                    ->where('id_komunitas', $id)
+                    ->where('is_active', true)
+                    ->first();
+                $isFollowing = $follow !== null;
+            }
+
+            return [
+                'id_komunitas'            => $komunitas->id_komunitas,
+                'nama_lembaga'            => $komunitas->nama_lembaga,
+                'deskripsi'               => $komunitas->deskripsi,
+                'alamat_detail'           => $komunitas->alamat_detail,
+                'nomor_kontak'            => $komunitas->nomor_kontak,
+                'link_medsos'             => $komunitas->link_medsos,
+                'foto_lembaga_url'        => $komunitas->foto_lembaga_url,
+                'kode_wilayah'            => $komunitas->kode_wilayah,
+                'status'                  => $komunitas->status,
+                'created_at'              => $komunitas->created_at,
+                'total_follower'          => $totalFollower,
+                'total_dana_diterima'     => $totalDanaDiterima,
+                'total_campaign_aktif'    => count($campaignAktif),
+                'total_campaign_selesai'  => $campaignSelesaiCount,
+                'daftar_campaign_aktif'   => $campaignAktif,
+                'daftar_campaign_selesai' => $campaignSelesaiList,
+                'is_following'            => $isFollowing,
+            ];
+        });
+
+        if ($data === null) {
             return ApiResponse::error('Komunitas tidak tersedia', null, 404);
         }
 
-        $campaignAktif = Campaign::where('id_komunitas', $id)
-            ->where('status', Campaign::STATUS_AKTIF)
-            ->get(['id_campaign', 'judul', 'target_dana', 'dana_terkumpul', 'tanggal_selesai']);
-
-        $campaignSelesaiCount = Campaign::where('id_komunitas', $id)
-            ->where('status', Campaign::STATUS_SELESAI)
-            ->count();
-
-        $campaignSelesaiList = Campaign::where('id_komunitas', $id)
-            ->where('status', Campaign::STATUS_SELESAI)
-            ->get(['id_campaign', 'judul', 'target_dana', 'dana_terkumpul']);
-
-        $totalFollower = $komunitas->followers()
-            ->where('is_active', true)
-            ->count();
-
-        $totalDanaDiterima = (int) Campaign::where('id_komunitas', $id)->sum('dana_terkumpul');
-
-        $isFollowing = false;
-        $user = $request->user();
-        if ($user) {
-            $follow = FollowKomunitas::where('id_user', $user->id_user ?? $user->id)
-                ->where('id_komunitas', $id)
-                ->where('is_active', true)
-                ->first();
-            $isFollowing = $follow !== null;
-        }
-
-        return ApiResponse::success([
-            'id_komunitas'            => $komunitas->id_komunitas,
-            'nama_lembaga'            => $komunitas->nama_lembaga,
-            'deskripsi'               => $komunitas->deskripsi,
-            'alamat_detail'           => $komunitas->alamat_detail,
-            'nomor_kontak'            => $komunitas->nomor_kontak,
-            'link_medsos'             => $komunitas->link_medsos,
-            'foto_lembaga_url'        => $komunitas->foto_lembaga_url,
-            'kode_wilayah'            => $komunitas->kode_wilayah,
-            'status'                  => $komunitas->status,
-            'created_at'              => $komunitas->created_at,
-            'total_follower'          => $totalFollower,
-            'total_dana_diterima'     => $totalDanaDiterima,
-            'total_campaign_aktif'    => count($campaignAktif),
-            'total_campaign_selesai'  => $campaignSelesaiCount,
-            'daftar_campaign_aktif'   => $campaignAktif,
-            'daftar_campaign_selesai' => $campaignSelesaiList,
-            'is_following'            => $isFollowing,
-        ]);
+        return ApiResponse::success($data);
     }
 
     /**
@@ -146,8 +159,7 @@ class KomunitasProfilController extends Controller
 
         $fotoLembagaUrl = $komunitas->foto_lembaga_url;
         if ($request->hasFile('foto_lembaga')) {
-            $path = $request->file('foto_lembaga')->store('community-photos', 'public');
-            $fotoLembagaUrl = '/storage/' . $path;
+            $fotoLembagaUrl = $this->uploadImage($request->file('foto_lembaga'), 'community-photos');
         }
 
         $updateData = array_merge(

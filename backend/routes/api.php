@@ -20,8 +20,10 @@ use App\Http\Controllers\Api\KategoriCampaignController;
 use App\Http\Controllers\Api\AdminAuditController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\DonationController;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
-Route::prefix('auth')->group(function () {
+Route::prefix('auth')->middleware('throttle:30,1')->group(function () {
     Route::post('/register-user', [AuthController::class, 'registerUser']);
     Route::post('/register-komunitas', [AuthController::class, 'registerKomunitas']);
     Route::post('/login', [AuthController::class, 'login'])
@@ -33,7 +35,7 @@ Route::prefix('auth')->group(function () {
     Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 });
 
-Route::middleware('auth:sanctum')->prefix('users')->group(function () {
+Route::middleware(['throttle:120,1', 'auth:sanctum'])->prefix('users')->group(function () {
     Route::get('/me', [UserController::class, 'me']);
     Route::patch('/me', [UserController::class, 'update']);
     Route::post('/me', [UserController::class, 'update']);
@@ -49,7 +51,7 @@ Route::get('/campaigns/{id}/public', [CampaignPublicController::class, 'show']);
 Route::get('/campaigns/{id}/donors', [CampaignPublicController::class, 'donors']);
 Route::get('/campaigns/{id}/monitoring', [MonitoringController::class, 'publicCampaign']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['throttle:120,1', 'auth:sanctum'])->group(function () {
     Route::post('/campaigns/{id}/complete', [CampaignPublicController::class, 'complete']);
     Route::post('/communities/{communityId}/follow', [CommunityFollowController::class, 'follow']);
     Route::delete('/communities/{communityId}/follow', [CommunityFollowController::class, 'unfollow']);
@@ -80,12 +82,14 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::post('/campaigns/updates/{updateId}/reports', [PostUpdateReportController::class, 'store']);
 
+Route::middleware('throttle:120,1')->group(function () {
 Route::get('/campaigns/search', [SearchController::class, 'campaigns']);
 Route::get('/communities/search', [SearchController::class, 'communities']);
 Route::get('/campaign-categories', [KategoriCampaignController::class, 'index']);
 Route::get('/jenis-lembaga', [MasterDataController::class, 'jenisLembaga']);
 Route::get('/wilayah', [MasterDataController::class, 'wilayah']);
 Route::get('/jenis-dokumen', [MasterDataController::class, 'jenisDokumen']);
+});
 
 Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
     Route::get('/', [NotificationController::class, 'index']);
@@ -152,4 +156,38 @@ Route::middleware(['auth:sanctum', 'role:SUPERADMIN'])->group(function () {
     Route::get('/campaigns/{id}/internal', [MonitoringController::class, 'internalCampaign']);
     Route::delete('/campaigns/updates/{updateId}', [SuperadminController::class, 'deleteUpdate']);
     Route::get('/superadmin/audit-logs', [AdminAuditController::class, 'index']);
+});
+
+Route::get('/health', function () {
+    $checks = [];
+
+    try {
+        DB::connection()->getPdo();
+        $checks['database'] = ['status' => 'ok'];
+    } catch (\Exception $e) {
+        $checks['database'] = ['status' => 'error', 'message' => $e->getMessage()];
+    }
+
+    try {
+        app('redis')->ping();
+        $checks['redis'] = ['status' => 'ok'];
+    } catch (\Exception $e) {
+        $checks['redis'] = ['status' => 'error', 'message' => $e->getMessage()];
+    }
+
+    try {
+        $disk = config('filesystems.default');
+        Storage::disk($disk)->exists('health-check');
+        $checks['storage'] = ['status' => 'ok', 'disk' => $disk];
+    } catch (\Exception $e) {
+        $checks['storage'] = ['status' => 'error', 'message' => $e->getMessage()];
+    }
+
+    $healthy = collect($checks)->every(fn($c) => $c['status'] === 'ok');
+
+    return response()->json([
+        'status'    => $healthy ? 'ok' : 'degraded',
+        'timestamp' => now()->toIso8601String(),
+        'checks'    => $checks,
+    ], $healthy ? 200 : 503);
 });

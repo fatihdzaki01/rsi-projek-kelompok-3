@@ -7,11 +7,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\FollowKomunitas;
+use App\Traits\HasImageUpload;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
+    use HasImageUpload;
     public function me()
     {
         $user = auth()->user();
@@ -45,8 +47,7 @@ class UserController extends Controller
         $fotoProfilUrl = $user->foto_profil_url;
 
         if ($request->hasFile('foto_profil')) {
-            $path = $request->file('foto_profil')->store('profile-photos', 'public');
-            $fotoProfilUrl = '/storage/' . $path;
+            $fotoProfilUrl = $this->uploadImage($request->file('foto_profil'), 'profile-photos');
         }
 
         $user->update([

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Notifikasi;
+use App\Traits\HasImageUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class SuperadminController extends Controller
 {
+    use HasImageUpload;
     public function profile(Request $request)
     {
         $user = $request->user();
@@ -43,8 +45,7 @@ class SuperadminController extends Controller
         $user = $request->user();
         $fotoProfilUrl = $user->foto_profil_url;
         if ($request->hasFile('foto_profil')) {
-            $path = $request->file('foto_profil')->store('profile-photos', 'public');
-            $fotoProfilUrl = '/storage/' . $path;
+            $fotoProfilUrl = $this->uploadImage($request->file('foto_profil'), 'profile-photos');
         }
 
         $user->update([
