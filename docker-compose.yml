@@ -167,6 +167,16 @@ services:
     networks:
       - berbagive-net
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: berbagive-cloudflared
+    restart: unless-stopped
+    command: tunnel --url http://nginx:80
+    depends_on:
+      - nginx
+    networks:
+      - berbagive-net
+
 volumes:
   pgdata:
   minio-data:
