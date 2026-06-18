@@ -2,48 +2,72 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Model users (Donatur, Komunitas, SuperAdmin).
+ */
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $table = 'users';
+    protected $primaryKey = 'id_user';
+
+    public $incrementing = true;
+    protected $keyType = 'int';
+
+    public $timestamps = true;
+
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'username', 'email', 'password_hash', 'role', 'is_active', 'is_verified',
+        'foto_profil_url', 'nama_lengkap', 'nomor_telepon', 'jenis_kelamin',
+        'tanggal_lahir', 'kode_wilayah',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
-        'password',
+        'password_hash',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'is_active' => 'boolean',
+        'is_verified' => 'boolean',
+        'tanggal_lahir' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
+    ];
+
+    public const ROLE_DONATUR = 'DONATUR';
+    public const ROLE_KOMUNITAS = 'KOMUNITAS';
+    public const ROLE_SUPERADMIN = 'SUPERADMIN';
+
+    public function getAuthPassword()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->password_hash;
     }
+
+    public function komunitas(): HasOne
+    {
+        return $this->hasOne(Komunitas::class, 'id_user', 'id_user');
+    }
+
+    public function donasi(): HasMany
+    {
+        return $this->hasMany(Donasi::class, 'id_user', 'id_user');
+    }
+
+    public function following(): HasMany
+    {
+        return $this->hasMany(FollowKomunitas::class, 'id_user', 'id_user')
+            ->where('is_active', true);
+    }
+
+    public function isKomunitas(): bool { return $this->role === self::ROLE_KOMUNITAS; }
+    public function isSuperadmin(): bool { return $this->role === self::ROLE_SUPERADMIN; }
 }

@@ -1,0 +1,19 @@
+-- INSERT in FK-safe order: parent tables first, child tables after
+\copy public.wilayah FROM '/tmp/data/wilayah.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.jenis_lembaga FROM '/tmp/data/jenis_lembaga.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.jenis_dokumen FROM '/tmp/data/jenis_dokumen.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.kategori_campaign FROM '/tmp/data/kategori_campaign.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.users FROM '/tmp/data/users.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.komunitas FROM '/tmp/data/komunitas.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.campaign FROM '/tmp/data/campaign.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.donasi FROM '/tmp/data/donasi.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.dokumen_komunitas FROM '/tmp/data/dokumen_komunitas.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.update_campaign FROM '/tmp/data/update_campaign.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.foto_update FROM '/tmp/data/foto_update.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.notifikasi FROM '/tmp/data/notifikasi.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.pencairan_dana FROM '/tmp/data/pencairan_dana.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.laporan_penggunaan_dana FROM '/tmp/data/laporan_penggunaan_dana.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.penerima_manfaat FROM '/tmp/data/penerima_manfaat.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.potongan_platform FROM '/tmp/data/potongan_platform.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.follow_komunitas FROM '/tmp/data/follow_komunitas.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
+\copy public.verifikasi_rekening FROM '/tmp/data/verifikasi_rekening.csv' WITH (FORMAT CSV, HEADER true, DELIMITER ',', ENCODING 'UTF8');
