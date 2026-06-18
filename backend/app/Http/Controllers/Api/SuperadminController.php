@@ -24,7 +24,6 @@ class SuperadminController extends Controller
             'description' => $description,
             'ip_address' => $request->ip(),
             'created_at' => now(),
-            'updated_at' => now(),
         ]);
     }
 
@@ -190,8 +189,7 @@ class SuperadminController extends Controller
                 'status' => 'aktif',
                 'alasan_penolakan' => null,
                 'direview_oleh' => $request->user()->id_user,
-                'updated_at' => now(),
-            ]);
+                ]);
 
         // Notifikasi ke komunitas pemilik campaign
         Notifikasi::kirim([
@@ -230,8 +228,7 @@ class SuperadminController extends Controller
                 'status' => 'ditolak',
                 'alasan_penolakan' => $validated['alasan_penolakan'],
                 'direview_oleh' => $request->user()->id_user,
-                'updated_at' => now(),
-            ]);
+                ]);
 
         // Notifikasi ke komunitas pemilik campaign
         Notifikasi::kirim([
@@ -942,8 +939,7 @@ class SuperadminController extends Controller
                 'status' => 'aktif',
                 'alasan_penolakan' => null,
                 'direview_oleh' => $request->user()->id_user,
-                'updated_at' => now(),
-            ]);
+                ]);
 
         DB::table('users')
             ->where('id_user', $komunitas->id_user)
@@ -974,8 +970,7 @@ class SuperadminController extends Controller
                 'status' => 'ditolak',
                 'alasan_penolakan' => $validated['alasan_penolakan'],
                 'direview_oleh' => $request->user()->id_user,
-                'updated_at' => now(),
-            ]);
+                ]);
 
         return ApiResponse::success(null, 'Pendaftaran komunitas berhasil ditolak.');
     }
@@ -1227,8 +1222,7 @@ class SuperadminController extends Controller
                 'status' => 'aktif',
                 'alasan_penolakan' => null,
                 'direview_oleh' => $request->user()->id_user,
-                'updated_at' => now(),
-            ]);
+                ]);
 
         $this->auditLog($request, 'IGNORE_REPORT', 'Mengabaikan laporan campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
         $this->bustCommunityProfileCache($campaign->id_komunitas);
@@ -1253,8 +1247,7 @@ class SuperadminController extends Controller
             ->update([
                 'status' => 'nonaktif',
                 'direview_oleh' => $request->user()->id_user,
-                'updated_at' => now(),
-            ]);
+                ]);
 
         // Notifikasi peringatan ke komunitas
         Notifikasi::kirim([
@@ -1326,8 +1319,7 @@ class SuperadminController extends Controller
                 'status' => 'aktif',
                 'alasan_penolakan' => null,
                 'direview_oleh' => $request->user()->id_user,
-                'updated_at' => now(),
-            ]);
+                ]);
 
         $this->auditLog($request, 'REACTIVATE', 'Mengaktifkan kembali campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
         $this->bustCommunityProfileCache($campaign->id_komunitas);
@@ -1352,8 +1344,7 @@ class SuperadminController extends Controller
             ->update([
                 'status' => 'ditutup_permanen',
                 'direview_oleh' => $request->user()->id_user,
-                'updated_at' => now(),
-            ]);
+                ]);
 
         // Notifikasi peringatan ke komunitas
         Notifikasi::kirim([

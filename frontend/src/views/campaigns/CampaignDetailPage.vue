@@ -141,8 +141,8 @@
             {{ reportAlert }}
           </div>
 
-          <!-- Monitoring link for authenticated users -->
-          <div v-if="authStore.isLoggedIn" class="flex items-center gap-2">
+          <!-- Monitoring link -->
+          <div class="flex items-center gap-2">
             <button
               @click="router.push(`/campaigns/${campaign.id_campaign}/monitoring`)"
               class="text-xs font-medium text-[#8B4513] hover:text-[#6b3410] underline-offset-2 hover:underline transition-colors"
