@@ -39,3 +39,7 @@ Schedule::call(function () {
 })->hourly()->name('auto-complete-funded-campaigns');
 
 Schedule::command('backup:database')->hourly()->name('auto-database-backup');
+
+Schedule::call(function () {
+    DB::statement('REFRESH MATERIALIZED VIEW CONCURRENTLY v_platform_summary_mv');
+})->everyFiveMinutes()->name('refresh-platform-summary-mv');

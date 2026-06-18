@@ -15,12 +15,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status
+    const url = error.config?.url || ''
 
-    if (status === 401) {
+    if (status === 401 && !url.includes('/auth/login') && !url.includes('/auth/logout')) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       router.push('/login')
-    } else if (status === 403) {
+    } else if (status === 403 && !url.includes('/auth/login')) {
       router.push('/forbidden')
     }
 

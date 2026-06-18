@@ -33,8 +33,14 @@ class NotificationController extends Controller
         $userId = $user->id_user ?? $user->id;
         $perPage = $request->input('per_page', 10);
 
-        $query = Notifikasi::query()
-            ->where('id_penerima_user', $userId);
+        $query = Notifikasi::query();
+
+        if ($user->role === 'KOMUNITAS') {
+            $komunitasId = $user->komunitas->id_komunitas ?? null;
+            $query->where('id_penerima_komunitas', $komunitasId);
+        } else {
+            $query->where('id_penerima_user', $userId);
+        }
 
         if ($request->status === 'read') {
             $query->where('is_read', true);
@@ -48,9 +54,14 @@ class NotificationController extends Controller
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
-        $unreadCount = Notifikasi::where('id_penerima_user', $userId)
-            ->where('is_read', false)
-            ->count();
+        $unreadQuery = Notifikasi::query();
+        if ($user->role === 'KOMUNITAS') {
+            $komunitasId = $user->komunitas->id_komunitas ?? null;
+            $unreadQuery->where('id_penerima_komunitas', $komunitasId);
+        } else {
+            $unreadQuery->where('id_penerima_user', $userId);
+        }
+        $unreadCount = $unreadQuery->where('is_read', false)->count();
 
         if ($notifications->isEmpty()) {
             return response()->json([
@@ -105,7 +116,15 @@ class NotificationController extends Controller
             ], 404);
         }
 
-        if ((int) $notification->id_penerima_user !== (int) $userId) {
+        $hasAccess = false;
+        if ($user->role === 'KOMUNITAS') {
+            $komunitasId = $user->komunitas->id_komunitas ?? null;
+            $hasAccess = (int) $notification->id_penerima_komunitas === (int) $komunitasId;
+        } else {
+            $hasAccess = (int) $notification->id_penerima_user === (int) $userId;
+        }
+
+        if (!$hasAccess) {
             return response()->json([
                 'status' => 'error',
                 'data' => null,
@@ -138,13 +157,18 @@ class NotificationController extends Controller
         $user = $request->user();
         $userId = $user->id_user ?? $user->id;
 
-        $updatedCount = Notifikasi::where('id_penerima_user', $userId)
-            ->where('is_read', false)
-            ->update([
-                'is_read' => true,
-                'read_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $markQuery = Notifikasi::query()->where('is_read', false);
+        if ($user->role === 'KOMUNITAS') {
+            $komunitasId = $user->komunitas->id_komunitas ?? null;
+            $markQuery->where('id_penerima_komunitas', $komunitasId);
+        } else {
+            $markQuery->where('id_penerima_user', $userId);
+        }
+        $updatedCount = $markQuery->update([
+            'is_read' => true,
+            'read_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         if ($updatedCount === 0) {
             return response()->json([

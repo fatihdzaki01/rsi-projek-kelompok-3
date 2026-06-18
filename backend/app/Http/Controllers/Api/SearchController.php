@@ -88,6 +88,15 @@ class SearchController extends Controller
 
         $campaigns = $query->paginate($perPage);
 
+        $totalDonatur = DB::table('donasi')
+            ->where('status_pembayaran', 'berhasil')
+            ->distinct('id_user')
+            ->count('id_user');
+
+        $totalDonasi = DB::table('donasi')
+            ->where('status_pembayaran', 'berhasil')
+            ->sum('nominal');
+
         return response()->json([
             'status'  => 'success',
             'data'    => [
@@ -98,6 +107,8 @@ class SearchController extends Controller
                     'total'        => $campaigns->total(),
                     'last_page'    => $campaigns->lastPage(),
                 ],
+                'total_donatur' => $totalDonatur,
+                'total_donasi'  => (int) $totalDonasi,
             ],
             'message' => $campaigns->isEmpty() ? 'Tidak ada campaign yang sesuai dengan pencarian' : 'Hasil pencarian campaign berhasil ditampilkan',
             'errors'  => null,
@@ -142,6 +153,10 @@ class SearchController extends Controller
                 'komunitas.status',
                 'wilayah.nama as nama_wilayah'
             )
+            ->selectRaw('(SELECT COUNT(*) FROM follow_komunitas WHERE id_komunitas = komunitas.id_komunitas AND is_active = TRUE) as total_follower')
+            ->selectRaw('(SELECT COALESCE(SUM(dana_terkumpul), 0) FROM campaign WHERE id_komunitas = komunitas.id_komunitas AND status IN (\'aktif\', \'selesai\')) as total_dana_diterima')
+            ->selectRaw('(SELECT COUNT(*) FROM campaign WHERE id_komunitas = komunitas.id_komunitas AND status = \'aktif\') as total_campaign_aktif')
+            ->selectRaw('(SELECT COUNT(*) FROM campaign WHERE id_komunitas = komunitas.id_komunitas AND status = \'selesai\') as total_campaign_selesai')
             ->where('komunitas.status', 'aktif');
 
         if ($keyword) {

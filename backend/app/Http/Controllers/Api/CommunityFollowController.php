@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Notifikasi;
 use Illuminate\Support\Facades\DB; //sementara
 use App\Models\FollowKomunitas;
+use App\Models\Komunitas;
 use Illuminate\Http\Request;
 
 class CommunityFollowController extends Controller

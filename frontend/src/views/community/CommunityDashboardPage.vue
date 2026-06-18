@@ -14,6 +14,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
           <h1 class="text-2xl font-bold text-[#2C2C2C]">Dashboard Komunitas</h1>
           <div class="flex flex-wrap items-center gap-2">
+            <router-link to="/communities/campaigns/history" class="px-4 py-2 bg-white text-[#8B4513] border border-[#8B4513] rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors">Campaign Saya</router-link>
             <router-link to="/communities/campaigns/create" class="px-4 py-2 bg-[#8B4513] text-white rounded-lg text-sm font-medium hover:bg-[#6b3410] transition-colors">+ Campaign Baru</router-link>
             <router-link to="/communities/campaigns/updates/create" class="px-4 py-2 bg-white text-[#8B4513] border border-[#8B4513] rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors">+ Update Campaign</router-link>
             <router-link to="/communities/profile/edit" class="px-4 py-2 border border-stone-200 text-[#2C2C2C] rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors">Edit Profil</router-link>

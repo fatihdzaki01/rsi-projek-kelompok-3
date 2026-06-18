@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\CampaignPublicController;
@@ -20,14 +21,13 @@ use App\Http\Controllers\Api\KategoriCampaignController;
 use App\Http\Controllers\Api\AdminAuditController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\DonationController;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 Route::prefix('auth')->middleware('throttle:30,1')->group(function () {
     Route::post('/register-user', [AuthController::class, 'registerUser']);
     Route::post('/register-komunitas', [AuthController::class, 'registerKomunitas']);
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:5,15');
+        ->middleware('throttle:10,1');
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::post('/resend-verification', [AuthController::class, 'resendVerification'])
@@ -52,6 +52,23 @@ Route::get('/campaigns/{id}/donors', [CampaignPublicController::class, 'donors']
 Route::get('/campaigns/{id}/monitoring', [MonitoringController::class, 'publicCampaign']);
 
 Route::middleware(['throttle:120,1', 'auth:sanctum'])->group(function () {
+    Route::get('/db-test', function () {
+        $totalUsers = DB::table('users')->count();
+        $totalCampaign = DB::table('campaign')->where('status', 'aktif')->count();
+        $totalDonasi = DB::table('donasi')->where('status_pembayaran', 'berhasil')->sum('nominal');
+
+        return response()->json([
+            'status'  => 'success',
+            'data'    => [
+                'total_users'    => (int) $totalUsers,
+                'total_campaign' => (int) $totalCampaign,
+                'total_donasi'   => (int) ($totalDonasi ?? 0),
+            ],
+            'message' => 'DB stats retrieved',
+            'errors'  => null,
+        ]);
+    });
+
     Route::post('/campaigns/{id}/complete', [CampaignPublicController::class, 'complete']);
     Route::post('/communities/{communityId}/follow', [CommunityFollowController::class, 'follow']);
     Route::delete('/communities/{communityId}/follow', [CommunityFollowController::class, 'unfollow']);

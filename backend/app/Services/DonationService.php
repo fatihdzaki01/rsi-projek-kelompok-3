@@ -45,7 +45,7 @@ class DonationService
 
     public function createDonation(int $userId, array $payload): object
     {
-        DB::statement('CALL sp_create_donation(?, ?, ?, ?, ?, ?, ?)', [
+        DB::statement('SELECT sp_create_donation(?, ?, ?, ?, ?, ?, ?)', [
             $userId,
             $payload['id_campaign'],
             $payload['nominal'],

@@ -10,6 +10,11 @@ echo "Creating Laravel framework tables..."
 docker compose exec -T db psql -U "${DB_USERNAME:-berbagive}" -d "${DB_DATABASE:-berbagive}" <<'SQL'
 BEGIN;
 
+-- Fix personal_access_tokens: DDL misses tokenable_type (Sanctum polymorphic)
+ALTER TABLE personal_access_tokens ADD COLUMN IF NOT EXISTS tokenable_type VARCHAR(255);
+UPDATE personal_access_tokens SET tokenable_type = 'App\Models\User' WHERE tokenable_type IS NULL;
+ALTER TABLE personal_access_tokens ALTER COLUMN tokenable_type SET NOT NULL;
+
 -- Cache (Laravel cache driver)
 CREATE TABLE IF NOT EXISTS cache (
     key        VARCHAR(255) PRIMARY KEY,
@@ -98,6 +103,18 @@ CREATE TABLE IF NOT EXISTS laporan_campaign (
     updated_at        TIMESTAMP DEFAULT NOW()
 );
 
+-- Sessions (session driver: database)
+CREATE TABLE IF NOT EXISTS sessions (
+    id            VARCHAR(255) PRIMARY KEY,
+    user_id       BIGINT,
+    ip_address    VARCHAR(45),
+    user_agent    TEXT,
+    payload       TEXT NOT NULL,
+    last_activity INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_last_activity ON sessions (last_activity);
+
 COMMIT;
 SQL
 
@@ -129,18 +146,41 @@ CREATE INDEX IF NOT EXISTS idx_komunitas_search ON komunitas USING GIN (search_v
 COMMIT;
 SQL
 
-echo "Updating sp_create_donation FUNCTION with pesan support..."
+echo "Fixing serial sequences after CSV import..."
 docker compose exec -T db psql -U "${DB_USERNAME:-berbagive}" -d "${DB_DATABASE:-berbagive}" <<'SQL'
-CREATE OR REPLACE FUNCTION sp_create_donation(
-    p_id_user integer,
-    p_id_campaign integer,
-    p_nominal bigint,
-    p_metode_pembayaran character varying,
-    p_is_anonim boolean,
-    p_nama_tampil character varying,
-    p_pesan text DEFAULT NULL
+SELECT setval('users_id_user_seq', COALESCE((SELECT MAX(id_user) FROM users), 1), true);
+SELECT setval('campaign_id_campaign_seq', COALESCE((SELECT MAX(id_campaign) FROM campaign), 1), true);
+SELECT setval('donasi_id_donasi_seq', COALESCE((SELECT MAX(id_donasi) FROM donasi), 1), true);
+SELECT setval('komunitas_id_komunitas_seq', COALESCE((SELECT MAX(id_komunitas) FROM komunitas), 1), true);
+SELECT setval('notifikasi_id_notif_seq', COALESCE((SELECT MAX(id_notif) FROM notifikasi), 1), true);
+SELECT setval('dokumen_komunitas_id_dokumen_seq', COALESCE((SELECT MAX(id_dokumen) FROM dokumen_komunitas), 1), true);
+SELECT setval('pencairan_dana_id_pencairan_seq', COALESCE((SELECT MAX(id_pencairan) FROM pencairan_dana), 1), true);
+SELECT setval('potongan_platform_id_potongan_seq', COALESCE((SELECT MAX(id_potongan) FROM potongan_platform), 1), true);
+SELECT setval('laporan_penggunaan_dana_id_laporan_seq', COALESCE((SELECT MAX(id_laporan) FROM laporan_penggunaan_dana), 1), true);
+SELECT setval('update_campaign_id_update_seq', COALESCE((SELECT MAX(id_update) FROM update_campaign), 1), true);
+SELECT setval('foto_update_id_foto_seq', COALESCE((SELECT MAX(id_foto) FROM foto_update), 1), true);
+SELECT setval('verifikasi_rekening_id_verif_seq', COALESCE((SELECT MAX(id_verif) FROM verifikasi_rekening), 1), true);
+SELECT setval('follow_komunitas_id_follow_seq', COALESCE((SELECT MAX(id_follow) FROM follow_komunitas), 1), true);
+SELECT setval('migrations_id_seq', COALESCE((SELECT MAX(id) FROM migrations), 1), true);
+SQL
+
+echo "Fixing log permissions..."
+docker compose exec -T app chmod -R 775 storage/logs 2>/dev/null || true
+
+echo "Updating sp_create_donation PROCEDURE with pesan support..."
+docker compose exec -T db psql -U "${DB_USERNAME:-berbagive}" -d "${DB_DATABASE:-berbagive}" <<'SQL'
+DROP FUNCTION IF EXISTS sp_create_donation(integer, integer, bigint, character varying, boolean, character varying, text);
+DROP PROCEDURE IF EXISTS sp_create_donation(integer, integer, bigint, character varying, boolean, character varying);
+
+CREATE OR REPLACE PROCEDURE sp_create_donation(
+    IN p_id_user integer,
+    IN p_id_campaign integer,
+    IN p_nominal bigint,
+    IN p_metode_pembayaran character varying,
+    IN p_is_anonim boolean,
+    IN p_nama_tampil character varying,
+    IN p_pesan text DEFAULT NULL
 )
-RETURNS void
 LANGUAGE plpgsql
 AS $$
 DECLARE
@@ -177,15 +217,13 @@ BEGIN
     VALUES (
         p_id_user, p_id_campaign, p_nominal, LOWER(TRIM(p_metode_pembayaran)),
         CASE WHEN p_is_anonim THEN NULL ELSE TRIM(p_nama_tampil) END,
-        p_is_anonim,
-        TRIM(p_pesan),
-        'pending'
+        p_is_anonim, TRIM(p_pesan), 'pending'
     );
 END;
 $$;
 SQL
 
-echo "Marking all migrations as done..."
+echo "Updating sp_create_donation FUNCTION with pesan support..."
 docker compose exec -T db psql -U "${DB_USERNAME:-berbagive}" -d "${DB_DATABASE:-berbagive}" <<'SQL'
 INSERT INTO migrations (migration, batch) VALUES
     ('0001_01_01_000000_create_users_table', 1),

@@ -41,7 +41,7 @@ const routes = [
   { path: '/communities/:id', name: 'CommunityProfile', component: PublicCommunityProfilePage },
   { path: '/search', component: () => import('@/views/search/SearchResultsPage.vue') },
 
-  { path: '/profile', component: () => import('@/views/user/UserProfilePage.vue'), meta: { requiresAuth: true } },
+  { path: '/profile', component: () => import('@/views/user/UserProfilePage.vue'), meta: { requiresAuth: true, role: 'DONATUR' } },
   { path: '/profile/edit', component: () => import('@/views/profile/EditProfilePage.vue'), meta: { requiresAuth: true } },
   { path: '/profile/change-password', component: () => import('@/views/profile/ChangePasswordPage.vue'), meta: { requiresAuth: true } },
   { path: '/donations/history', component: () => import('@/views/donations/DonationHistory.vue'), meta: { requiresAuth: true } },
@@ -70,8 +70,10 @@ const routes = [
 
   // Campaign approval (SUPERADMIN)
   { path: '/campaigns/approval', name: 'CampaignApproval', component: () => import('@/views/campaigns/CampaignApprovalView.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
+  { path: '/dashboard/campaign-approvals', redirect: '/campaigns/approval' },
   { path: '/campaigns/:id/review', name: 'CampaignReview', component: () => import('@/views/campaigns/CampaignDetailView.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
   { path: '/disbursements', name: 'Disbursements', component: () => import('@/views/dashboard/DisbursementView.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
+  { path: '/dashboard/disbursements', redirect: '/disbursements' },
 
   // Error pages
   { path: '/forbidden', name: 'Forbidden', component: () => import('@/views/errors/ForbiddenPage.vue') },

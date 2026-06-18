@@ -1,12 +1,8 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import api from '@/api/axios'
-import { useAuthStore } from '@/stores/auth'
-import AppFooter from '@/components/shared/AppFooter.vue'
-
-const router = useRouter()
-const auth = useAuthStore()
+import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const profile = ref(null)
 const campaigns = ref([])
@@ -14,6 +10,10 @@ const stats = ref({
   total_users: 0,
   total_campaign: 0,
   total_donasi: 0,
+  campaign_aktif: 0,
+  campaign_selesai: 0,
+  campaign_menunggu_review: 0,
+  total_donatur_aktif: 0,
 })
 
 const loading = ref(true)
@@ -24,15 +24,27 @@ const fetchDashboard = async () => {
   errorMessage.value = ''
 
   try {
-    const [profileResponse, campaignResponse, dbResponse] = await Promise.all([
+    const [profileResponse, dashboardResponse] = await Promise.all([
       api.get('/superadmin/profile'),
-      api.get('/superadmin/campaigns/review?per_page=5'),
-      api.get('/db-test'),
+      api.get('/superadmin/dashboard'),
     ])
 
     profile.value = profileResponse.data.data
-    campaigns.value = campaignResponse.data.data.data
-    stats.value = dbResponse.data.data
+    const data = dashboardResponse.data.data
+
+    const summary = data?.summary ?? {}
+    stats.value = {
+      total_users: summary.total_users ?? 0,
+      total_campaign: summary.total_campaign ?? 0,
+      total_donasi: summary.total_nominal_donasi ?? 0,
+      campaign_aktif: summary.campaign_aktif ?? 0,
+      campaign_selesai: summary.campaign_selesai ?? 0,
+      campaign_menunggu_review: summary.campaign_menunggu_review ?? 0,
+      total_donatur_aktif: summary.total_donatur_aktif ?? 0,
+    }
+
+    const recentCampaigns = data?.recent_campaigns ?? []
+    campaigns.value = recentCampaigns.filter(c => c.status === 'menunggu_review')
   } catch (error) {
     errorMessage.value =
       error.response?.data?.message || 'Gagal memuat dashboard.'
@@ -41,132 +53,148 @@ const fetchDashboard = async () => {
   }
 }
 
-const handleLogout = () => {
-  auth.logout()
-  router.push('/login')
-}
-
 onMounted(fetchDashboard)
 </script>
 
 <template>
-  <main class="dashboard-page">
-    <header class="navbar">
-      <div class="brand">BERBAGIVE</div>
-
-      <nav>
-        <RouterLink to="/dashboard" class="active">Dashboard</RouterLink>
-        <RouterLink to="/dashboard/campaign-approvals">Approval</RouterLink>
-        <RouterLink to="/dashboard/disbursements">Pencairan</RouterLink>
-        <a>Laporan</a>
-        <a>Admin Panel</a>
-      </nav>
-
-      <button class="logout-btn" @click="handleLogout">Logout</button>
-    </header>
-
-    <section class="container">
-      <div class="page-title">
-        <div>
-          <h1>Ringkasan Platform</h1>
-          <p>Pantau aktivitas terbaru dan performa platform secara real-time.</p>
-        </div>
-
-        <div v-if="profile" class="user-box">
-          <span>{{ profile.nama_lengkap }}</span>
-          <small>{{ profile.role }}</small>
-        </div>
+  <AdminLayout>
+    <div class="space-y-6">
+      <div>
+        <h1 class="text-xl font-bold text-gray-800">Ringkasan Platform</h1>
+        <p class="text-sm text-gray-500">Pantau aktivitas terbaru dan performa platform secara real-time.</p>
       </div>
 
-      <section v-if="loading" class="card">Memuat data...</section>
+      <div v-if="loading" class="flex items-center justify-center py-12">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B4513]"></div>
+        <span class="ml-3 text-gray-500">Memuat data...</span>
+      </div>
 
-      <section v-else-if="errorMessage" class="card error">
+      <section v-else-if="errorMessage" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
         {{ errorMessage }}
       </section>
 
       <template v-else>
-        <section class="stats-grid">
-          <div class="stat-card">
-            <p>Total User</p>
-            <h2>{{ Number(stats.total_users).toLocaleString('id-ID') }}</h2>
-            <span>Database aktif</span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-stone-200">
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total User</p>
+            <h2 class="text-2xl font-bold text-gray-800 mt-1">{{ Number(stats.total_users).toLocaleString('id-ID') }}</h2>
+            <span class="text-xs text-gray-400">Database aktif</span>
           </div>
 
-          <div class="stat-card">
-            <p>Total Campaign</p>
-            <h2>{{ Number(stats.total_campaign).toLocaleString('id-ID') }}</h2>
-            <span>Semua campaign</span>
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-stone-200">
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total Campaign</p>
+            <h2 class="text-2xl font-bold text-gray-800 mt-1">{{ Number(stats.total_campaign).toLocaleString('id-ID') }}</h2>
+            <span class="text-xs text-gray-400">
+              {{ stats.campaign_aktif }} aktif &bull; {{ stats.campaign_selesai }} selesai &bull; {{ stats.campaign_menunggu_review }} menunggu
+            </span>
           </div>
 
-          <div class="stat-card highlight">
-            <p>Total Transaksi Donasi</p>
-            <h2>{{ Number(stats.total_donasi).toLocaleString('id-ID') }}</h2>
-            <span>Record transaksi donasi</span>
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-stone-200">
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total Transaksi Donasi</p>
+            <h2 class="text-2xl font-bold text-[#8B4513] mt-1">Rp{{ Number(stats.total_donasi).toLocaleString('id-ID') }}</h2>
+            <span class="text-xs text-gray-400">{{ Number(stats.total_donatur_aktif).toLocaleString('id-ID') }} donatur aktif</span>
           </div>
-        </section>
+        </div>
 
-        <section class="content-grid">
-          <div class="card">
-            <div class="card-header">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
               <div>
-                <h2>Perlu Tindakan Segera</h2>
-                <p>Campaign yang menunggu review superadmin.</p>
+                <h2 class="text-sm font-semibold text-gray-800">Perlu Tindakan Segera</h2>
+                <p class="text-xs text-gray-400">Campaign yang menunggu review superadmin.</p>
               </div>
-              <span class="badge">{{ campaigns.length }} data</span>
+              <span class="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-medium">{{ campaigns.length }} data</span>
             </div>
 
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Judul Campaign</th>
-                  <th>Komunitas</th>
-                  <th>Kategori</th>
-                  <th>Target Dana</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
+            <div v-if="campaigns.length === 0" class="p-8 text-center text-gray-400 text-sm">
+              <p>Tidak ada campaign yang menunggu review.</p>
+            </div>
 
-              <tbody>
-                <tr v-for="campaign in campaigns" :key="campaign.id_campaign">
-                  <td>{{ campaign.id_campaign }}</td>
-                  <td>{{ campaign.judul }}</td>
-                  <td>{{ campaign.nama_lembaga }}</td>
-                  <td>{{ campaign.nama_kategori }}</td>
-                  <td>Rp{{ Number(campaign.target_dana).toLocaleString('id-ID') }}</td>
-                  <td>
-                    <span class="status">{{ campaign.status }}</span>
-                  </td>
-                  <td>
-                    <RouterLink
-                      class="detail-link"
-                      :to="`/dashboard/campaigns/${campaign.id_campaign}`"
-                    >
-                      Detail
-                    </RouterLink>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-else class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-stone-50 text-gray-500 text-xs uppercase">
+                  <tr>
+                    <th class="px-5 py-3 text-left font-medium">ID</th>
+                    <th class="px-5 py-3 text-left font-medium">Judul Campaign</th>
+                    <th class="px-5 py-3 text-left font-medium">Komunitas</th>
+                    <th class="px-5 py-3 text-left font-medium">Target Dana</th>
+                    <th class="px-5 py-3 text-left font-medium">Status</th>
+                    <th class="px-5 py-3 text-center font-medium">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-100">
+                  <tr v-for="campaign in campaigns" :key="campaign.id_campaign" class="hover:bg-stone-50 transition-colors">
+                    <td class="px-5 py-3 text-gray-500">#{{ campaign.id_campaign }}</td>
+                    <td class="px-5 py-3 font-medium text-gray-800 max-w-[200px] truncate">{{ campaign.judul }}</td>
+                    <td class="px-5 py-3 text-gray-600">{{ campaign.nama_lembaga }}</td>
+                    <td class="px-5 py-3 text-gray-700">Rp{{ Number(campaign.target_dana).toLocaleString('id-ID') }}</td>
+                    <td class="px-5 py-3">
+                      <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                        {{ campaign.status }}
+                      </span>
+                    </td>
+                    <td class="px-5 py-3 text-center">
+                      <RouterLink
+                        :to="`/campaigns/${campaign.id_campaign}/review`"
+                        class="text-xs text-[#8B4513] hover:text-[#6B3410] font-medium hover:underline"
+                      >
+                        Review
+                      </RouterLink>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <aside class="card profile-card">
-            <h2>Profil Superadmin</h2>
+          <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-5">
+            <h2 class="text-sm font-semibold text-gray-800 mb-4">Profil Superadmin</h2>
 
-            <img
-              v-if="profile?.foto_profil_url"
-              :src="profile.foto_profil_url"
-              alt="Foto profil"
-            />
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-12 h-12 rounded-full bg-[#8B4513]/10 flex items-center justify-center text-[#8B4513] font-bold text-lg">
+                {{ (profile?.nama_lengkap || profile?.username || 'A')[0].toUpperCase() }}
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-800">{{ profile?.nama_lengkap || profile?.username || '-' }}</p>
+                <p class="text-xs text-gray-400">SUPERADMIN</p>
+              </div>
+            </div>
 
-            <p><strong>Nama</strong>{{ profile?.nama_lengkap }}</p>
-            <p><strong>Email</strong>{{ profile?.email }}</p>
-            <p><strong>Status</strong>{{ profile?.is_active ? 'Aktif' : 'Nonaktif' }}</p>
-          </aside>
-        </section>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Email</span>
+                <span class="text-gray-700">{{ profile?.email || '-' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Username</span>
+                <span class="text-gray-700">{{ profile?.username || '-' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Status</span>
+                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  {{ profile?.is_active ? 'Aktif' : 'Nonaktif' }}
+                </span>
+              </div>
+            </div>
+
+            <RouterLink
+              to="/dashboard/profile"
+              class="mt-4 block w-full text-center text-xs py-2 rounded-lg border border-stone-200 text-gray-600 hover:bg-stone-50 transition-colors"
+            >
+              Edit Profil
+            </RouterLink>
+          </div>
+        </div>
       </template>
-    </section>
-   <AppFooter />
-  </main>
+    </div>
+  </AdminLayout>
 </template>
+
+<style scoped>
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

@@ -46,12 +46,25 @@ async function handleSubmit() {
 
     successMessage.value = response.data?.message || 'Link reset password dikirim jika email terdaftar'
 
-    setTimeout(() => {
-      router.push({
-        path: '/reset-password',
-        query: { email: email.value },
-      })
-    }, 1500)
+    // Extract token from reset_url in response
+    const resetUrl = response.data?.data?.reset_url
+    if (resetUrl) {
+      const url = new URL(resetUrl)
+      const token = url.searchParams.get('token')
+      setTimeout(() => {
+        router.push({
+          path: '/reset-password',
+          query: { email: email.value, token: token || '' },
+        })
+      }, 1500)
+    } else {
+      setTimeout(() => {
+        router.push({
+          path: '/reset-password',
+          query: { email: email.value },
+        })
+      }, 1500)
+    }
   } catch (error) {
     const status = error.response?.status
     const errData = error.response?.data?.errors || {}

@@ -8,6 +8,7 @@ use App\Models\Notifikasi;
 use App\Traits\HasImageUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -356,87 +357,91 @@ class SuperadminController extends Controller
 
     public function dashboard(Request $request)
     {
-        $summary = DB::table('v_platform_summary')->first();
+        return Cache::remember('superadmin:dashboard', 30, function () use ($request) {
+            $summary = DB::table('v_platform_summary_mv')->first();
 
-        $campaignStatusBreakdown = DB::table('campaign')
-            ->select('status', DB::raw('COUNT(*) as total'))
-            ->groupBy('status')
-            ->pluck('total', 'status');
+            $campaignStatusBreakdown = DB::table('campaign')
+                ->select('status', DB::raw('COUNT(*) as total'))
+                ->groupBy('status')
+                ->pluck('total', 'status');
 
-        $recentDonations = DB::table('v_donation_transactions')
-            ->where('status_pembayaran', 'berhasil')
-            ->orderByDesc('tanggal_transaksi')
-            ->limit(10)
-            ->get();
+            $recentDonations = DB::table('v_donation_transactions')
+                ->where('status_pembayaran', 'berhasil')
+                ->orderByDesc('tanggal_transaksi')
+                ->limit(10)
+                ->get();
 
-        $recentCampaigns = DB::table('campaign as c')
-            ->join('komunitas as k', 'k.id_komunitas', '=', 'c.id_komunitas')
-            ->select(
-                'c.id_campaign',
-                'c.judul',
-                'c.status',
-                'c.dana_terkumpul',
-                'c.target_dana',
-                'c.created_at',
-                'k.nama_lembaga'
-            )
-            ->orderByDesc('c.created_at')
-            ->limit(10)
-            ->get();
+            $recentCampaigns = DB::table('campaign as c')
+                ->join('komunitas as k', 'k.id_komunitas', '=', 'c.id_komunitas')
+                ->select(
+                    'c.id_campaign',
+                    'c.judul',
+                    'c.status',
+                    'c.dana_terkumpul',
+                    'c.target_dana',
+                    'c.created_at',
+                    'k.nama_lembaga'
+                )
+                ->orderByDesc('c.created_at')
+                ->limit(10)
+                ->get();
 
-        return ApiResponse::success([
-            'summary' => $summary,
-            'campaign_status_breakdown' => $campaignStatusBreakdown,
-            'recent_donations' => $recentDonations,
-            'recent_campaigns' => $recentCampaigns,
-        ], 'Dashboard superadmin berhasil dimuat.');
+            return ApiResponse::success([
+                'summary' => $summary,
+                'campaign_status_breakdown' => $campaignStatusBreakdown,
+                'recent_donations' => $recentDonations,
+                'recent_campaigns' => $recentCampaigns,
+            ], 'Dashboard superadmin berhasil dimuat.');
+        });
     }
 
     public function dashboardStatistics(Request $request)
     {
         $days = min((int) $request->query('days', 30), 365);
 
-        $dailyStats = DB::table('v_platform_analytics')
-            ->orderByDesc('tanggal')
-            ->limit($days)
-            ->get();
+        return Cache::remember("superadmin:stats:days={$days}", 60, function () use ($days) {
+            $dailyStats = DB::table('v_platform_analytics')
+                ->orderByDesc('tanggal')
+                ->limit($days)
+                ->get();
 
-        $topCampaigns = DB::table('campaign as c')
-            ->join('komunitas as k', 'k.id_komunitas', '=', 'c.id_komunitas')
-            ->leftJoin('kategori_campaign as kc', 'kc.id_kategori', '=', 'c.id_kategori')
-            ->select(
-                'c.id_campaign',
-                'c.judul',
-                'c.dana_terkumpul',
-                'c.target_dana',
-                'c.status',
-                'k.nama_lembaga',
-                'kc.nama_kategori'
-            )
-            ->where('c.status', 'aktif')
-            ->orderByDesc('c.dana_terkumpul')
-            ->limit(5)
-            ->get();
+            $topCampaigns = DB::table('campaign as c')
+                ->join('komunitas as k', 'k.id_komunitas', '=', 'c.id_komunitas')
+                ->leftJoin('kategori_campaign as kc', 'kc.id_kategori', '=', 'c.id_kategori')
+                ->select(
+                    'c.id_campaign',
+                    'c.judul',
+                    'c.dana_terkumpul',
+                    'c.target_dana',
+                    'c.status',
+                    'k.nama_lembaga',
+                    'kc.nama_kategori'
+                )
+                ->where('c.status', 'aktif')
+                ->orderByDesc('c.dana_terkumpul')
+                ->limit(5)
+                ->get();
 
-        $topCommunities = DB::table('komunitas as k')
-            ->leftJoin('campaign as c', 'c.id_komunitas', '=', 'k.id_komunitas')
-            ->select(
-                'k.id_komunitas',
-                'k.nama_lembaga',
-                DB::raw('COALESCE(SUM(c.dana_terkumpul), 0) as total_dana'),
-                DB::raw('COUNT(c.id_campaign) as total_campaign')
-            )
-            ->whereNull('k.deleted_at')
-            ->groupBy('k.id_komunitas', 'k.nama_lembaga')
-            ->orderByDesc('total_dana')
-            ->limit(5)
-            ->get();
+            $topCommunities = DB::table('komunitas as k')
+                ->leftJoin('campaign as c', 'c.id_komunitas', '=', 'k.id_komunitas')
+                ->select(
+                    'k.id_komunitas',
+                    'k.nama_lembaga',
+                    DB::raw('COALESCE(SUM(c.dana_terkumpul), 0) as total_dana'),
+                    DB::raw('COUNT(c.id_campaign) as total_campaign')
+                )
+                ->whereNull('k.deleted_at')
+                ->groupBy('k.id_komunitas', 'k.nama_lembaga')
+                ->orderByDesc('total_dana')
+                ->limit(5)
+                ->get();
 
-        return ApiResponse::success([
-            'daily_stats' => $dailyStats,
-            'top_campaigns' => $topCampaigns,
-            'top_communities' => $topCommunities,
-        ], 'Statistik dashboard berhasil dimuat.');
+            return ApiResponse::success([
+                'daily_stats' => $dailyStats,
+                'top_campaigns' => $topCampaigns,
+                'top_communities' => $topCommunities,
+            ], 'Statistik dashboard berhasil dimuat.');
+        });
     }
 
     public function dashboardActivities(Request $request)
@@ -456,31 +461,32 @@ class SuperadminController extends Controller
         $startDate = $request->input('start_date', date('Y-m-01'));
         $endDate = $request->input('end_date', date('Y-m-t'));
 
-        $platformData = DB::table('v_platform_analytics')
-            ->whereBetween('tanggal', [$startDate, $endDate])
-            ->orderBy('tanggal')
-            ->get();
+        return Cache::remember("superadmin:analytics:{$startDate}:{$endDate}", 120, function () use ($startDate, $endDate) {
+            $platformData = DB::table('v_platform_analytics')
+                ->whereBetween('tanggal', [$startDate, $endDate])
+                ->orderBy('tanggal')
+                ->get();
 
-        $financialReport = DB::table('v_financial_report')
-            ->whereBetween('tanggal_transaksi', [$startDate, $endDate . ' 23:59:59'])
-            ->orderBy('tanggal_transaksi')
-            ->limit(500)
-            ->get();
+            $financialReport = DB::table('v_financial_report')
+                ->whereBetween('tanggal_transaksi', [$startDate, $endDate . ' 23:59:59'])
+                ->orderBy('tanggal_transaksi')
+                ->limit(500)
+                ->get();
 
-        $financialSummary = DB::table('v_financial_report')
-            ->whereBetween('tanggal_transaksi', [$startDate, $endDate . ' 23:59:59'])
-            ->select(
-                DB::raw("COALESCE(SUM(nominal_donasi), 0) as total_donasi"),
-                DB::raw("COALESCE(SUM(nominal_potongan_platform), 0) as total_potongan"),
-                DB::raw("COALESCE(SUM(nominal_pencairan), 0) as total_pencairan"),
-                DB::raw("COUNT(id_donasi) as jumlah_donasi"),
-                DB::raw("COUNT(id_pencairan) FILTER (WHERE id_pencairan IS NOT NULL) as jumlah_pencairan")
-            )
-            ->first();
+            $financialSummary = DB::table('v_financial_report')
+                ->whereBetween('tanggal_transaksi', [$startDate, $endDate . ' 23:59:59'])
+                ->select(
+                    DB::raw("COALESCE(SUM(nominal_donasi), 0) as total_donasi"),
+                    DB::raw("COALESCE(SUM(nominal_potongan_platform), 0) as total_potongan"),
+                    DB::raw("COALESCE(SUM(nominal_pencairan), 0) as total_pencairan"),
+                    DB::raw("COUNT(id_donasi) as jumlah_donasi"),
+                    DB::raw("COUNT(id_pencairan) FILTER (WHERE id_pencairan IS NOT NULL) as jumlah_pencairan")
+                )
+                ->first();
 
-        $saldoAkhir = DB::selectOne('SELECT fn_hitung_saldo_platform(?, ?) as saldo_akhir', [$startDate, $endDate]);
+            $saldoAkhir = DB::selectOne('SELECT fn_hitung_saldo_platform(?, ?) as saldo_akhir', [$startDate, $endDate]);
 
-        $totalCampaign = DB::table('campaign')->count();
+            $totalCampaign = DB::table('campaign')->count();
         $successfulCampaigns = DB::table('campaign')
             ->where('status', 'selesai')
             ->whereColumn('dana_terkumpul', '>=', 'target_dana')
@@ -501,6 +507,7 @@ class SuperadminController extends Controller
             'campaign_success_rate' => $totalCampaign > 0 ? round(($successfulCampaigns / $totalCampaign) * 100, 2) : 0,
             'category_distribution' => $kategoriDistribution,
         ], 'Analitik platform berhasil dimuat.');
+        });
     }
 
     // ========== KELOLA DONATUR ==========
@@ -909,6 +916,10 @@ class SuperadminController extends Controller
                 'direview_oleh' => $request->user()->id_user,
                 'updated_at' => now(),
             ]);
+
+        DB::table('users')
+            ->where('id_user', $komunitas->id_user)
+            ->update(['is_verified' => true]);
 
         return ApiResponse::success(null, 'Pendaftaran komunitas berhasil disetujui.');
     }

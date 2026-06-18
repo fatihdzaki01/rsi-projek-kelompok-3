@@ -22,7 +22,7 @@ class KomunitasProfilController extends Controller
     {
         $cacheKey = "community:profile:{$id}";
 
-        $data = Cache::remember($cacheKey, 600, function () use ($request, $id) {
+        $cached = Cache::remember($cacheKey, 600, function () use ($id) {
             $komunitas = Komunitas::where('id_komunitas', $id)
                 ->where('status', Komunitas::STATUS_AKTIF)
                 ->first();
@@ -49,16 +49,6 @@ class KomunitasProfilController extends Controller
 
             $totalDanaDiterima = (int) Campaign::where('id_komunitas', $id)->sum('dana_terkumpul');
 
-            $isFollowing = false;
-            $user = $request->user();
-            if ($user) {
-                $follow = FollowKomunitas::where('id_user', $user->id_user ?? $user->id)
-                    ->where('id_komunitas', $id)
-                    ->where('is_active', true)
-                    ->first();
-                $isFollowing = $follow !== null;
-            }
-
             return [
                 'id_komunitas'            => $komunitas->id_komunitas,
                 'nama_lembaga'            => $komunitas->nama_lembaga,
@@ -76,15 +66,26 @@ class KomunitasProfilController extends Controller
                 'total_campaign_selesai'  => $campaignSelesaiCount,
                 'daftar_campaign_aktif'   => $campaignAktif,
                 'daftar_campaign_selesai' => $campaignSelesaiList,
-                'is_following'            => $isFollowing,
             ];
         });
 
-        if ($data === null) {
+        if ($cached === null) {
             return ApiResponse::error('Komunitas tidak tersedia', null, 404);
         }
 
-        return ApiResponse::success($data);
+        // Compute is_following per-request (cannot be cached)
+        $isFollowing = false;
+        $user = $request->user();
+        if ($user) {
+            $follow = FollowKomunitas::where('id_user', $user->id_user ?? $user->id)
+                ->where('id_komunitas', $id)
+                ->where('is_active', true)
+                ->first();
+            $isFollowing = $follow !== null;
+        }
+        $cached['is_following'] = $isFollowing;
+
+        return ApiResponse::success($cached);
     }
 
     /**

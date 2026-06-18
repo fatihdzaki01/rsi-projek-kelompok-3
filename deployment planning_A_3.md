@@ -10,12 +10,12 @@ Rekayasa Sistem Informasi – Aplikasi Web Client-Server
 | Nama Proyek | Berbagive |
 | :---- | :---- |
 | **Versi Rilis** | v1.0.0 |
-| **Tanggal Rencana Deployment** | \[15 / 06 / 2026\] |
-| **Server Target (Web)** | \[IP / Hostname Server Web Production\] |
-| **Server Target (DB)** | \[IP / Hostname Server Database Production\] |
+| **Tanggal Rencana Deployment** | \[17 / 06 / 2026\] |
+| **Server Target (Web)** | [https://hospital-extras-explicit-active.trycloudflare.com](https://hospital-extras-explicit-active.trycloudflare.com)  |
+| **Server Target (DB)** | [https://hospital-extras-explicit-active.trycloudflare.com/login](https://hospital-extras-explicit-active.trycloudflare.com/login)  |
 | **Mata Kuliah** | Rekayasa Sistem Informasi |
 | **Dosen Pengampu** | Bambang Widoyono, S.T., M.T.I. |
-| **Status Dokumen** | Draft |
+| **Status Dokumen** | Final |
 
 | NIM | Nama | PIC konten |
 | :---- | :---- | :---- |
@@ -34,7 +34,7 @@ Dokumen ini merupakan panduan standar deployment untuk aplikasi berbasis web cli
 
 Perencanaan yang terstruktur, mencakup persiapan environment, pemetaan folder sumber dan tujuan, langkah konfigurasi, pengujian dasar, serta rencana mitigasi Risiko sangat diperlukan agar proses deployment berlangsung terkendali dan risiko gangguan layanan dapat diminimalkan. 
 
-Aplikasi yang akan dilakukan deployment yaitu Berbagive, Berbagive sendiri adalah sistem informasi penyaluran dan pengelolaan bantuan sosial berbasis komunitas yang dikembangkan dalam bentuk aplikasi web. Berbagive didesain untuk memfasilitasi proses penggalang dana dengan masyarakat umum sebagai donatur. Sistem ini tidak hanya menyediakan fitur donasi, tetapi juga mendukung proses pengajuan campaign, verifikasi komunitas, pengajuan pencairan dana, monitoring penggunaan dana, notifikasi, dashboard komunitas, dashboard superadmin, serta pengelolaan data oleh superadmin.
+Aplikasi yang akan dilakukan deployment adalah Berbagive, sebuah sistem informasi penyaluran dan pengelolaan bantuan sosial berbasis komunitas yang dikembangkan dalam bentuk aplikasi web. Berbagive didesain untuk memfasilitasi proses penggalang dana dengan masyarakat umum sebagai donatur. Sistem ini tidak hanya menyediakan fitur donasi, tetapi juga mendukung proses pengajuan campaign, verifikasi komunitas, pengajuan pencairan dana, monitoring penggunaan dana, notifikasi, dashboard komunitas, dashboard superadmin, serta pengelolaan data oleh superadmin.
 
 Berdasarkan ruang lingkup pada FSD, Berbagive dikembangkan untuk menjawab kebutuhan transparansi dan akuntabilitas dalam pengelolaan dana sosial. Sistem ini mempunyai mekanisme verifikasi legalitas komunitas, pengajuan pencairan dana bertahap yang disertai laporan penggunaan dana, serta fitur monitoring campaign yang menampilkan riwayat dana masuk dan dana keluar. Oleh karena itu, proses deployment Berbagive perlu direncanakan secara sistematis agar aplikasi dapat berjalan secara stabil pada server production, mendukung akses pengguna sesuai peran, menjaga keamanan data, serta memastikan fitur utama aplikasi dapat digunakan dengan baik setelah go-live. 
 
@@ -50,15 +50,9 @@ Berdasarkan ruang lingkup pada FSD, Berbagive dikembangkan untuk menjawab kebutu
 
 * Menetapkan prosedur smoke test untuk verifikasi fungsionalitas pasca-deployment.
 
-* Menyediakan Backup-Recovery Plan (server crash) dan Fallback Plan (maintenance terencana).
-
-* Menyediakan Fallback plan untuk mendukung proses pemulihan jika terjadi kendala selama maintenance atau deployment terencana.
-
 * Memastikan seluruh komponen utama aplikasi Berbagive, meliputi frontend, backend API, database, konfigurasi environment, storage file, dan layanan pendukung lainnya telah siap digunakan pada lingkungan production. 
 
 * Menjadi pedoman bagi tim pengembang dalam melakukan deployment aplikasi Berbagive secara terstruktur, terdokumentasi, dan dapat diverifikasi melalui checklist serta indikator keberhasilan pada setiap tahap. 
-
-* **\[Penjelasan isi\]**
 
 ## **1.3 Ruang Lingkup**
 
@@ -66,7 +60,7 @@ Dokumen ini mencakup proses deployment aplikasi Berbagive, yaitu sistem informas
 
 Ruang lingkup deployment mencakup seluruh komponen utama aplikasi Berbagive, yaitu frontend, backend, database, konfigurasi environment, serta file dan komponen pendukung yang dibutuhkan agar aplikasi dapat berjalan pada server production. Sistem Berbagive dikembangkan sebagai aplikasi berbasis web dengan Vue pada sisi frontend dan Laravel sebagai backend. Oleh karena itu, proses deployment perlu memperhatikan kesiapan source code, dependency aplikasi, konfigurasi database, pengaturan file environment, serta pengamanan akses menggunakan protokol HTTPS.
 
-Secara arsitektural, deployment Berbagive dirancang menggunakan arsitektur web client-server dengan pemisahan komponen frontend, backend API, dan database. Bentuk arsitektur yang diadopsi mengarah pada three-tier architecture, yaitu presentation layer pada frontend berbasis Vue, application layer pada backend berbasis Laravel, dan data layer pada database. Deployment production direncanakan menggunakan dua server utama, yaitu Web/Application Server untuk menjalankan frontend dan backend aplikasi, serta Database Server untuk menyimpan dan mengelola data utama sistem. Sistem operasi server mengikuti ketentuan pada template deployment, yaitu **Ubuntu Server 22.04 LTS**, atau dapat disesuaikan kembali dengan environment production yang digunakan oleh tim.
+Secara arsitektural, deployment Berbagive menggunakan pendekatan containerized dengan Docker. Komponen dipisahkan dalam container terpisah: Nginx sebagai web server/reverse proxy (presentation layer), PHP-FPM Laravel sebagai backend API (application layer), dan PostgreSQL sebagai database (data layer). Seluruh container berjalan pada satu mesin dengan sistem operasi Ubuntu 22.04 LTS. Akses publik ke aplikasi menggunakan tailscale Tunnel yang menyediakan HTTPS otomatis tanpa perlu konfigurasi sertifikat SSL manual. File upload pengguna (foto profil, dokumen legalitas, bukti campaign) disimpan menggunakan MinIO (S3-compatible object storage) dalam container terpisah.
 
 Berdasarkan ruang lingkup sistem, aplikasi Berbagive mencakup fitur utama seperti autentikasi, manajemen profil, donasi, campaign, pencairan dana, monitoring, notifikasi, dashboard komunitas, dashboard superadmin, serta pengelolaan dan verifikasi komunitas. Sistem juga mendukung proses bisnis utama berupa pendaftaran komunitas, pengajuan dan review campaign, donasi online, pencairan dana, monitoring aliran dana, dan moderasi platform.
 
@@ -74,23 +68,21 @@ Dokumen deployment ini berfokus pada tahapan teknis untuk menyiapkan aplikasi pa
 
 Dokumen ini tidak membahas pengembangan fitur baru, aplikasi mobile native, maupun integrasi sistem eksternal di luar kebutuhan deployment. Integrasi payment gateway hanya dibahas pada aspek konfigurasi environment yang diperlukan agar fitur donasi dapat berfungsi sesuai rancangan sistem.
 
-**\[Penjelasan ruanglingkup singkat, jumlah server, bentuk architektur yg diadopsi, OS\]**
-
 # **BAB 2 – ENVIRONMENT SPECIFICATIONS READINESS**
 
 Seluruh komponen berikut harus diverifikasi SEBELUM deployment dimulai. Centang kolom Status apabila sudah terpenuhi. Kosongkan atau beri catatan apabila belum.
 
 ## **2.1 Hardware Requirements — Web / Application Server**
 
-Server yang menjalankan Nginx (reverse proxy \+ static files), Node.js backend, Redis, PM2, dan Certbot.
+Server yang menjalankan seluruh layanan dalam container Docker: Nginx (reverse proxy \+ static SPA), PHP-FPM Laravel (backend API), PostgreSQL (database), Redis (cache), MinIO (object storage), Queue Worker, Scheduler, dan Cloudflared (tunnel HTTPS).
 
 | No. | Komponen | Spesifikasi Direkomendasikan | Spesifikasi Minimum | Status |
 | :---: | ----- | ----- | ----- | ----- |
 | 1 | Processor (CPU) | 8 core @ 2.9 GHz | 2 core @ 2.0 GHz | \[ \] Ready |
-| 2 | Memory (RAM) | 8 GB DDR4 | 4 GB DDR4 | \[ \] Ready |
-| 3 | Storage (Disk) | 256 GB SSD | 20 GB SSD NVMe | \[ \] Ready |
-| 4 | Operating System | Ubuntu Server 22.04 LTS / Windows 11 64-bit | Ubuntu Server 22.04 LTS / windows 10 64-bit | \[ \] Ready |
-| 5 | IP Address | IP lokal lab | IP Publik Statis \+ reverse DNS | \[ \] Ready |
+| 2 | Memory (RAM) | 8 GB DDR4 | 8 GB DDR4 | \[ \] Ready |
+| 3 | Storage (Disk) | 256 GB SSD | 40 GB SSD NVMe | \[ \] Ready |
+| 4 | Operating System | Ubuntu Server 22.04 LTS  | Ubuntu Server 22.04 LTS  | \[ \] Ready |
+| 5 | IP Address | IP lokal lab / Cloudflare Tunnel (akses publik melalui trycloudflare.com) | IP Publik Statis \+ reverse DNS | \[ \] Ready |
 | 6 | Bandwidth (Internet) | Jaringan lokal lab  | 100 Mbps dedicated | \[ \] Ready |
 | 7 | Server Uptime SLA | 99% / bulan | 99.9% / bulan | \[ \] Ready |
 | 8 | Hostname |  |  | \[ \] Ready |
@@ -108,22 +100,23 @@ Software berikut harus terinstal dan berjalan normal di server yang sesuai sebel
 | No | Nama Software | Versi | Server | Peruntukan / Role | Wajib | Status | Verifikasi |
 | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
 | 1 | Nginx | 1.24.x+ | Web Server | Reverse proxy ke PHP-FPM \+ server Vue build | Wajib  | Ready  |  |
-| 2 | PHP | 8.2.x+ | Web Server | Runtime laravel 12 | Wajib  | Ready  |  |
-| 3 | PHP-FPM | 8.2.x+ | Web Server | FastCGI Process manager untuk PHP | Wajib  | Ready  |  |
+| 2 | PHP | 8.4.x+ | Web Server | Runtime laravel 12 | Wajib  | Ready  |  |
+| 3 | PHP-FPM | 8.4.x+ | Web Server | FastCGI Process manager untuk PHP | Wajib  | Ready  |  |
 | 4 | Composer | 2.x+ | Web Server | Package Manager PHP / Laravel | Wajib  | Ready  |  |
-| 5 | [Node.js](http://Node.js) \+ npm | 20 LTS/ 10.x+ | Web Server | Build asset vue 3 (VIte) | Wajib  | Ready  |  |
+| 5 | [Node.js](http://Node.js) \+ npm | 20 LTS | Web Server | Build asset vue 3 (VIte) | Wajib  | Ready  |  |
 | 6 | Redis | 7.0.x | Web Server | Cache \+ session Laravel | opsional | Ready  |  |
 | 7 | Git | 2.40.x | Web Server | Pull source code dari repository, CI/CD | Wajib  | Ready  |  |
-| 8 | UFW |  | Web Server | Firewall OS | Wajib  | Ready  |  |
-| 9 | cron |  | Web Server | Scheduler Laravel | Wajib  | Ready  |  |
-| 10 | PostgreSQL | 15.x.+ | DB Server | Database Utama | Wajib  | Ready  |  |
-| 11 | pg\_dump | 15.x.+ | DB Server | Database Backup | Wajib  | Ready  |  |
+| 8 | UFW |  | Web Server | Firewall OS | opsional  | Ready  |  |
+| 9 | cron |  | Web Server | Scheduler Laravel | Opsional (pakai scheduler container) | Ready  |  |
+| 10 | PostgreSQL | 16.x.+ | DB Server | Database Utama | Wajib  | Ready  |  |
+| 11 | pg\_dump | 16.x.+ | DB Server | Database Backup | Wajib  | Ready  |  |
 | 12 | Certbot | \>= 2.x | Web Server | SSL/TLS (jika domain publik) | opsional | Ready  |  |
 | 13 | Docker | 24.x.+ | Web/DB | Kontainerisasi | Wajib  | Ready  |  |
-
-Keterangan: (\*) Wajib apabila backend menggunakan framework Node.js/Express. Sesuaikan dengan stack teknologi yang digunakan pada proyek.
-
-**Bagian Wajib ditentukan sendiri.**
+| 14 | MInio | latest | Web/db | Object storage S3-compatible | Wajib  | Ready  |  |
+| 15 | tailscale | latest | Web Server | Tunnel HTTPS publik | Wajib  | Ready  |  |
+| 16 | Docker Compose | v2.x | Web/db | Orchestration multi-container | Wajib  | Ready  |  |
+| 17 | Laravel Queue Worker  |  | Web Server | Proses background job (email, notifikasi) | Wajib  | Ready  |  |
+| 18  | Laravel Scheduler |  | Web Server | Task terjadwal (cron di container) | Wajib  | Ready  |  |
 
 ## **2.4 Network & Firewall Requirements**
 
@@ -135,17 +128,16 @@ Verifikasi jaringan: pastikan Web Server TIDAK bisa diakses langsung ke port DB 
 
 | No. | Port | Protokol | Nama Service | Jenis Akses | Keterangan & Third Party |
 | :---: | ----- | ----- | ----- | ----- | ----- |
-| 1 | 80 | TCP | HTTP/NGinx | Public | Serve Vue 3 static files & reverse proxy ke Laravel. Lab lokal tidak pakai SSL, gunakan HTTP |
-| 2 | 8000 | TCP | Laravel App | Localhost | Port development Laravel. Hanya Nginx yang boleh akses via proxy\_pass |
-| 3 | 6379 | TCP | Redis | Localhost | Cache & session Laravel. Bind ke 127.0.0.1 |
-| 4 | 5434 | TCP | PostgreSQL | Localhost | Database utama. Hanya Laravel yang boleh akses, tidak dibuka ke publik |
+| 1 | 80 | TCP | HTTP/NGinx | Public | SPA statis \+ reverse proxy ke PHP-FPM. Pakai cloudflared, HTTPS auto |
+| 2 | 22 | TCP | SSH | Restricted (admin only) | Akses remote server |
+| 3 | \- | \- | PostgreSQL (5432), Redis (6379), MinIO (9000/9001), PHP-FPM (9000) | Internal Docker | Tidak ada port yang di-expose ke host. Hanya bisa diakses antar-container via Docker bridge network berbagive-net |
 
-### **2.4.2 Database Server \-  Aturan Firewall (SESUAIKAN)**
+### **2.4.2 Database Server \-  Aturan Firewall** 
 
 | No. | Port | Protokol | Nama Service | Jenis Akses | Bandwidth Min. | Keterangan |
 | :---: | ----- | ----- | ----- | ----- | ----- | ----- |
-| 1 | 22 | TCP | SSH | Restricted — whitelist IP admin saja | 1 Mbps | Akses remote ke PC lab. Gunakan SSH key jika memungkinkan |
-| 2 | 5434 | TCP | PostgreSQL | Localhost  | N/A | Menggantikan MySQL port 3306\. Single server, jadi hanya diakses dari localhost — tidak perlu dibuka ke jaringan |
+| 1 | 22 | TCP | SSH | Restricted | 1 Mbps | Akses remote admin |
+| 2 | 5432 | TCP | PostgreSQL | Internal Docker  | N/A | Single server, hanya diakses container app via Docker network |
 
 ## **2.5 Isi Folder Source — Development / Staging Environment**
 
@@ -155,18 +147,18 @@ Catatan pengisian: PATH FOLDER di bawah adalah contoh. Sesuaikan dengan struktur
 
 | No. | Kategori | Nama Item / File | Deskripsi & Peruntukan | Path Folder (Source Dev) | Status |
 | :---: | ----- | ----- | ----- | ----- | ----- |
-| 1 | Kode (Source) | app/ (backend) | Source code backend Laravel 12: controller, model, service, route API & web  | \[path/ke/repo\]/app/, \[path/ke/repo\]/routes/ | \[ \] Ready |
-| 2 | Kode (Source) | resources/  • public/build/ (frontend) | Source Vue 3  • hasil build Vite. Jalankan npm run build dulu | \[path/ke/repo\]/resources/, \[path/ke/repo\]/public/build/ | \[ \] Ready |
-| 3 | Kode (Source) | .env.example | Template environment variables, dasar pembuatan .env production | \[path/ke/repo\]/.env.example | \[ \] Ready |
-| 4 | Kode (Source) | ecosystem.config.js | docker-compose.yml  • Dockerfile | \[path/ke/repo\]/docker-compose.yml, \[path/ke/repo\]/Dockerfile | \[ \] Ready |
-| 5 | Kode (Source) | composer.json/composer.lock  • package.json/package-lock.json | Dependensi PHP (Composer) & JS (npm untuk build Vite), instalasi deterministik  | \[path/ke/repo\]/composer.json, \[path/ke/repo\]/package.json | \[ \] Ready |
-| 6 | Database (DB) | database/migrations/ | Migrasi Laravel \= struktur tabel PostgreSQL (pengganti schema\_migration.sql) | \[path/ke/repo\]/database/migrations/ | \[ \] Ready |
-| 7 | Database (DB) | database/seeders/ | Data awal: role, kategori campaign, akun superadmin (pengganti seed\_data.sql) | \[path/ke/repo\]/database/seeders/ | \[ \] Ready / \[ \] N/A |
-| 8 | Software/Config | docker/nginx/\*.conf | Konfigurasi Nginx: reverse proxy ke PHP-FPM \+ serve Vue build  | \[path/ke/repo\]/docker/nginx/ | \[ \] Ready |
-| 9 | Software / Config | certbot-params.txt (opsional) | \[path/ke/repo\]/config/ | \[path/ke/repo\]/docker/  | \[ \] Ready / \[ \] N/A |
-| 10 | File Lain | storage/app/public/  | File upload pengguna (bukti donasi, dokumen verifikasi komunitas)  | \[path/ke/repo\]/storage/app/public/  | \[ \] Ready / \[ \] N/A |
-| 11 | File Lain | N/A | Tidak dipakai — Berbagive memakai Nginx, bukan Apache  | \- | \[ \] Ready / \[ \] N/A |
-| 12 | File Lain | crontab-backup.txt | Daftar cron job backup otomatis (pg\_dump  • arsip volume) | \[path/ke/repo\]/docker/ | \[ \] Ready |
+| 1 | Kode (Source) | backend/app/, backend/routes/, backend/config/ | Source Laravel 12: controller, model, service, middleware, route API | backend/ | \[ \] Ready |
+| 2 | Kode (Source) | frontend/src/, frontend/dist/ | Source Vue 3 \+ hasil build Vite | frontend/ | \[ \] Ready |
+| 3 | Kode (Source) | .env.docker, frontend/.env.production | Template environment variables, dasar pembuatan .env production | ./.env.docker, frontend/.env.production | \[ \] Ready |
+| 4 | Kode (Source) | docker-compose.yml, Dockerfile, .dockerignore | Orchestrasi container, build image, ignore list | ./.dockerignore, ./Dockerfile, ./docker-compose.yml | \[ \] Ready |
+| 5 | Kode (Source) | backend/composer.json / composer.lock, frontend/package.json / package-lock.json | Dependensi PHP (Composer) & JS (npm untuk build Vite), instalasi deterministik | backend/composer.json, frontend/package.json | \[ \] Ready |
+| 6 | Database (DB) | backend/database/migrations/ | Migrasi Laravel — struktur tabel PostgreSQL | backend/database/migrations/ | \[ \] Ready |
+| 7 | Database (DB) | backend/database/seeders/ | Data awal: role, kategori campaign, akun superadmin | backend/database/seeders/ | \[ \] Ready / \[ \] N/A |
+| 8 | Software/Config | nginx/default.conf | Konfigurasi Nginx: reverse proxy ke PHP-FPM \+ serve Vue build \+ proxy storage ke MinIO | nginx/default.conf | \[ \] Ready |
+| 9 | Software/Config | ddl/\*.sql (6 file), insert.sql | DDL mentah PostgreSQL (skema inti \+ constraint \+ view \+ SP \+ function \+ index) \+ data CSV | ddl/, insert.sql | \[ \] Ready |
+| 10 | Software/Config | deploy.sh, finalize.sh | Skrip otomatis deployment \+ finalisasi post-DDL | ./deploy.sh, ./finalize.sh | \[ \] Ready |
+| 11 | File Lain | backend/storage/app/public/ | File upload pengguna di environment development (runtime) | backend/storage/app/public/ | \[ \] Ready / \[ \] N/A |
+| 12 | File Lain | backend/routes/console.php | Definisi scheduled tasks (close campaign, archive notif, backup DB) | backend/routes/console.php | \[ \] Ready |
 
 ## **2.6 Isi Folder Target — Production Server**
 
@@ -176,19 +168,19 @@ Catatan: Kolom 'Server Name' diisi dengan nama/hostname server production yang r
 
 | . | Kategori | Nama Item | Peruntukan di Production | Path Folder (Target Production) | Server Name |
 | :---: | ----- | ----- | ----- | ----- | ----- |
-| 1 | Kode (Source) | app/ (backend) | Direktori utama source code backend yang dijalankan oleh PM2. | /var/www/\[nama-app\]/ | \[app-server\] |
-| 2 | Kode (Source) | public/ atau dist/ | File frontend statis yang dilayani langsung oleh Nginx. | /var/www/\[nama-app\]/public/ | \[app-server\] |
-| 3 | Kode (Source) | .env | File environment variables production (dibuat dari .env.example, TIDAK di-commit ke Git). | /var/www/\[nama-app\]/.env | \[app-server\] |
-| 4 | Kode (Source) | ecosystem.config.js | Konfigurasi PM2 yang digunakan untuk perintah pm2 start. | /var/www/\[nama-app\]/ecosystem.config.js | \[app-server\] |
-| 5 | Kode (Source) | node\_modules/ | Dependensi Node.js hasil npm install di server (bukan di-copy dari source). | /var/www/\[nama-app\]/node\_modules/ | \[app-server\] |
-| 6 | Database (DB) | nama\_db\_prod (MySQL) | Database production. Schema dibuat dari schema\_migration.sql, data dari seed jika perlu. | DB: \[nama\_db\_prod\] di MySQL | \[db-server\] |
-| 7 | Database (DB) | Backup DB rutin | File backup mysqldump harian yang disimpan di server dan/atau remote storage. | /backup/db/\[YYYY-MM-DD\]/ | \[db-server\] |
-| 8 | Software / Config | app.conf (Nginx) | File konfigurasi virtual host Nginx untuk aplikasi ini. | /etc/nginx/sites-available/\[nama-app\] | \[app-server\] |
-| 9 | Software / Config | Symlink Nginx | Symlink aktif yang menghubungkan sites-available ke sites-enabled. | /etc/nginx/sites-enabled/\[nama-app\] | \[app-server\] |
-| 10 | Software / Config | Sertifikat SSL | Sertifikat SSL dan private key yang dikelola oleh Certbot. | /etc/letsencrypt/live/\[domain.com\]/ | \[app-server\] |
-| 11 | File Lain | uploads/ atau storage/ | Direktori penyimpanan file yang di-upload pengguna. Permission: www-data. | /var/www/\[nama-app\]/storage/uploads/ | \[app-server\] |
-| 12 | File Lain | Cron job backup | Entry cron yang diregistrasikan menggunakan crontab \-e untuk backup otomatis. | crontab (root atau deploy user) | \[db-server / app-server\] |
-| 13 | File Lain | Backup App Files | Backup file aplikasi sebelum setiap deployment. | /backup/app/\[versi\]/ | \[app-server\] |
+| 1 | Kode (Source) | backend/ | Source Laravel 12 di-copy ke image saat docker compose build — berada di /var/www dalam container berbagive-app | Layer image Docker (COPY di Dockerfile) → /var/www (di container app) | Docker host |
+| 2 | Kode (Source) | frontend/dist/ | File frontend statis hasil build Vite — dilayani langsung oleh Nginx via bind mount | ./frontend/dist:/var/www/frontend-dist (bind mount ke container nginx) | Docker host |
+| 3 | Kode (Source) | .env | File environment variables production (dibuat dari .env.docker, TIDAK di-commit ke Git) | ./.env (root proyek, dibaca oleh docker-compose) | Docker host |
+| 4 | Kode (Source) | docker-compose.yml | Definisi 7 container: app, nginx, db, redis, minio, queue, scheduler | ./docker-compose.yml | Docker host |
+| 5 | Kode (Source) | frontend/node\_modules/ | Dependensi Node.js hasil npm ci saat build (di host, bukan di server) | ./frontend/node\_modules/ (host, temporary) | Docker host |
+| 6 | Database (DB) | berbagive (PostgreSQL) | Database production. Data tersimpan di volume Docker pgdata | Volume Docker: pgdata:/var/lib/postgresql/data | Docker host |
+| 7 | Database (DB) | Backup DB rutin | File backup pg\_dump harian via cron host | /backup/db/\[YYYY-MM-DD\]/ | Docker host |
+| 8 | Software/Config | nginx/default.conf | Konfigurasi virtual host Nginx untuk reverse proxy \+ serve frontend | Bind mount: ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro | Docker host |
+| 9 | Software/Config | MinIO bucket | Object storage S3-compatible untuk file upload (foto profil, dokumen, bukti campaign) | Volume Docker: minio-data:/data — bucket: berbagive (public) | Docker host |
+| 10 | Software/Config | Tailscale tunnel | Akses HTTPS publik — diatur di host, bukan di container | Host: sudo tailscale funnel \--bg http://localhost:\[HTTP\_PORT\] | Docker host |
+| 11 | File Lain | backend/storage/app/public/ | Symlink storage untuk akses file via Nginx (development fallback) | Bind mount: ./backend/storage/app/public:/var/www/storage/app/public:ro (ke container nginx) | Docker host |
+| 12 | File Lain | Scheduler tasks | Task terjadwal berjalan di container berbagive-scheduler (loop schedule:run tiap 60 detik) — definisi task di backend/routes/console.php | Container berbagive-scheduler — tidak perlu cron host | Docker host |
+| 13 | File Lain | Backup App Files | Backup file aplikasi dan .env sebelum deployment | /backup/app/\[versi\]/ | Docker host |
 
 # **BAB 3 – LANGKAH DEPLOYMENT (STEP BY STEP)**
 
@@ -220,21 +212,21 @@ Seluruh pengujian dilakukan dari jaringan EKSTERNAL (bukan dari server) mengguna
 
 | No. | Fungsi yang Diuji | Parameter Pengujian | Langkah / Cara Uji | Indikator Keberhasilan |
 | :---: | ----- | ----- | ----- | ----- |
-| 1 | Akses URL Production | URL: https://\[domain.com\] | Buka https://\[domain.com\] di Chrome/Firefox dari jaringan eksternal. | HTTP status 200\. Halaman utama tampil normal \< 3 detik. Gembok SSL hijau aktif di address bar. Tidak ada pesan error SSL/TLS. |
-| 2 | Redirect HTTP → HTTPS | URL: http://\[domain.com\] (tanpa S) | Buka http://\[domain.com\] di browser. Amati apakah otomatis diarahkan ke HTTPS. | Browser redirect ke https://\[domain.com\] dengan status 301 Moved Permanently. URL di address bar berubah menjadi https://. |
-| 3 | Halaman Login / Autentikasi | Endpoint: /login Akun uji: \[test\_user\] / \[test\_password\] | Akses /login. Masukkan kredensial valid. Klik login. | Login berhasil, diarahkan ke dashboard. Session/token JWT tersimpan. Tidak ada pesan 'Internal Server Error'. |
-| 4 | Health Check API | GET https://\[domain.com\]/api/health | Jalankan: curl \-X GET https://\[domain.com\]/api/health | HTTP 200\. Response: {"status":"ok","database":"connected"}. Response time \< 500ms. |
-| 5 | Koneksi Database (List Campaign) | GET /api/campaigns atau halaman daftar campaign  | Buka halaman yang memuat daftar campaign dari DB.  | Data campaign tampil benar dari PostgreSQL. Tidak ada error "DB connection failed" / 500\.  |
-| 6 | Buat & Tampil Campaign  | Login sebagai komunitas terverifikasi  | Buat campaign baru → cek tampil di daftar publik.  | Campaign tersimpan & muncul di halaman publik dengan data lengkap (judul, target, deskripsi).  |
-| 7 | Alur Donasi | Akun donatur, nominal uji (con : Rp10.000) | Login donatur → pilih campaign → input donasi → submit.  | Donasi tercatat, saldo/total terkumpul campaign bertambah, riwayat donasi muncul.  |
-| 8 | Verifikasi Komunitas (Superadmin)  | Login akun superadmin  | Buka dashboard superadmin → verifikasi pengajuan komunitas.  | Status komunitas berubah jadi "Terverifikasi". Notifikasi terkirim ke komunitas.  |
-| 9 | Pengajuan Pencairan Dana  | Login komunitas, campaign dengan dana terkumpul  | Ajukan pencairan dana \+ unggah laporan penggunaan.  | Pengajuan tercatat, masuk antrian approval superadmin, status berubah.  |
-| 10 | Upload / Download File  | File uji: bukti\_test.pdf (\< 5 MB) | Unggah dokumen (legalitas/laporan) → download kembali.  | Upload sukses, file tersimpan di storage/, hasil download identik (tidak corrupt). |
-| 11 | Notifikasis & Email | Fitur lupa password/notifikasi. Email: \[test@domain.com\] | Trigger email → cek inbox | Email diterima \< 5 menit, tidak masuk spam, link dapat diklik. (Cek juga queue worker jalan.)  |
-| 12 | Dashboard & Monitoring Dana | Login komunitas komunitas & superadmin | Buka daasboard, cek grafik/riwayat dana masuk & keluar | Data dashboard akurat sesuai transaksi. Riwayat dana masuk/keluar tampil benar.  |
-| 13 | Responsivitas Mobile | View 375px (Chrome DevTools) | Buka home, login dashboard di mode mobile | Layout menyesuaikan, tanpa horizontal scroll, semua tombol bisa di-tap.  |
-| 14 | Seacurity Header HTTP | curl \-I https://\[domain.com\]  | Periksa response header | Ada X-Content-Type-Options: nosniff, X-Frame-Options, Strict-Transport-Security. Versi Nginx/PHP tidak terekspos.  |
-| 15 | Performa Loading Halaman Utama | Chrome DevTools Network / PageSpeed  | Reload home, amati waktu loading | Total \< 3 detik, tidak ada resource gagal (404/500), ukuran halaman \< 3 MB.  |
+| 1 | Akses URL Production | URL: http://\[IP-server\] atau https://\[tailscale-funnel-url\] | Buka URL di browser dari jaringan eksternal | HTTP 200\. Halaman utama (SPA) tampil \< 3 detik. Tidak ada koneksi refused. |
+| 2 | Halaman Login / Autentikasi | Via SPA di /login atau API: POST /api/v1/auth/login | Buka halaman login, masukkan email & password valid | Login berhasil, response mengandung token Sanctum \+ data user. Redirect sesuai role (DONATUR → /campaigns, KOMUNITAS → /communities/dashboard, SUPERADMIN → /dashboard). |
+| 3 | Health Check API | GET \[URL\]/api/v1/health | curl \-X GET \[URL\]/api/v1/health | HTTP 200\. {"status":"ok","checks":{"database":{"status":"ok"},"redis":{"status":"ok"},"storage":{"status":"ok"}}}. Response time \< 500ms. |
+| 4 | Koneksi Database (List Campaign) | GET /api/v1/campaigns/search (tanpa auth) | Buka halaman campaign atau curl /api/v1/campaigns/search | Data campaign tampil dari PostgreSQL. Tidak ada error 500 / "DB connection failed". |
+| 5 | Buat Campaign | Login sebagai KOMUNITAS | POST /api/v1/communities/campaigns dengan data valid | Campaign tersimpan, status menunggu\_review, muncul di riwayat komunitas. |
+| 6 | Review Campaign (Superadmin) | Login sebagai SUPERADMIN | POST /api/v1/superadmin/campaigns/{id}/approve | Status campaign berubah jadi aktif, muncul di daftar publik. |
+| 7 | Alur Donasi | Login DONATUR, nominal Rp10.000 | POST /api/v1/donations dengan id\_campaign, nominal, is\_anonim | Donasi tercatat status pending. Riwayat donasi muncul di GET /me/donations. |
+| 8 | Update Status Pembayaran | Patch payment status | PATCH /api/v1/donations/{id}/payment-status ke berhasil | Dana terkumpul campaign bertambah sesuai nominal. |
+| 9 | Upload File (MinIO) | File uji \< 5 MB | Upload dokumen legalitas/bukti via fitur komunitas | Upload sukses, file bisa diakses via URL /storage/.... |
+| 10 | Notifikasi & Email | Trigger lupa password | POST /api/v1/auth/forgot-password dengan email terdaftar | Response sukses. Cek Mailtrap dashboard (bukan inbox real) — email terkirim. Cek docker compose logs queue — queue worker memproses job. |
+| 11 | Dashboard Komunitas | Login KOMUNITAS | GET /api/v1/communities/dashboard | Statistik campaign (total, aktif, dana terkumpul) tampil. |
+| 12 | Dashboard Superadmin | Login SUPERADMIN | GET /api/v1/superadmin/dashboard | Statistik platform (total users, donasi, campaign) tampil. |
+| 13 | Responsivitas Mobile | View 375px (Chrome DevTools) | Buka home, login, dashboard di mode mobile | Layout menyesuaikan, tanpa horizontal scroll, semua tombol bisa di-tap. |
+| 14 | Security Header HTTP | curl \-I \[URL\] | Periksa response header | Ada X-Content-Type-Options: nosniff, X-Frame-Options: SAMEORIGIN. |
+| 15 | Performa Loading H | Chrome DevTools Network | Reload home, amati waktu l | Total \< 5 detik (SPA \+ API call), tidak ada resource gagal (404/500). |
 
 # **BAB 5 – BACKUP-RECOVERY PLAN**
 
@@ -246,10 +238,10 @@ Recovery Time Objective (RTO): Maksimal 4 jam sejak kegagalan terdeteksi. Recove
 
 | No. | Tipe Backup | Metode | Frekuensi & Jadwal | Lokasi Penyimpanan | Retensi |
 | :---: | ----- | ----- | ----- | ----- | ----- |
-| 1 | Database (PostgreSQL) | \`docker exec postgres pg\_dump \-U \[app\_user\] \[nama\_db\_prod\] \\  | gzip \> .sql.gz\`  | Harian otomatis, 02:00 WIB (cron)  | Lokal /backup/db/\[YYYY-MM-DD\]/  • Remote \[remote\] 7 Hari terakhir |
-| 2 | VOlumen Upload Pengguna | docker run \--rm \-v berbagive\_storage:/data \-v /backup:/backup alpine tar czf /backup/uploads\_\[tgl\].tar.gz \-C /data . (bukti, dokumen legalitas, gambar campaign) | Harian 02.30 | Lokal: /backup/app/uploads/ \+ Remote storage | 7 hari terakhir |
-| 3 | Source Code \+ Compose \+ .env | tar.gz \[deploy-dir\] (exclude vendor/, node\_modules/) \+ .env (encrypted gpg) | Mingguan & setiap ada perubahan konfigurasi | Setiap sebelum deployment & tiap perubahan config  | 3 Versi |
-| 4 | Docker Image | \`docker save \[image\]:\[tag\] \\ | gzip \> image\_\[versi\].tar.gz\`  | Setiap rilis versi baru | Lokal \+ Remote / registry 2 versi terakhir |
+| 1 | Database (PostgreSQL) | docker compose exec berbagive-db pg\_dump \-U berbagive berbagive | gzip \> /backup/db/$(date \+%Y%m%d\_%H%M).sql.gz | Per jam (via scheduler container: php artisan backup:database — lihat routes/console.php baris 41\) \+ Harian 02:00 (cron host fallback) | Lokal: /backup/db/ | 7 hari |
+| 2 | Volume MinIO (Upload Pengguna) | docker run \--rm \-v berbagive\_minio-data:/data \-v /backup:/backup alpine tar czf /backup/minio/$(date \+%Y%m%d).tar.gz \-C /data . | Harian 02:30 WIB (cron host) | Lokal: /backup/minio/ | 7 hari |
+| 3 | Source Code \+ .env \+ docker-compose | tar czf /backup/app/berbagive-v1.0.0.tar.gz \--exclude=frontend/node\_modules \--exclude=.git . | Setiap deployment (sebelum update) \+ mingguan | Lokal: /backup/app/ | 3 versi terakhir |
+| 4 | Docker Image | Tidak perlu di-backup terpisah — image bisa di-rebuild dari source \+ Git | — | — | Factory rebuild via docker compose build |
 
 ### **5.2 Prosedur Recovery (Jika Server Crash)** 
 
@@ -257,14 +249,14 @@ Prosedur yang dijalankan apabila diperlukan pemeliharaan terencana (planned main
 
 | No. | Langkah Recovery | Tujuan | Perintah / Aksi Utama | Indikator Keberhasilan |
 | :---: | ----- | ----- | ----- | ----- |
-| 1 | Identifikasi & Analisis Kegagalan | Menentukan penyebab crash agar tindakan pemulihan tepat sasaran. |  • Cek docker compose ps & log   • Cek resource host (df \-h, htop)   • Catat waktu kegagalan   • Aktifkan halaman maintenance/darurat   • Hubungi tim | Penyebab teridentifikasi (host down / container crash / data corrupt / disk full / security). Tim siap.  |
-| 2 | Restore host/image | Menyiapkan kembali environtment dengan benar |  • Pastikan Docker host sehat   • docker load \< image\_\[versi\].tar.gz (jika image hilang) atau git checkout \[tag\] lalu rebuild   • docker compose \-f docker-compose.prod.yml up \-d  | Contrainer kembali berjalan (docker compose ps : Up) |
-| 3 | Restore Database dari Backup | Memulihkan data database dari backup .sql.gz harian apabila data corrupt atau terhapus. | \# Pilih backup terdekat sebelum insiden: ls \-lh /backup/db/ \# Restore: gunzip \-c /backup/db/\[YYYY-MM-DD\]/backup\_\[tanggal\].sql.gz | mysql \-h \[db-server-IP\] \-u \[app\_user\] \-p \[nama\_db\_prod\] \# Verifikasi: mysql \-h \[db-server-IP\] \-u \[app\_user\] \-p \[nama\_db\_prod\] \-e 'SELECT COUNT(\*) FROM \[tabel\_utama\];' | docker exec \-i postgres psql \-U \[app\_user\] \-d \[nama\_db\_prod\] Verifikasi: docker exec \-it postgres psql \-U \[app\_user\] \-d \[nama\_db\_prod\] \-c "SELECT COUNT(\*) FROM \[tabel\_utama\];"\` 4 |
-| 4 | Restore file update pengguna  | Memulihkan volume storage (data kritikal) | docker run \--rm \-v berbagive\_storage:/data \-v /backup:/backup alpine tar xzf /backup/uploads\_\[tgl\].tar.gz \-C /data | Volume upload terisi kembali. Dokumen legalitas & bukti pencairan tersedia. |
-| 5 | Re-Install Laravel | Menyiapkan cache symlink, & skema | docker exec \-it app php artisan config:cache docker exec \-it app php artisan route:cache docker exec \-it app php artisan storage:link docker exec \-it app php artisan migrate \--force (jika perlu sinkron skema) | Tidak ada eroro artisan. Symlink storage aktif |
-| 6 | Restart Semua Sevice | Menghidupkan ulang seluruh cotrainer | docker compose \-f docker-compose.prod.yml down docker compose \-f docker-compose.prod.yml up \-d Verifikasi: docker compose ps | Item smoke test prioritas lulus. Data kritikal valid. Tidak ada error baru.  |
-| 7 | Smoke Test Post-Recovery | Verifikasi fungsi dasr sebelum dibuka | Jalankan item prioritas BAB 4 (akses URL, login, health check, list campaign, donasi) → verifikasi data donasi/transaksi tidak hilang → pantau log 15 menit | Semua stakeholder menerima notifikasi. Incident Report selesai dalam 24 jam setelah recovery. |
-| 8 | Notifikasi & Dokumentasi Insiden | Memberi tahu stakeholder & dokuentasi | Matikan maintenance: docker exec \-it app php artisan up   • Notifikasi pemulihan ke PM, Dosen, pengguna   • Isi Incident Report (waktu down, penyebab, tindakan, RTO aktual)   • Simpan di \[lokasi dokumen tim\]  | Semua stakeholder dapat notifikasi. Incident Report selesai \< 24 jam.  |
+| 1 | Identifikasi & Analisis Kegagalan | Menentukan penyebab crash | • docker compose ps & docker compose logs • Cek resource host: df \-h, htop • Catat waktu kegagalan • Hubungi tim | Penyebab teridentifikasi (host down / container crash / data corrupt / disk full). Tim siap. |
+| 2 | Restore Host / Rebuild Container | Menyiapkan kembali environment | • Pastikan Docker host sehat • cd \[deploy-dir\] && git pull • docker compose build \--pull • docker compose up \-d | Semua container docker compose ps status Up (healthy) |
+| 3 | Restore Database dari Backup | Memulihkan data PostgreSQL dari backup harian | ls \-lh /backup/db/ — pilih backup sebelum insiden **Restore:** gunzip \-c /backup/db/\[YYYYMMDD\].sql.gz | docker compose exec \-T berbagive-db psql \-U berbagive \-d berbagive **Verifikasi:** docker compose exec \-T berbagive-db psql \-U berbagive \-d berbagive \-c "SELECT COUNT(\*) FROM campaign;" | Data kembali. Query verifikasi mengembalikan jumlah record yang wajar. |
+| 4 | Restore Volume MinIO (Upload Pengguna) | Memulihkan file upload | docker run \--rm \-v berbagive\_minio-data:/data \-v /backup:/backup alpine tar xzf /backup/minio/\[YYYYMMDD\].tar.gz \-C /data | File upload tersedia kembali. Dokumen legalitas, bukti pencairan, foto campaign bisa diakses via /storage/.... |
+| 5 | Finalisasi Laravel | Menyiapkan cache, symlink, optimize | docker compose exec berbagive-app php artisan key:generate \--force docker compose exec berbagive-app php artisan storage:link docker compose exec berbagive-app php artisan optimize | Tidak ada error artisan. Symlink storage aktif. |
+| 6 | Restart Semua Service | Menghidupkan ulang seluruh container | docker compose down docker compose up \-d **Verifikasi:** docker compose ps | Semua container status Up. |
+| 7 | Smoke Test Post-Recovery | Verifikasi fungsi dasar sebelum dibuka | Jalankan item prioritas BAB 4 (akses URL, health check, login, list campaign, donasi) \+ verifikasi data transaksi tidak hilang \+ pantau log 15 menit | Item smoke test prioritas lulus. Data kritikal valid. Tidak ada error baru. |
+| 8 | Notifikasi & Dokumentasi Insiden | Memberi tahu stakeholder | Matikan maintenance: akses normal kembali • Notifikasi ke PM, dosen, pengguna • Isi Incident Report (waktu down, penyebab, tindakan, RTO aktual) | Semua stakeholder dapat notifikasi. Incident Report selesai \< 24 jam. |
 
 # **BAB 6 –PENUTUP**
 

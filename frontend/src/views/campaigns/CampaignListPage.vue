@@ -80,12 +80,11 @@ async function fetchCampaigns() {
 
 async function fetchStats() {
   try {
-    const res = await api.get('/campaigns/search', { params: { per_page: 8 } })
-    const items = res.data.data?.items || []
+    const res = await api.get('/campaigns/search', { params: { per_page: 1 } })
     const total = res.data.data?.pagination?.total || 0
-    const totalDonasi = items.reduce((sum, c) => sum + (c.dana_terkumpul || 0), 0)
     stats.value.total_campaign = total
-    stats.value.total_donasi = totalDonasi
+    stats.value.total_donatur = res.data.data?.total_donatur || 0
+    stats.value.total_donasi = res.data.data?.total_donasi || 0
   } catch {}
 }
 

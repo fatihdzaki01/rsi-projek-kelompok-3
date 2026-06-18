@@ -69,7 +69,7 @@ const statusClass = (status) => {
   }
 }
 
-const goCampaign = (id) => router.push(`/community/campaigns/${id}`)
+const goCampaign = (id) => router.push(`/campaigns/${id}`)
 </script>
 
 <template>
@@ -82,7 +82,7 @@ const goCampaign = (id) => router.push(`/community/campaigns/${id}`)
         <nav class="text-xs text-gray-500 mb-4">
           <router-link to="/" class="hover:text-[#8B4513]">Beranda</router-link>
           <span class="mx-1">›</span>
-          <router-link to="/community/profile" class="hover:text-[#8B4513]">Profil Komunitas</router-link>
+          <router-link to="/communities/dashboard" class="hover:text-[#8B4513]">Dashboard Komunitas</router-link>
           <span class="mx-1">›</span>
           <span class="text-[#1a2744] font-medium">Riwayat Campaign</span>
         </nav>
