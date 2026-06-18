@@ -10,6 +10,13 @@ const pagination = ref(null)
 const loading = ref(true)
 const errorMessage = ref('')
 const currentPage = ref(1)
+const successMessage = ref('')
+
+const showRejectModal = ref(false)
+const rejectId = ref(null)
+const rejectReason = ref('')
+const rejectLoading = ref(false)
+const approveLoading = ref({})
 
 const fetchDisbursements = async () => {
   loading.value = true
@@ -58,6 +65,43 @@ const prevPage = () => {
   }
 }
 
+const openReject = (id) => {
+  rejectId.value = id
+  rejectReason.value = ''
+  showRejectModal.value = true
+}
+
+const handleApprove = async (id) => {
+  approveLoading.value = { ...approveLoading.value, [id]: true }
+  successMessage.value = ''
+  try {
+    await api.post(`/superadmin/disbursements/${id}/approve`)
+    successMessage.value = 'Pencairan disetujui.'
+    fetchDisbursements()
+  } catch (e) {
+    errorMessage.value = e.response?.data?.message || 'Gagal menyetujui.'
+  } finally {
+    approveLoading.value = { ...approveLoading.value, [id]: false }
+  }
+}
+
+const handleReject = async () => {
+  if (!rejectReason.value.trim()) return
+  rejectLoading.value = true
+  try {
+    await api.post(`/superadmin/disbursements/${rejectId.value}/reject`, {
+      alasan_penolakan: rejectReason.value,
+    })
+    successMessage.value = 'Pencairan ditolak.'
+    showRejectModal.value = false
+    fetchDisbursements()
+  } catch (e) {
+    errorMessage.value = e.response?.data?.message || 'Gagal menolak.'
+  } finally {
+    rejectLoading.value = false
+  }
+}
+
 onMounted(fetchDisbursements)
 </script>
 
@@ -68,8 +112,8 @@ onMounted(fetchDisbursements)
 
       <nav>
         <RouterLink to="/dashboard">Dashboard</RouterLink>
-        <RouterLink to="/dashboard/campaign-approvals">Approval</RouterLink>
-        <RouterLink to="/dashboard/disbursements" class="active">
+        <RouterLink to="/campaigns/approval">Approval</RouterLink>
+        <RouterLink to="/disbursements" class="active">
           Pencairan
         </RouterLink>
       </nav>
@@ -84,6 +128,10 @@ onMounted(fetchDisbursements)
 
         <RouterLink to="/dashboard" class="back-link">Kembali Dashboard</RouterLink>
       </div>
+
+      <section v-if="successMessage" class="card success">
+        {{ successMessage }}
+      </section>
 
       <section class="approval-tabs">
         <button :class="{ active: activeTab === 'review' }" @click="changeTab('review')">
@@ -162,9 +210,22 @@ onMounted(fetchDisbursements)
               </td>
 
               <td>
-                <button class="mini-btn" disabled>
-                  Detail
-                </button>
+                <template v-if="activeTab === 'review' && item.status === 'menunggu_review'">
+                  <button
+                    class="mini-btn approve"
+                    :disabled="approveLoading[item.id_pencairan]"
+                    @click="handleApprove(item.id_pencairan)"
+                  >
+                    {{ approveLoading[item.id_pencairan] ? '...' : 'Setujui' }}
+                  </button>
+                  <button
+                    class="mini-btn reject"
+                    @click="openReject(item.id_pencairan)"
+                  >
+                    Tolak
+                  </button>
+                </template>
+                <span v-else class="text-xs text-gray-400">-</span>
               </td>
             </tr>
           </tbody>
@@ -186,5 +247,81 @@ onMounted(fetchDisbursements)
       </section>
     </section>
     <AppFooter />
+
+    <div v-if="showRejectModal" class="modal-overlay" @click.self="showRejectModal = false">
+      <div class="modal-box">
+        <h3 class="text-sm font-bold text-[#2C2C2C] mb-3">Tolak Pencairan</h3>
+        <textarea
+          v-model="rejectReason"
+          rows="3"
+          placeholder="Alasan penolakan..."
+          class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
+        ></textarea>
+        <div class="flex justify-end gap-2 mt-3">
+          <button class="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-800" @click="showRejectModal = false">Batal</button>
+          <button
+            class="px-4 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            :disabled="!rejectReason.trim() || rejectLoading"
+            @click="handleReject"
+          >
+            {{ rejectLoading ? '...' : 'Tolak' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
+
+<style scoped>
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-box {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 420px;
+}
+.mini-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  margin-right: 4px;
+  cursor: pointer;
+  border: none;
+  color: #fff;
+}
+.mini-btn.approve {
+  background: #16a34a;
+}
+.mini-btn.approve:hover {
+  background: #15803d;
+}
+.mini-btn.reject {
+  background: #dc2626;
+}
+.mini-btn.reject:hover {
+  background: #b91c1c;
+}
+.mini-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.card.success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+</style>

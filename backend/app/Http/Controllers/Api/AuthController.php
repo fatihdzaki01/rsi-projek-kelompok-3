@@ -207,19 +207,19 @@ class AuthController extends Controller
 
     public function registerKomunitas(RegisterKomunitasRequest $request)
     {
-        $user = DB::transaction(function () use ($request) {
-            $user = User::create([
-                'username'      => $request->nama_lembaga,
-                'nama_lengkap'  => $request->nama_pic ?? null,
-                'email'         => $request->email,
-                'password_hash' => Hash::make($request->password),
-                'role'          => User::ROLE_KOMUNITAS,
-                'is_active'     => true,
-                'is_verified'   => true,
-            ]);
+        $authUser = $request->user();
 
+        if ($authUser->role !== User::ROLE_DONATUR) {
+            return ApiResponse::error('Hanya akun Donatur yang dapat mendaftar sebagai Komunitas', null, 403);
+        }
+
+        if ($authUser->komunitas) {
+            return ApiResponse::error('Anda sudah terdaftar sebagai Komunitas', null, 409);
+        }
+
+        DB::transaction(function () use ($request, $authUser) {
             $komunitas = Komunitas::create([
-                'id_user'          => $user->id_user,
+                'id_user'          => $authUser->id_user,
                 'id_jenis_lembaga' => $request->id_jenis_lembaga,
                 'nama_lembaga'     => $request->nama_lembaga,
                 'deskripsi'        => $request->deskripsi,
@@ -227,11 +227,20 @@ class AuthController extends Controller
                 'alamat_detail'    => $request->alamat_detail,
                 'nomor_kontak'     => $request->nomor_kontak,
                 'link_medsos'      => $request->link_medsos,
-                'foto_lembaga_url' => $request->foto_lembaga_url,
+                'foto_lembaga_url' => $request->foto_lembaga_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($request->nama_lembaga) . '&background=1a2744&color=fff&size=256',
+                'nama_bank'        => '-',
+                'nomor_rekening'   => '-',
+                'foto_buku_rekening_url' => '-',
                 'status'           => Komunitas::STATUS_AKTIF,
+                'direview_oleh'    => User::where('role', User::ROLE_SUPERADMIN)->first()->id_user,
             ]);
 
-            // Upload dokumen
+            if ($request->nama_pic) {
+                $authUser->update(['nama_lengkap' => $request->nama_pic]);
+            }
+
+            $authUser->update(['role' => User::ROLE_KOMUNITAS]);
+
             if ($request->hasFile('dokumen')) {
                 foreach ($request->file('dokumen') as $idJenisDok => $file) {
                     $url = $this->uploadDocument($file, 'dokumen-komunitas');
@@ -245,15 +254,13 @@ class AuthController extends Controller
                     ]);
                 }
             }
-
-            return $user;
         });
 
         return ApiResponse::success([
-            'id_user'     => $user->id_user,
-            'email'       => $user->email,
+            'id_user'     => $authUser->id_user,
+            'email'       => $authUser->email,
             'nama_lembaga' => $request->nama_lembaga,
-            'role'        => $user->role,
+            'role'        => User::ROLE_KOMUNITAS,
         ], 'Registrasi komunitas berhasil.', 201);
     }
 

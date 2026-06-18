@@ -15,7 +15,7 @@ class RegisterUserRequest extends FormRequest
     {
         return [
             'username' => ['required', 'string', 'max:100', 'unique:users,username'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', 'regex:/^[a-zA-Z0-9._%+-]+@gmail\.com$/', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[A-Za-z])(?=.*\d).+$/'],
         ];
     }
@@ -27,6 +27,7 @@ class RegisterUserRequest extends FormRequest
             'username.unique' => 'Username sudah digunakan',
             'email.required' => 'Email wajib diisi',
             'email.email' => 'Format email tidak valid',
+            'email.regex' => 'Email harus menggunakan domain @gmail.com',
             'email.unique' => 'Email sudah digunakan',
             'password.required' => 'Password wajib diisi',
             'password.min' => 'Password minimal 8 karakter',

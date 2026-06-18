@@ -7,14 +7,32 @@ use App\Http\Controllers\Controller;
 use App\Models\Notifikasi;
 use App\Traits\HasImageUpload;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class SuperadminController extends Controller
 {
     use HasImageUpload;
+
+    private function auditLog(Request $request, string $actionType, string $description): void
+    {
+        DB::table('audit_logs')->insert([
+            'user_id' => $request->user()->id_user,
+            'action_type' => $actionType,
+            'description' => $description,
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function bustCommunityProfileCache(int $idKomunitas): void
+    {
+        Cache::forget("community:profile:{$idKomunitas}");
+    }
+
     public function profile(Request $request)
     {
         $user = $request->user();
@@ -184,6 +202,9 @@ class SuperadminController extends Controller
             'related_campaign_id' => $id,
         ]);
 
+        $this->auditLog($request, 'APPROVE', 'Menyetujui campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
+        $this->bustCommunityProfileCache($campaign->id_komunitas);
+
         return ApiResponse::success(null, 'Campaign berhasil disetujui.');
     }
 
@@ -220,6 +241,9 @@ class SuperadminController extends Controller
             'tipe' => 'campaign_ditolak',
             'related_campaign_id' => $id,
         ]);
+
+        $this->auditLog($request, 'REJECT', 'Menolak campaign "' . $campaign->judul . '" (ID: ' . $id . ') — Alasan: ' . $validated['alasan_penolakan']);
+        $this->bustCommunityProfileCache($campaign->id_komunitas);
 
         return ApiResponse::success(null, 'Campaign berhasil ditolak.');
     }
@@ -296,6 +320,8 @@ class SuperadminController extends Controller
                 null,
             ]);
 
+            $this->auditLog($request, 'APPROVE_DISBURSEMENT', 'Menyetujui pencairan dana (ID: ' . $id . ')');
+
             return ApiResponse::success(null, 'Pengajuan pencairan berhasil disetujui.');
         } catch (\Throwable $e) {
             return ApiResponse::error($e->getMessage(), 422);
@@ -315,6 +341,8 @@ class SuperadminController extends Controller
                 $request->user()->id_user,
                 $validated['alasan_penolakan'],
             ]);
+
+            $this->auditLog($request, 'REJECT_DISBURSEMENT', 'Menolak pencairan dana (ID: ' . $id . ') — Alasan: ' . $validated['alasan_penolakan']);
 
             return ApiResponse::success(null, 'Pengajuan pencairan berhasil ditolak.');
         } catch (\Throwable $e) {
@@ -1202,6 +1230,9 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
+        $this->auditLog($request, 'IGNORE_REPORT', 'Mengabaikan laporan campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
+        $this->bustCommunityProfileCache($campaign->id_komunitas);
+
         return ApiResponse::success(null, 'Laporan campaign diabaikan, campaign diaktifkan.');
     }
 
@@ -1233,6 +1264,9 @@ class SuperadminController extends Controller
             'tipe' => 'peringatan',
             'related_campaign_id' => $id,
         ]);
+
+        $this->auditLog($request, 'DISABLE', 'Menonaktifkan campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
+        $this->bustCommunityProfileCache($campaign->id_komunitas);
 
         return ApiResponse::success(null, 'Campaign berhasil dinonaktifkan.');
     }
@@ -1295,6 +1329,9 @@ class SuperadminController extends Controller
                 'updated_at' => now(),
             ]);
 
+        $this->auditLog($request, 'REACTIVATE', 'Mengaktifkan kembali campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
+        $this->bustCommunityProfileCache($campaign->id_komunitas);
+
         return ApiResponse::success(null, 'Campaign berhasil diaktifkan kembali.');
     }
 
@@ -1326,6 +1363,9 @@ class SuperadminController extends Controller
             'tipe' => 'peringatan',
             'related_campaign_id' => $id,
         ]);
+
+        $this->auditLog($request, 'CLOSE_PERMANENT', 'Menutup permanen campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
+        $this->bustCommunityProfileCache($campaign->id_komunitas);
 
         return ApiResponse::success(null, 'Campaign berhasil ditutup permanen.');
     }

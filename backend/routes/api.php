@@ -25,9 +25,9 @@ use Illuminate\Support\Facades\Storage;
 
 Route::prefix('auth')->middleware('throttle:30,1')->group(function () {
     Route::post('/register-user', [AuthController::class, 'registerUser']);
-    Route::post('/register-komunitas', [AuthController::class, 'registerKomunitas']);
+    // register-komunitas now requires auth:sanctum — moved below
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:10,1');
+        ->middleware('throttle:60,1');
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::post('/resend-verification', [AuthController::class, 'resendVerification'])
@@ -42,6 +42,9 @@ Route::middleware(['throttle:120,1', 'auth:sanctum'])->prefix('users')->group(fu
     Route::patch('/me/password', [UserController::class, 'changePassword']);
     Route::get('/me/donations', [DonationController::class, 'history']);
     Route::get('/me/following', [UserController::class, 'following']);
+
+    Route::post('/me/register-komunitas', [AuthController::class, 'registerKomunitas'])
+        ->middleware('throttle:5,60');
 });
 
 Route::get('/communities/{id}/profile', [KomunitasProfilController::class, 'profilPublik']);

@@ -108,9 +108,11 @@ onMounted(() => {
           <template v-if="authStore.isCommunity">
             <router-link to="/communities/dashboard" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/communities/dashboard') ? 'font-medium text-[#8B4513]' : ''">Dashboard</router-link>
             <router-link to="/communities/campaigns/history" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/communities/campaigns') ? 'font-medium text-[#8B4513]' : ''">Campaign Saya</router-link>
+            <router-link to="/communities/profile/edit" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/communities/profile') ? 'font-medium text-[#8B4513]' : ''">Profil</router-link>
           </template>
           <template v-else>
             <router-link to="/donations/history" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/donations') ? 'font-medium text-[#8B4513]' : ''">Donasi Saya</router-link>
+            <router-link to="/profile" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/profile') ? 'font-medium text-[#8B4513]' : ''">Profil Saya</router-link>
           </template>
           <router-link to="/notifications" class="relative text-gray-700 transition-colors hover:text-[#8B4513]" aria-label="Notifikasi">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

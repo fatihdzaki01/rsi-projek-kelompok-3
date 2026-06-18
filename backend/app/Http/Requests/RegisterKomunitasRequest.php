@@ -33,8 +33,8 @@ class RegisterKomunitasRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email'            => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password'         => ['required', 'string', 'min:8', 'regex:/^(?=.*[A-Za-z])(?=.*\d).+$/'],
+            'email'            => ['nullable', 'email', 'max:255'],
+            'password'         => ['nullable', 'string', 'min:8'],
             'nama_pic'         => ['required', 'string', 'max:255'],
             'nama_lembaga'     => ['required', 'string', 'max:255'],
             'id_jenis_lembaga' => ['required', 'integer', 'exists:jenis_lembaga,id_jenis'],
@@ -52,12 +52,8 @@ class RegisterKomunitasRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required'          => 'Email wajib diisi',
             'email.email'             => 'Format email tidak valid',
-            'email.unique'            => 'Email sudah digunakan',
-            'password.required'       => 'Password wajib diisi',
             'password.min'            => 'Password minimal 8 karakter',
-            'password.regex'          => 'Password harus terdiri dari huruf dan angka',
             'nama_pic.required'       => 'Nama penanggung jawab wajib diisi',
             'nama_lembaga.required'   => 'Nama lembaga wajib diisi',
             'id_jenis_lembaga.required' => 'Jenis lembaga wajib dipilih',

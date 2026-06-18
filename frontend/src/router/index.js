@@ -18,9 +18,9 @@ import PublicCommunityProfilePage from '@/views/community/PublicCommunityProfile
 const routes = [
   { path: '/', name: 'Beranda', component: HomePage },
   { path: '/register', name: 'RegisterUser', component: RegisterUser },
-  { path: '/register/komunitas', name: 'RegisterKomunitas', component: RegisterKomunitas },
+  { path: '/register/komunitas', name: 'RegisterKomunitas', component: RegisterKomunitas, meta: { requiresAuth: true, role: 'DONATUR' } },
   { path: '/email-verification', name: 'EmailVerification', component: EmailVerification },
-  { path: '/login', name: 'LoginUser', component: LoginPage },
+  { path: '/login', name: 'Login', component: LoginPage },
   { path: '/login-result', name: 'LoginResult', component: LoginResult },
   { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPassword },
   { path: '/reset-password', name: 'ResetPassword', component: ResetPassword },
@@ -72,6 +72,7 @@ const routes = [
   { path: '/campaigns/approval', name: 'CampaignApproval', component: () => import('@/views/campaigns/CampaignApprovalView.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
   { path: '/dashboard/campaign-approvals', redirect: '/campaigns/approval' },
   { path: '/campaigns/:id/review', name: 'CampaignReview', component: () => import('@/views/campaigns/CampaignDetailView.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
+  { path: '/campaigns/:id/internal', name: 'CampaignMonitoringInternal', component: () => import('@/views/dashboard/CampaignMonitoringInternalView.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
   { path: '/disbursements', name: 'Disbursements', component: () => import('@/views/dashboard/DisbursementView.vue'), meta: { requiresAuth: true, role: 'SUPERADMIN' } },
   { path: '/dashboard/disbursements', redirect: '/disbursements' },
 

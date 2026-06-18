@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -45,7 +46,7 @@ class DonationService
 
     public function createDonation(int $userId, array $payload): object
     {
-        DB::statement('SELECT sp_create_donation(?, ?, ?, ?, ?, ?, ?)', [
+        DB::statement('CALL sp_create_donation(?, ?, ?, ?, ?, ?, ?)', [
             $userId,
             $payload['id_campaign'],
             $payload['nominal'],
@@ -141,6 +142,16 @@ class DonationService
             }
 
             $this->generateReceiptPdf($idDonasi);
+
+            $campaignInfo = DB::selectOne(
+                'SELECT id_komunitas FROM donasi d
+                 JOIN campaign c ON c.id_campaign = d.id_campaign
+                 WHERE d.id_donasi = ?',
+                [$idDonasi]
+            );
+            if ($campaignInfo?->id_komunitas) {
+                Cache::forget("community:profile:{$campaignInfo->id_komunitas}");
+            }
         } else {
             DB::statement('CALL sp_fail_payment(?)', [$idDonasi]);
         }

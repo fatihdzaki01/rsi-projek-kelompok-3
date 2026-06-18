@@ -22,7 +22,7 @@ class KomunitasProfilController extends Controller
     {
         $cacheKey = "community:profile:{$id}";
 
-        $cached = Cache::remember($cacheKey, 600, function () use ($id) {
+        $cached = Cache::remember($cacheKey, 60, function () use ($id) {
             $komunitas = Komunitas::where('id_komunitas', $id)
                 ->where('status', Komunitas::STATUS_AKTIF)
                 ->first();

@@ -28,8 +28,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 $code = 429;
 
                 if ($request->is('api/v1/auth/login') || $request->is('api/auth/login')) {
-                    $message = 'Akun dikunci sementara selama 15 menit';
-                    $code = 423;
+                    $message = 'Terlalu banyak percobaan login. Silakan coba lagi dalam 1 menit.';
+                    $code = 429;
                 } elseif ($request->is('*resend-verification*')) {
                     $message = 'Batas pengiriman ulang email verifikasi telah tercapai. Silakan coba lagi nanti.';
                 }

@@ -4,50 +4,29 @@
       <p class="text-xs font-semibold tracking-widest text-[#1a2744] mb-6">BERBAGIVE</p>
 
       <h1 class="text-3xl font-bold text-[#1a2744] mb-1">Daftar Komunitas</h1>
-      <p class="text-sm text-[#6B7280] mb-8">Isi data lembaga untuk bergabung di Berbagive.</p>
+      <p class="text-sm text-[#6B7280] mb-6">Isi data lembaga untuk bergabung di Berbagive.</p>
+
+      <div class="flex items-center gap-3 mb-6 p-3 bg-[#F5F0E8] rounded-lg border border-stone-200">
+        <div class="w-8 h-8 rounded-full bg-[#1a2744] flex items-center justify-center text-white text-xs font-bold uppercase">
+          {{ loggedInEmail.charAt(0) }}
+        </div>
+        <div>
+          <p class="text-xs text-gray-500">Login sebagai</p>
+          <p class="text-sm font-medium text-[#2C2C2C]">{{ loggedInEmail }}</p>
+        </div>
+      </div>
 
       <form @submit.prevent="handleSubmit" class="space-y-5" novalidate>
 
-        <!-- Row: Nama PIC + Email -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label for="nama_pic" class="block text-sm font-medium text-[#374151] mb-1">Nama PIC <span class="text-red-500">*</span></label>
-            <input
-              id="nama_pic" v-model="form.nama_pic" type="text" placeholder="Nama penanggung jawab"
-              class="w-full h-11 px-3 bg-[#F5F0E8] border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1a2744]/30"
-              :class="{ 'ring-2 ring-red-400': errors.nama_pic }"
-            />
-            <p v-if="errors.nama_pic" class="mt-1 text-xs text-red-500">{{ errors.nama_pic }}</p>
-          </div>
-          <div>
-            <label for="email" class="block text-sm font-medium text-[#374151] mb-1">Email</label>
-            <input
-              id="email" v-model="form.email" type="email" placeholder="nama@email.com" autocomplete="email"
-              class="w-full h-11 px-3 bg-[#F5F0E8] border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1a2744]/30"
-              :class="{ 'ring-2 ring-red-400': errors.email }"
-            />
-            <p v-if="errors.email" class="mt-1 text-xs text-red-500">{{ errors.email }}</p>
-          </div>
-        </div>
-
-        <!-- Row: Password + Confirm Password -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label for="password" class="block text-sm font-medium text-[#374151] mb-1">Password</label>
-            <input
-              id="password" v-model="form.password" type="password" placeholder="Minimal 8 karakter"
-              class="w-full h-11 px-3 bg-[#F5F0E8] border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1a2744]/30"
-              :class="{ 'ring-2 ring-red-400': errors.password }"
-            />
-            <p v-if="errors.password" class="mt-1 text-xs text-red-500">{{ errors.password }}</p>
-          </div>
-          <div>
-            <label for="password_confirmation" class="block text-sm font-medium text-[#374151] mb-1">Konfirmasi Password</label>
-            <input
-              id="password_confirmation" v-model="form.password_confirmation" type="password" placeholder="Ulangi password"
-              class="w-full h-11 px-3 bg-[#F5F0E8] border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1a2744]/30"
-            />
-          </div>
+        <!-- Nama PIC -->
+        <div>
+          <label for="nama_pic" class="block text-sm font-medium text-[#374151] mb-1">Nama PIC <span class="text-red-500">*</span></label>
+          <input
+            id="nama_pic" v-model="form.nama_pic" type="text" placeholder="Nama penanggung jawab"
+            class="w-full h-11 px-3 bg-[#F5F0E8] border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1a2744]/30"
+            :class="{ 'ring-2 ring-red-400': errors.nama_pic }"
+          />
+          <p v-if="errors.nama_pic" class="mt-1 text-xs text-red-500">{{ errors.nama_pic }}</p>
         </div>
 
         <!-- Nama Lembaga -->
@@ -188,26 +167,25 @@
       </form>
 
       <p class="mt-6 text-center text-sm text-gray-600">
-        Sudah punya akun?
-        <router-link to="/login" class="text-[#8B4513] font-semibold hover:underline ml-0.5">Masuk di sini</router-link>
+        <router-link to="/profile" class="text-[#8B4513] font-semibold hover:underline">← Kembali ke Profil</router-link>
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { FileText, Upload } from 'lucide-vue-next'
 import api from '@/api/axios'
 
 const router = useRouter()
 
+const loggedInUser = ref(null)
+const loggedInEmail = computed(() => loggedInUser.value?.email || '')
+
 const form = ref({
   nama_pic: '',
-  email: '',
-  password: '',
-  password_confirmation: '',
   nama_lembaga: '',
   id_jenis_lembaga: '',
   kode_wilayah: '',
@@ -238,13 +216,23 @@ const previews = ref({})
 
 onMounted(async () => {
   try {
+    const user = JSON.parse(localStorage.getItem('user') || 'null')
+    if (!user) {
+      router.push('/login')
+      return
+    }
+    loggedInUser.value = user
+    form.value.nama_pic = user.nama_lengkap || ''
+
     const [jl, prov] = await Promise.all([
       api.get('/jenis-lembaga'),
       api.get('/wilayah?level=1'),
     ])
     jenisLembagaList.value = jl.data.data || []
     provinces.value = prov.data.data || []
-  } catch {}
+  } catch {
+    router.push('/login')
+  }
 })
 
 async function onProvinceChange() {
@@ -301,18 +289,10 @@ async function handleSubmit() {
   globalError.value = ''
   success.value = ''
 
-  if (form.value.password !== form.value.password_confirmation) {
-    globalError.value = 'Konfirmasi password tidak cocok'
-    return
-  }
-
   loading.value = true
   try {
     const fd = new FormData()
     fd.append('nama_pic', form.value.nama_pic)
-    fd.append('email', form.value.email)
-    fd.append('password', form.value.password)
-    fd.append('password_confirmation', form.value.password_confirmation)
     fd.append('nama_lembaga', form.value.nama_lembaga)
     fd.append('id_jenis_lembaga', form.value.id_jenis_lembaga)
     fd.append('kode_wilayah', form.value.kode_wilayah)
@@ -324,18 +304,32 @@ async function handleSubmit() {
       fd.append(`dokumen[${idJenisDok}]`, file)
     }
 
-    await api.post('/auth/register-komunitas', fd, {
+    const res = await api.post('/users/me/register-komunitas', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    success.value = 'Registrasi berhasil! Menunggu verifikasi superadmin. Mengalihkan ke halaman login...'
-    setTimeout(() => router.push('/login'), 2500)
+    const result = res.data.data || res.data
+    const updatedUser = {
+      ...loggedInUser.value,
+      role: result.role || 'KOMUNITAS',
+    }
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+
+    success.value = 'Registrasi komunitas berhasil! Mengalihkan...'
+    setTimeout(() => router.push('/communities/dashboard'), 2000)
   } catch (e) {
     const status = e.response?.status
     const errData = e.response?.data?.errors || {}
     const message = e.response?.data?.message || ''
 
-    if (status === 422) {
+    if (status === 401) {
+      globalError.value = 'Sesi login habis. Silakan login ulang.'
+      setTimeout(() => router.push('/login'), 2000)
+    } else if (status === 403) {
+      globalError.value = message || 'Hanya akun Donatur yang dapat mendaftar'
+    } else if (status === 409) {
+      globalError.value = message || 'Anda sudah terdaftar sebagai Komunitas'
+    } else if (status === 422) {
       errors.value = Object.fromEntries(
         Object.entries(errData).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
       )

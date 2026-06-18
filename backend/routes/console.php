@@ -41,5 +41,5 @@ Schedule::call(function () {
 Schedule::command('backup:database')->hourly()->name('auto-database-backup');
 
 Schedule::call(function () {
-    DB::statement('REFRESH MATERIALIZED VIEW CONCURRENTLY v_platform_summary_mv');
+    DB::statement('REFRESH MATERIALIZED VIEW v_platform_summary_mv');
 })->everyFiveMinutes()->name('refresh-platform-summary-mv');

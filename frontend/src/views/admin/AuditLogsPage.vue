@@ -12,10 +12,15 @@
             <label class="block text-xs font-medium text-gray-500 mb-1">Aksi</label>
             <select v-model="filter.action_type" @change="loadPage(1)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white">
               <option value="">Semua Aksi</option>
-              <option value="LOGIN">Login</option>
               <option value="APPROVE">Approve</option>
               <option value="REJECT">Reject</option>
               <option value="DISABLE">Disable</option>
+              <option value="IGNORE_REPORT">Ignore Report</option>
+              <option value="REACTIVATE">Reactivate</option>
+              <option value="CLOSE_PERMANENT">Close Permanent</option>
+              <option value="APPROVE_DISBURSEMENT">Approve Disbursement</option>
+              <option value="REJECT_DISBURSEMENT">Reject Disbursement</option>
+              <option value="LOGIN">Login</option>
               <option value="CREATE">Create</option>
               <option value="UPDATE">Update</option>
             </select>
@@ -85,7 +90,19 @@ const pagination = ref({ current_page: 1, last_page: 1, total: 0 })
 const filter = ref({ action_type: '', start_date: '', end_date: '' })
 
 function actionBadge(a) {
-  const map = { LOGIN: 'text-blue-700 bg-blue-50', APPROVE: 'text-green-700 bg-green-50', REJECT: 'text-red-700 bg-red-50', DISABLE: 'text-gray-700 bg-gray-100', CREATE: 'text-purple-700 bg-purple-50', UPDATE: 'text-yellow-700 bg-yellow-50' }
+  const map = {
+    LOGIN: 'text-blue-700 bg-blue-50',
+    APPROVE: 'text-green-700 bg-green-50',
+    REJECT: 'text-red-700 bg-red-50',
+    DISABLE: 'text-gray-700 bg-gray-100',
+    IGNORE_REPORT: 'text-yellow-700 bg-yellow-50',
+    REACTIVATE: 'text-green-700 bg-green-50',
+    CLOSE_PERMANENT: 'text-red-700 bg-red-50',
+    APPROVE_DISBURSEMENT: 'text-green-700 bg-green-50',
+    REJECT_DISBURSEMENT: 'text-red-700 bg-red-50',
+    CREATE: 'text-purple-700 bg-purple-50',
+    UPDATE: 'text-yellow-700 bg-yellow-50',
+  }
   return map[a] || 'text-gray-700 bg-gray-100'
 }
 
@@ -102,9 +119,9 @@ async function loadPage(page = 1) {
     if (filter.value.start_date) params.start_date = filter.value.start_date
     if (filter.value.end_date) params.end_date = filter.value.end_date
     const res = await api.get('/superadmin/audit-logs', { params })
-    const data = res.data || res
+    const data = (res.data && res.data.data) || {}
     logs.value = data.data || []
-    pagination.value = data.meta || { current_page: 1, last_page: 1, total: 0 }
+    pagination.value = { current_page: data.current_page || 1, last_page: data.last_page || 1, total: data.total || 0 }
   } catch (e) {
     logs.value = []
   } finally {

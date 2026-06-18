@@ -181,9 +181,21 @@ class MonitoringController extends Controller
             ->orderByDesc('pd.tanggal_pengajuan')
             ->get();
 
+        $totalDonatur = DB::table('donasi')
+            ->where('id_campaign', $id)
+            ->where('status_pembayaran', 'berhasil')
+            ->distinct('id_user')
+            ->count('id_user');
+
         return $this->success([
             'campaign' => $campaign,
-            'summary' => $summary,
+            'summary' => [
+                'total_donasi_berhasil' => (int) ($summary->total_dana_masuk ?? 0),
+                'total_donatur'         => $totalDonatur,
+                'total_dicairkan'       => (int) ($summary->total_dana_dicairkan ?? 0),
+                'saldo_tersisa'         => (int) ($summary->saldo_tersisa ?? 0),
+                'potongan_platform'     => (int) ($summary->potongan_platform ?? 0),
+            ],
             'donations' => $donations,
             'withdrawals' => $withdrawals,
         ], 'Monitoring internal campaign berhasil dimuat.');
