@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/axios'
@@ -45,12 +45,14 @@ const auth = useAuthStore()
 
 const profile = ref(null)
 
-try {
-  const res = await api.get('/superadmin/profile')
-  profile.value = res.data.data
-} catch (e) {
-  // silent
-}
+onMounted(async () => {
+  try {
+    const res = await api.get('/superadmin/profile')
+    profile.value = res.data.data
+  } catch (e) {
+    // silent
+  }
+})
 
 const menuItems = [
   { path: '/dashboard', label: 'Dashboard', icon: '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>' },
