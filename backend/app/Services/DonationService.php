@@ -46,12 +46,12 @@ class DonationService
 
     public function createDonation(int $userId, array $payload): object
     {
-        DB::statement('CALL sp_create_donation(?, ?, ?, ?, ?, ?, ?)', [
+        DB::statement('CALL sp_create_donation(?::INT, ?::INT, ?::BIGINT, ?::VARCHAR, ?::BOOLEAN, ?::VARCHAR, ?::TEXT)', [
             $userId,
             $payload['id_campaign'],
             $payload['nominal'],
             $payload['metode_pembayaran'],
-            $payload['is_anonim'] ?? true,
+            (bool) ($payload['is_anonim'] ?? true),
             $payload['nama_tampil'] ?? null,
             $payload['pesan'] ?? null,
         ]);

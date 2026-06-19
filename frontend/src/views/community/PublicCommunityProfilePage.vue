@@ -71,9 +71,17 @@
                 </div>
               </div>
 
+              <router-link
+                v-if="isOwner"
+                to="/communities/profile/edit"
+                class="shrink-0 text-sm font-medium rounded-lg px-4 py-1.5 border border-[#8B4513] text-[#8B4513] bg-white hover:bg-[#F5F0E8] transition-colors"
+              >
+                Edit Profil
+              </router-link>
+              
               <!-- Follow/Unfollow button (DONATUR only) -->
               <button
-                v-if="canFollow"
+                v-else-if="canFollow"
                 @click="isFollowing ? confirmUnfollow() : follow()"
                 :disabled="followLoading"
                 class="shrink-0 text-sm font-medium rounded-lg px-4 py-1.5 transition-colors"
@@ -244,6 +252,11 @@ const initials = computed(() => {
 
 const canFollow = computed(() => {
   return authStore.isLoggedIn && authStore.isDonor
+})
+
+const isOwner = computed(() => {
+  return authStore.isLoggedIn && authStore.isCommunity && 
+         (authStore.user?.komunitas?.id_komunitas || authStore.user?.id_komunitas) === profile.value?.id_komunitas
 })
 
 async function fetchProfile() {

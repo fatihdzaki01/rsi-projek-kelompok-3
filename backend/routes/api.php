@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\KategoriCampaignController;
 use App\Http\Controllers\Api\AdminAuditController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\DonationController;
+use App\Http\Controllers\Api\PencairanController;
 use Illuminate\Support\Facades\Storage;
 
 Route::prefix('auth')->middleware('throttle:30,1')->group(function () {
@@ -55,23 +56,6 @@ Route::get('/campaigns/{id}/donors', [CampaignPublicController::class, 'donors']
 Route::get('/campaigns/{id}/monitoring', [MonitoringController::class, 'publicCampaign']);
 
 Route::middleware(['throttle:120,1', 'auth:sanctum'])->group(function () {
-    Route::get('/db-test', function () {
-        $totalUsers = DB::table('users')->count();
-        $totalCampaign = DB::table('campaign')->where('status', 'aktif')->count();
-        $totalDonasi = DB::table('donasi')->where('status_pembayaran', 'berhasil')->sum('nominal');
-
-        return response()->json([
-            'status'  => 'success',
-            'data'    => [
-                'total_users'    => (int) $totalUsers,
-                'total_campaign' => (int) $totalCampaign,
-                'total_donasi'   => (int) ($totalDonasi ?? 0),
-            ],
-            'message' => 'DB stats retrieved',
-            'errors'  => null,
-        ]);
-    });
-
     Route::post('/campaigns/{id}/complete', [CampaignPublicController::class, 'complete']);
     Route::post('/communities/{communityId}/follow', [CommunityFollowController::class, 'follow']);
     Route::delete('/communities/{communityId}/follow', [CommunityFollowController::class, 'unfollow']);
@@ -90,6 +74,9 @@ Route::middleware(['throttle:120,1', 'auth:sanctum'])->group(function () {
 
         Route::get('/communities/bank-account/history', [RekeningController::class, 'riwayat']);
         Route::post('/communities/bank-account/change', [RekeningController::class, 'ajukanPerubahan']);
+
+        Route::get('/communities/withdrawals', [PencairanController::class, 'index']);
+        Route::post('/communities/withdrawals', [PencairanController::class, 'store']);
 
         Route::get('/communities/dashboard', [DashboardController::class, 'index']);
     });
@@ -184,14 +171,14 @@ Route::get('/health', function () {
     try {
         DB::connection()->getPdo();
         $checks['database'] = ['status' => 'ok'];
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         $checks['database'] = ['status' => 'error', 'message' => $e->getMessage()];
     }
 
     try {
         app('redis')->ping();
         $checks['redis'] = ['status' => 'ok'];
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         $checks['redis'] = ['status' => 'error', 'message' => $e->getMessage()];
     }
 
@@ -199,7 +186,7 @@ Route::get('/health', function () {
         $disk = config('filesystems.default');
         Storage::disk($disk)->exists('health-check');
         $checks['storage'] = ['status' => 'ok', 'disk' => $disk];
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         $checks['storage'] = ['status' => 'error', 'message' => $e->getMessage()];
     }
 
