@@ -63,6 +63,9 @@ onMounted(() => {
   nextTick(updateIndicator)
   if (localStorage.getItem('token')) {
     notificationStore.fetchAll()
+    if (authStore.isCommunity && !authStore.user?.id_komunitas) {
+      authStore.fetchMe()
+    }
   }
 })
 </script>
@@ -105,16 +108,8 @@ onMounted(() => {
         </div>
 
         <template v-if="isLoggedIn">
-          <template v-if="authStore.isCommunity">
-            <router-link to="/communities/dashboard" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/communities/dashboard') ? 'font-medium text-[#8B4513]' : ''">Dashboard</router-link>
-            <router-link to="/communities/campaigns/history" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/communities/campaigns') ? 'font-medium text-[#8B4513]' : ''">Campaign Saya</router-link>
-            <router-link to="/communities/profile/edit" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/communities/profile') ? 'font-medium text-[#8B4513]' : ''">Profil</router-link>
-          </template>
-          <template v-else>
-            <router-link to="/donations/history" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/donations') ? 'font-medium text-[#8B4513]' : ''">Donasi Saya</router-link>
-            <router-link to="/profile" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/profile') ? 'font-medium text-[#8B4513]' : ''">Profil Saya</router-link>
-          </template>
-          <router-link to="/notifications" class="relative text-gray-700 transition-colors hover:text-[#8B4513]" aria-label="Notifikasi">
+          <!-- Notifikasi -->
+          <router-link to="/notifications" class="relative text-gray-700 transition-colors hover:text-[#8B4513] mr-1" aria-label="Notifikasi">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
@@ -125,11 +120,33 @@ onMounted(() => {
               {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
             </span>
           </router-link>
-          <button @click="handleLogout" class="text-gray-700 transition-colors hover:text-[#8B4513]" aria-label="Keluar">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
+
+          <!-- Dropdown Profil -->
+          <div class="relative group">
+            <button class="flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-[#8B4513] transition-colors py-2">
+              <div class="w-8 h-8 bg-[#F5F0E8] text-[#8B4513] rounded-full flex items-center justify-center border border-[#8B4513]/20">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="8" r="4" /><path stroke-linecap="round" d="M4 20c0-4 3.5-6 8-6s8 2 8 6" />
+                </svg>
+              </div>
+              <span class="max-w-[120px] truncate hidden lg:block">{{ authStore.user?.name || 'Akun Saya' }}</span>
+              <svg class="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div class="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden transform origin-top-right scale-95 group-hover:scale-100 py-1">
+              <template v-if="authStore.isCommunity">
+                <router-link to="/communities/dashboard" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F5F0E8] hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/communities/dashboard') ? 'font-medium text-[#8B4513] bg-[#F5F0E8]' : ''">Dashboard</router-link>
+                <router-link to="/communities/campaigns/history" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F5F0E8] hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/communities/campaigns') ? 'font-medium text-[#8B4513] bg-[#F5F0E8]' : ''">Campaign Saya</router-link>
+                <router-link to="/communities/withdrawals" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F5F0E8] hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/communities/withdrawals') ? 'font-medium text-[#8B4513] bg-[#F5F0E8]' : ''">Pencairan Dana</router-link>
+                <router-link v-if="authStore.user?.id_komunitas || authStore.user?.komunitas?.id_komunitas" :to="`/communities/${authStore.user?.komunitas?.id_komunitas || authStore.user?.id_komunitas}`" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F5F0E8] hover:text-[#8B4513] transition-colors" :class="route.path === `/communities/${authStore.user?.komunitas?.id_komunitas || authStore.user?.id_komunitas}` ? 'font-medium text-[#8B4513] bg-[#F5F0E8]' : ''">Profil Komunitas</router-link>
+              </template>
+              <template v-else>
+                <router-link to="/donations/history" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F5F0E8] hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/donations') ? 'font-medium text-[#8B4513] bg-[#F5F0E8]' : ''">Donasi Saya</router-link>
+                <router-link to="/profile" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F5F0E8] hover:text-[#8B4513] transition-colors" :class="route.path.startsWith('/profile') ? 'font-medium text-[#8B4513] bg-[#F5F0E8]' : ''">Profil Saya</router-link>
+              </template>
+              <div class="my-1 border-t border-gray-100"></div>
+              <button @click="handleLogout" class="flex w-full items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">Keluar</button>
+            </div>
+          </div>
         </template>
         <template v-else>
           <router-link to="/login" class="text-sm text-gray-700 hover:text-[#8B4513] transition-colors">Donasi Saya</router-link>
@@ -182,6 +199,8 @@ onMounted(() => {
         <template v-if="isLoggedIn && authStore.isCommunity">
           <router-link to="/communities/dashboard" class="rounded-lg px-3 py-2 text-sm transition-colors hover:text-[#8B4513] text-gray-700" @click="isMobileMenuOpen = false">Dashboard</router-link>
           <router-link to="/communities/campaigns/history" class="rounded-lg px-3 py-2 text-sm transition-colors hover:text-[#8B4513] text-gray-700" @click="isMobileMenuOpen = false">Campaign Saya</router-link>
+          <router-link to="/communities/withdrawals" class="rounded-lg px-3 py-2 text-sm transition-colors hover:text-[#8B4513] text-gray-700" @click="isMobileMenuOpen = false">Pencairan Dana</router-link>
+          <router-link v-if="authStore.user?.id_komunitas || authStore.user?.komunitas?.id_komunitas" :to="`/communities/${authStore.user?.komunitas?.id_komunitas || authStore.user?.id_komunitas}`" class="rounded-lg px-3 py-2 text-sm transition-colors hover:text-[#8B4513] text-gray-700" @click="isMobileMenuOpen = false">Profil Komunitas</router-link>
         </template>
         <template v-else>
           <router-link to="/donations/history" class="rounded-lg px-3 py-2 text-sm transition-colors hover:text-[#8B4513] text-gray-700" @click="isMobileMenuOpen = false">Donasi Saya</router-link>

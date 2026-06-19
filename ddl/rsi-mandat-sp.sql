@@ -18,7 +18,8 @@ CREATE OR REPLACE PROCEDURE sp_create_donation(
     IN p_nominal BIGINT,
     IN p_metode_pembayaran VARCHAR(20),
     IN p_is_anonim BOOLEAN,
-    IN p_nama_tampil VARCHAR(100)
+    IN p_nama_tampil VARCHAR(100),
+    IN p_pesan TEXT DEFAULT NULL
 )
 LANGUAGE plpgsql
 AS $$
@@ -62,6 +63,7 @@ BEGIN
         metode_pembayaran,
         nama_tampil,
         is_anonim,
+        pesan,
         status_pembayaran
     )
     VALUES (
@@ -74,6 +76,7 @@ BEGIN
             ELSE TRIM(p_nama_tampil)
         END,
         p_is_anonim,
+        TRIM(p_pesan),
         'pending'
     );
 

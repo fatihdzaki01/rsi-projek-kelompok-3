@@ -43,7 +43,8 @@ export const useAuthStore = defineStore('auth', {
         } else {
           response = await api.get('/users/me')
         }
-        this.user = response.data.data || response.data.user || response.data
+        const newData = response.data.data || response.data.user || response.data
+        this.user = { ...this.user, ...newData, role: role }
         localStorage.setItem('user', JSON.stringify(this.user))
         return this.user
       } catch (error) {

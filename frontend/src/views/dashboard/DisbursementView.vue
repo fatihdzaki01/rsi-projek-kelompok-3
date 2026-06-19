@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/api/axios'
-import AppFooter from '@/components/shared/AppFooter.vue'
+import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const activeTab = ref('review')
 const items = ref([])
@@ -106,222 +106,176 @@ onMounted(fetchDisbursements)
 </script>
 
 <template>
-  <main class="dashboard-page">
-    <header class="navbar">
-      <div class="brand">BERBAGIVE</div>
-
-      <nav>
-        <RouterLink to="/dashboard">Dashboard</RouterLink>
-        <RouterLink to="/campaigns/approval">Approval</RouterLink>
-        <RouterLink to="/disbursements" class="active">
-          Pencairan
-        </RouterLink>
-      </nav>
-    </header>
-
-    <section class="container">
-      <div class="page-title">
+  <AdminLayout>
+    <div class="space-y-6">
+      <div class="flex justify-between items-center">
         <div>
-          <h1>Pencairan Dana Superadmin</h1>
-          <p>Review pengajuan pencairan dan riwayat pencairan dana.</p>
+          <h1 class="text-xl font-bold text-gray-800">Pencairan Dana Superadmin</h1>
+          <p class="text-sm text-gray-500">Review pengajuan pencairan dan riwayat pencairan dana.</p>
         </div>
-
-        <RouterLink to="/dashboard" class="back-link">Kembali Dashboard</RouterLink>
       </div>
 
-      <section v-if="successMessage" class="card success">
+      <section v-if="successMessage" class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
         {{ successMessage }}
       </section>
 
-      <section class="approval-tabs">
-        <button :class="{ active: activeTab === 'review' }" @click="changeTab('review')">
+      <div class="flex space-x-1 bg-stone-100 p-1 rounded-lg w-fit">
+        <button
+          @click="changeTab('review')"
+          :class="['px-4 py-2 text-sm font-medium rounded-md transition-colors', activeTab === 'review' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700']"
+        >
           Menunggu Review
         </button>
-
-        <button :class="{ active: activeTab === 'history' }" @click="changeTab('history')">
+        <button
+          @click="changeTab('history')"
+          :class="['px-4 py-2 text-sm font-medium rounded-md transition-colors', activeTab === 'history' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700']"
+        >
           Riwayat Pencairan
         </button>
-      </section>
+      </div>
 
-      <section v-if="loading" class="card">
-        Memuat data pencairan...
-      </section>
-
-      <section v-else-if="errorMessage" class="card error">
-        {{ errorMessage }}
-      </section>
-
-      <section v-else class="card">
-        <div class="card-header">
+      <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
           <div>
-            <h2>
+            <h2 class="text-sm font-semibold text-gray-800">
               {{ activeTab === 'review' ? 'Pengajuan Pencairan' : 'Riwayat Pencairan' }}
             </h2>
-            <p>
+            <p class="text-xs text-gray-400">
               {{ activeTab === 'review'
                 ? 'Daftar pengajuan dana yang perlu direview superadmin.'
                 : 'Daftar riwayat keputusan pencairan dana.'
               }}
             </p>
           </div>
-
-          <span class="badge">{{ pagination?.total || 0 }} data</span>
+          <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full font-medium">{{ pagination?.total || 0 }} data</span>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Campaign</th>
-              <th>Komunitas</th>
-              <th>Nominal</th>
-              <th>Status</th>
-              <th>Tanggal</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
+        <div v-if="loading" class="flex items-center justify-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B4513]"></div>
+          <span class="ml-3 text-gray-500">Memuat data...</span>
+        </div>
 
-          <tbody>
-            <tr v-if="items.length === 0">
-              <td colspan="7">Belum ada data pencairan.</td>
-            </tr>
+        <div v-else-if="errorMessage" class="p-8 text-center text-red-500 text-sm">
+          {{ errorMessage }}
+        </div>
 
-            <tr v-for="item in items" :key="item.id_pencairan">
-              <td>{{ item.id_pencairan }}</td>
-
-              <td>
-                {{ item.judul_campaign }}
-              </td>
-
-              <td>
-                {{ item.nama_lembaga }}
-              </td>
-
-              <td>
-                Rp{{ Number(item.nominal_diajukan || item.nominal_disetujui || 0).toLocaleString('id-ID') }}
-              </td>
-
-              <td>
-                <span class="status">{{ item.status }}</span>
-              </td>
-
-              <td>
-                {{ item.tanggal_pengajuan || item.tanggal_keputusan || '-' }}
-              </td>
-
-              <td>
-                <template v-if="activeTab === 'review' && item.status === 'menunggu_review'">
-                  <button
-                    class="mini-btn approve"
-                    :disabled="approveLoading[item.id_pencairan]"
-                    @click="handleApprove(item.id_pencairan)"
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-stone-50 text-gray-500 text-xs uppercase">
+              <tr>
+                <th class="px-5 py-3 text-left font-medium">ID</th>
+                <th class="px-5 py-3 text-left font-medium">Campaign</th>
+                <th class="px-5 py-3 text-left font-medium">Komunitas</th>
+                <th class="px-5 py-3 text-left font-medium">Nominal</th>
+                <th class="px-5 py-3 text-left font-medium">Status</th>
+                <th class="px-5 py-3 text-left font-medium">Tanggal</th>
+                <th class="px-5 py-3 text-center font-medium">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-100">
+              <tr v-if="items.length === 0">
+                <td colspan="7" class="p-8 text-center text-gray-400 text-sm">Belum ada data pencairan.</td>
+              </tr>
+              <tr v-for="item in items" :key="item.id_pencairan" class="hover:bg-stone-50 transition-colors">
+                <td class="px-5 py-3 text-gray-500">#{{ item.id_pencairan }}</td>
+                <td class="px-5 py-3 font-medium text-gray-800 max-w-[200px] truncate">{{ item.judul_campaign }}</td>
+                <td class="px-5 py-3 text-gray-600">{{ item.nama_lembaga }}</td>
+                <td class="px-5 py-3 text-gray-700">Rp{{ Number(item.nominal_diajukan || item.nominal_disetujui || 0).toLocaleString('id-ID') }}</td>
+                <td class="px-5 py-3">
+                  <span
+                    :class="[
+                      'inline-block px-2 py-0.5 rounded-full text-xs font-medium',
+                      item.status === 'menunggu_review' ? 'bg-amber-100 text-amber-700' : '',
+                      item.status === 'disetujui' ? 'bg-green-100 text-green-700' : '',
+                      item.status === 'selesai' ? 'bg-blue-100 text-blue-700' : '',
+                      item.status === 'ditolak' ? 'bg-red-100 text-red-700' : ''
+                    ]"
                   >
-                    {{ approveLoading[item.id_pencairan] ? '...' : 'Setujui' }}
-                  </button>
-                  <button
-                    class="mini-btn reject"
-                    @click="openReject(item.id_pencairan)"
-                  >
-                    Tolak
-                  </button>
-                </template>
-                <span v-else class="text-xs text-gray-400">-</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                    {{ item.status.replace('_', ' ').toUpperCase() }}
+                  </span>
+                </td>
+                <td class="px-5 py-3 text-gray-500 text-xs">
+                  {{ new Date(item.tanggal_pengajuan || item.tanggal_keputusan).toLocaleDateString('id-ID') }}
+                </td>
+                <td class="px-5 py-3 text-center">
+                  <template v-if="activeTab === 'review' && item.status === 'menunggu_review'">
+                    <div class="flex justify-center gap-2">
+                      <button
+                        class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs disabled:opacity-50 transition-colors"
+                        :disabled="approveLoading[item.id_pencairan]"
+                        @click="handleApprove(item.id_pencairan)"
+                      >
+                        {{ approveLoading[item.id_pencairan] ? '...' : 'Setujui' }}
+                      </button>
+                      <button
+                        class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs transition-colors"
+                        @click="openReject(item.id_pencairan)"
+                      >
+                        Tolak
+                      </button>
+                    </div>
+                  </template>
+                  <span v-else class="text-xs text-gray-400">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-        <section v-if="pagination" class="pagination-box">
-          <button :disabled="!pagination.prev_page_url" @click="prevPage">
-            Sebelumnya
-          </button>
+          <div v-if="pagination && pagination.last_page > 1" class="px-5 py-4 border-t border-stone-100 flex items-center justify-between">
+            <button
+              class="px-3 py-1.5 border border-stone-200 rounded text-sm text-gray-600 hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="!pagination.prev_page_url"
+              @click="prevPage"
+            >
+              Sebelumnya
+            </button>
+            <span class="text-sm text-gray-500">
+              Halaman {{ pagination.current_page }} dari {{ pagination.last_page }}
+            </span>
+            <button
+              class="px-3 py-1.5 border border-stone-200 rounded text-sm text-gray-600 hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="!pagination.next_page_url"
+              @click="nextPage"
+            >
+              Selanjutnya
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-          <span>
-            Halaman {{ pagination.current_page }} dari {{ pagination.last_page }}
-          </span>
-
-          <button :disabled="!pagination.next_page_url" @click="nextPage">
-            Selanjutnya
-          </button>
-        </section>
-      </section>
-    </section>
-    <AppFooter />
-
-    <div v-if="showRejectModal" class="modal-overlay" @click.self="showRejectModal = false">
-      <div class="modal-box">
-        <h3 class="text-sm font-bold text-[#2C2C2C] mb-3">Tolak Pencairan</h3>
-        <textarea
-          v-model="rejectReason"
-          rows="3"
-          placeholder="Alasan penolakan..."
-          class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
-        ></textarea>
-        <div class="flex justify-end gap-2 mt-3">
-          <button class="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-800" @click="showRejectModal = false">Batal</button>
+    <div v-if="showRejectModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" @click.self="showRejectModal = false">
+      <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Tolak Pencairan</h3>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Alasan Penolakan</label>
+          <textarea
+            v-model="rejectReason"
+            rows="3"
+            placeholder="Masukkan alasan penolakan..."
+            class="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8B4513]/50 focus:border-[#8B4513] resize-none"
+          ></textarea>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800" @click="showRejectModal = false">Batal</button>
           <button
-            class="px-4 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            class="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
             :disabled="!rejectReason.trim() || rejectLoading"
             @click="handleReject"
           >
-            {{ rejectLoading ? '...' : 'Tolak' }}
+            {{ rejectLoading ? 'Memproses...' : 'Tolak Pencairan' }}
           </button>
         </div>
       </div>
     </div>
-  </main>
+  </AdminLayout>
 </template>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
-.modal-box {
-  background: #fff;
-  padding: 24px;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 420px;
-}
-.mini-btn {
-  padding: 4px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-  font-weight: 500;
-  margin-right: 4px;
-  cursor: pointer;
-  border: none;
-  color: #fff;
-}
-.mini-btn.approve {
-  background: #16a34a;
-}
-.mini-btn.approve:hover {
-  background: #15803d;
-}
-.mini-btn.reject {
-  background: #dc2626;
-}
-.mini-btn.reject:hover {
-  background: #b91c1c;
-}
-.mini-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.card.success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

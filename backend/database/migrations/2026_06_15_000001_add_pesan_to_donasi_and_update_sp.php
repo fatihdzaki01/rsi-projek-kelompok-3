@@ -14,7 +14,7 @@ return new class extends Migration
         });
 
         DB::statement("
-            CREATE OR REPLACE FUNCTION sp_create_donation(
+            CREATE OR REPLACE PROCEDURE sp_create_donation(
                 p_id_user integer,
                 p_id_campaign integer,
                 p_nominal bigint,
@@ -23,7 +23,6 @@ return new class extends Migration
                 p_nama_tampil character varying,
                 p_pesan text DEFAULT NULL
             )
-            RETURNS void
             LANGUAGE plpgsql
             AS \$\$
             DECLARE
@@ -76,7 +75,7 @@ return new class extends Migration
         });
 
         DB::statement("
-            CREATE OR REPLACE FUNCTION sp_create_donation(
+            CREATE OR REPLACE PROCEDURE sp_create_donation(
                 p_id_user integer,
                 p_id_campaign integer,
                 p_nominal bigint,
@@ -84,7 +83,6 @@ return new class extends Migration
                 p_is_anonim boolean,
                 p_nama_tampil character varying
             )
-            RETURNS void
             LANGUAGE plpgsql
             AS \$\$
             DECLARE
