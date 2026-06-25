@@ -17,8 +17,7 @@ class DonationService
         $params = [$userId];
 
         if ($search !== '') {
-            $where .= ' AND (judul_campaign LIKE ? OR nomor_transaksi LIKE ?)';
-            $params[] = "%{$search}%";
+            $where .= ' AND (judul_campaign LIKE ?)';
             $params[] = "%{$search}%";
         }
 
@@ -144,12 +143,13 @@ class DonationService
             $this->generateReceiptPdf($idDonasi);
 
             $campaignInfo = DB::selectOne(
-                'SELECT id_komunitas FROM donasi d
+                'SELECT d.id_campaign, c.id_komunitas FROM donasi d
                  JOIN campaign c ON c.id_campaign = d.id_campaign
                  WHERE d.id_donasi = ?',
                 [$idDonasi]
             );
-            if ($campaignInfo?->id_komunitas) {
+            if ($campaignInfo) {
+                Cache::forget("campaign:public:{$campaignInfo->id_campaign}");
                 Cache::forget("community:profile:{$campaignInfo->id_komunitas}");
             }
         } else {
@@ -192,11 +192,10 @@ class DonationService
         ]);
 
         $filename = 'receipts/donation-' . $idDonasi . '.pdf';
-        $path = 'public/' . $filename;
 
-        Storage::put($path, $pdf->output());
+        Storage::disk('public')->put($filename, $pdf->output());
 
-        $url = Storage::url($filename);
+        $url = '/storage/' . $filename;
 
         DB::update(
             'UPDATE donasi SET bukti_pdf_url = ? WHERE id_donasi = ?',

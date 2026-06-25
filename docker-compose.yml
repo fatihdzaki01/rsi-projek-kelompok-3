@@ -83,6 +83,8 @@ services:
       POSTGRES_PASSWORD: "${DB_PASSWORD:-berbagive123}"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-berbagive} -d ${DB_DATABASE:-berbagive}"]
       interval: 10s

@@ -36,10 +36,8 @@
             <button @click="handleApprove(item)" class="px-4 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">Setujui</button>
           </div>
         </div>
-        <div v-if="pagination.last_page > 1" class="flex justify-center gap-2 mt-4">
-          <button @click="loadPage(pagination.current_page - 1)" :disabled="pagination.current_page <= 1" class="px-3 py-1 text-xs border border-stone-200 rounded disabled:opacity-30">Prev</button>
-          <span class="text-xs text-gray-400">{{ pagination.current_page }}/{{ pagination.last_page }}</span>
-          <button @click="loadPage(pagination.current_page + 1)" :disabled="pagination.current_page >= pagination.last_page" class="px-3 py-1 text-xs border border-stone-200 rounded disabled:opacity-30">Next</button>
+        <div v-if="pagination.last_page > 1" class="flex justify-center mt-4">
+          <PaginationBar :currentPage="currentPage" :totalPages="pagination.last_page" :perPage="perPage" :total="pagination.total" @update:currentPage="loadPage" @update:perPage="changePerPage" />
         </div>
       </template>
 
@@ -67,6 +65,9 @@
               </tr>
             </tbody>
           </table>
+          <div v-if="historyPagination.last_page > 1" class="px-5 py-3 border-t border-stone-100">
+            <PaginationBar :currentPage="historyPage" :totalPages="historyPagination.last_page" :perPage="perPageHistory" :total="historyPagination.total" @update:currentPage="loadHistoryPage" @update:perPage="changeHistoryPerPage" />
+          </div>
         </div>
       </template>
     </div>
@@ -89,13 +90,19 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import api from '@/api/axios'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const activeTab = ref('pending')
 const loading = ref(true)
 const items = ref([])
-const pagination = ref({ current_page: 1, last_page: 1 })
+const pagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const currentPage = ref(1)
+const perPage = ref(10)
 const historyList = ref([])
+const historyPagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const historyPage = ref(1)
+const perPageHistory = ref(15)
 
 const showModal = ref(false)
 const rejectTarget = ref(null)
@@ -103,12 +110,13 @@ const rejectReason = ref('')
 const rejectError = ref('')
 
 async function loadPage(page = 1) {
+  currentPage.value = page
   loading.value = true
   try {
-    const res = await api.get('/superadmin/bank-account-changes', { params: { page, per_page: 10 } })
+    const res = await api.get('/superadmin/bank-account-changes', { params: { page, per_page: perPage.value } })
     const data = res.data.data || res.data
     items.value = data.data || data
-    pagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1 }
+    pagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
   } catch (e) {
     items.value = []
   } finally {
@@ -117,16 +125,28 @@ async function loadPage(page = 1) {
 }
 
 async function loadHistoryPage(page = 1) {
+  historyPage.value = page
   loading.value = true
   try {
-    const res = await api.get('/superadmin/bank-account-changes/history', { params: { page, per_page: 15 } })
+    const res = await api.get('/superadmin/bank-account-changes/history', { params: { page, per_page: perPageHistory.value } })
     const data = res.data.data || res.data
     historyList.value = data.data || data
+    historyPagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
   } catch (e) {
     historyList.value = []
   } finally {
     loading.value = false
   }
+}
+
+function changePerPage(pp) {
+  perPage.value = pp
+  loadPage(1)
+}
+
+function changeHistoryPerPage(pp) {
+  perPageHistory.value = pp
+  loadHistoryPage(1)
 }
 
 async function handleApprove(item) {

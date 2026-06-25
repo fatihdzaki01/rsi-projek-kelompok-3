@@ -289,6 +289,15 @@ async function handleSubmit() {
   globalError.value = ''
   success.value = ''
 
+  const missingDocs = dokumenList.value
+    .filter(d => !d.is_opsional && !files.value[d.id_jenis_dok])
+    .map(d => d.nama_dokumen)
+
+  if (missingDocs.length) {
+    globalError.value = `Dokumen wajib belum lengkap: ${missingDocs.join(', ')}`
+    return
+  }
+
   loading.value = true
   try {
     const fd = new FormData()

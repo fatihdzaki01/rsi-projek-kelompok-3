@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/api/axios'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const activeTab = ref('review')
@@ -10,6 +11,7 @@ const pagination = ref(null)
 const loading = ref(true)
 const errorMessage = ref('')
 const currentPage = ref(1)
+const perPage = ref(8)
 const successMessage = ref('')
 
 const showRejectModal = ref(false)
@@ -30,7 +32,7 @@ const fetchDisbursements = async () => {
 
     const response = await api.get(endpoint, {
       params: {
-        per_page: 8,
+        per_page: perPage.value,
         page: currentPage.value,
       },
     })
@@ -51,18 +53,15 @@ const changeTab = (tab) => {
   fetchDisbursements()
 }
 
-const nextPage = () => {
-  if (pagination.value?.next_page_url) {
-    currentPage.value += 1
-    fetchDisbursements()
-  }
+const loadPage = (page) => {
+  currentPage.value = page
+  fetchDisbursements()
 }
 
-const prevPage = () => {
-  if (pagination.value?.prev_page_url) {
-    currentPage.value -= 1
-    fetchDisbursements()
-  }
+const changePerPage = (pp) => {
+  perPage.value = pp
+  currentPage.value = 1
+  fetchDisbursements()
 }
 
 const openReject = (id) => {
@@ -221,24 +220,8 @@ onMounted(fetchDisbursements)
             </tbody>
           </table>
 
-          <div v-if="pagination && pagination.last_page > 1" class="px-5 py-4 border-t border-stone-100 flex items-center justify-between">
-            <button
-              class="px-3 py-1.5 border border-stone-200 rounded text-sm text-gray-600 hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="!pagination.prev_page_url"
-              @click="prevPage"
-            >
-              Sebelumnya
-            </button>
-            <span class="text-sm text-gray-500">
-              Halaman {{ pagination.current_page }} dari {{ pagination.last_page }}
-            </span>
-            <button
-              class="px-3 py-1.5 border border-stone-200 rounded text-sm text-gray-600 hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="!pagination.next_page_url"
-              @click="nextPage"
-            >
-              Selanjutnya
-            </button>
+          <div v-if="pagination && pagination.last_page > 1" class="px-5 py-4 border-t border-stone-100">
+            <PaginationBar :currentPage="currentPage" :totalPages="pagination.last_page" :perPage="perPage" :total="pagination.total" @update:currentPage="loadPage" @update:perPage="changePerPage" />
           </div>
         </div>
       </div>

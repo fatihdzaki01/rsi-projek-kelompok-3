@@ -102,6 +102,13 @@
                 <p v-if="errors.target_audiens" class="mt-1 text-xs text-red-500">{{ errors.target_audiens }}</p>
               </div>
 
+              <div v-if="form.tipe_distribusi === 'individual'">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Total Penerima Manfaat <span class="text-red-400">*</span></label>
+                <input v-model.number="form.total_penerima_manfaat" type="number" min="0" placeholder="Jumlah penerima manfaat" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
+                <p class="mt-1 text-xs text-gray-400">Jumlah orang yang akan menerima manfaat</p>
+                <p v-if="errors.total_penerima_manfaat" class="mt-1 text-xs text-red-500">{{ errors.total_penerima_manfaat }}</p>
+              </div>
+
               <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Foto Campaign <span class="text-red-400">*</span></label>
                 <input v-model="form.foto_campaign_url" type="url" placeholder="https://" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent" />
@@ -159,6 +166,7 @@ const form = ref({
   kode_wilayah: '',
   tipe_distribusi: 'kolektif',
   target_audiens: '',
+  total_penerima_manfaat: null,
   foto_campaign_url: '',
   url_rab: '',
 })
@@ -197,6 +205,7 @@ async function handleSubmit() {
       kode_wilayah: form.value.kode_wilayah,
       tipe_distribusi: form.value.tipe_distribusi,
       target_audiens: form.value.target_audiens || undefined,
+      total_penerima_manfaat: form.value.total_penerima_manfaat || undefined,
       foto_campaign_url: form.value.foto_campaign_url,
       url_rab: form.value.url_rab || undefined,
     })

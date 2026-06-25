@@ -64,6 +64,7 @@ class KomunitasCampaignController extends Controller
                 'foto_campaign_url' => ['required', 'string', 'max:255'],
                 'kode_wilayah'      => ['required', 'string', 'exists:wilayah,kode'],
                 'target_audiens'    => ['nullable', 'string', 'max:150'],
+                'total_penerima_manfaat' => ['nullable', 'integer', 'min:0'],
                 'tipe_distribusi'   => ['required', 'in:individual,kolektif'],
                 'url_rab'           => ['nullable', 'string', 'max:255'],
             ]);
@@ -84,6 +85,10 @@ class KomunitasCampaignController extends Controller
         // Campaign individual wajib punya target_audiens (mirror chk_target_audiens_individual)
         if ($data['tipe_distribusi'] === 'individual' && empty($data['target_audiens'])) {
             return $this->error('ERR-CAMP-01', 'Field wajib belum diisi', 400);
+        }
+
+        if ($data['tipe_distribusi'] === 'individual' && empty($data['total_penerima_manfaat'])) {
+            return $this->error('ERR-CAMP-01', 'Total penerima manfaat wajib diisi untuk campaign individual', 400);
         }
 
         $campaign = DB::transaction(function () use ($komunitas, $data) {

@@ -9,6 +9,8 @@ const router = useRouter()
 const failedDonation = ref(null)
 const loading = ref(true)
 
+const campaignId = computed(() => failedDonation.value?.id_campaign || null)
+
 const formattedAmount = computed(() => {
   if (!failedDonation.value) return ''
   return 'Rp ' + Number(failedDonation.value.nominal).toLocaleString('id-ID')
@@ -19,12 +21,19 @@ onMounted(async () => {
     const res = await api.get(`/donations/${route.params.id}`)
     failedDonation.value = res.data.data
   } catch {
-    alert('Gagal memuat data donasi')
     router.push('/donations/history')
   } finally {
     loading.value = false
   }
 })
+
+function goToCampaign() {
+  if (campaignId.value) {
+    router.push(`/campaigns/${campaignId.value}`)
+  } else {
+    router.push('/campaigns')
+  }
+}
 
 function retryPayment() {
   const method = failedDonation.value?.metode_pembayaran
@@ -37,11 +46,11 @@ function retryPayment() {
 }
 
 function changeMethod() {
-  router.back()
-}
-
-function contactSupport() {
-  alert('Hubungi bantuan melalui email support@berbagive.com')
+  if (campaignId.value) {
+    router.push(`/campaigns/${campaignId.value}`)
+  } else {
+    router.push('/campaigns')
+  }
 }
 </script>
 
@@ -98,7 +107,7 @@ function contactSupport() {
           class="text-xs underline underline-offset-2 transition-opacity hover:opacity-70"
           style="color: #0D9488;"
         >
-          Coba Metode Lain
+          Pilih Campaign Lain
         </button>
       </div>
 
@@ -113,11 +122,10 @@ function contactSupport() {
         </button>
 
         <button
-          @click="contactSupport"
-          class="text-sm text-center transition-opacity hover:opacity-60"
-          style="color: #9CA3AF;"
+          @click="goToCampaign"
+          class="w-full py-3 rounded-xl font-semibold text-sm border border-gray-200 text-gray-700 transition-opacity hover:opacity-80"
         >
-          Hubungi Bantuan
+          Kembali ke Campaign
         </button>
       </div>
 

@@ -15,8 +15,8 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'foto_profil' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
-            'nama_lengkap' => ['required', 'string', 'max:150'],
-            'nomor_telepon' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
+            'nama_lengkap' => ['required', 'string', 'max:150', 'regex:/^[a-zA-Z\s]+$/'],
+            'nomor_telepon' => ['nullable', 'string', 'max:20', 'regex:/^(08|\+?62)\d{9,13}$/'],
             'jenis_kelamin' => ['nullable', 'in:L,P'],
             'tanggal_lahir' => ['nullable', 'date'],
             'kode_wilayah' => ['nullable', 'string', 'max:20', 'exists:wilayah,kode'],
@@ -26,14 +26,15 @@ class UpdateProfileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'foto_profil.image' => 'File foto profil harus berupa gambar',
-            'foto_profil.mimes' => 'Format foto profil harus JPG, JPEG, atau PNG',
-            'foto_profil.max' => 'Ukuran foto profil melebihi batas maksimum 2MB',
-            'nama_lengkap.required' => 'Nama lengkap wajib diisi',
-            'nomor_telepon.regex' => 'Format nomor telepon tidak valid',
-            'jenis_kelamin.in' => 'Jenis kelamin harus L atau P',
-            'tanggal_lahir.date' => 'Tanggal lahir tidak valid',
-            'kode_wilayah.exists' => 'Kode wilayah tidak ditemukan',
+            'foto_profil.image'       => 'File foto profil harus berupa gambar',
+            'foto_profil.mimes'       => 'Format foto profil harus JPG, JPEG, atau PNG',
+            'foto_profil.max'         => 'Ukuran foto profil melebihi batas maksimum 2MB',
+            'nama_lengkap.required'   => 'Nama lengkap wajib diisi',
+            'nama_lengkap.regex'      => 'Nama lengkap tidak boleh mengandung angka',
+            'nomor_telepon.regex'     => 'Nomor telepon harus diawali 08 atau 62 dan terdiri dari 10-15 digit',
+            'jenis_kelamin.in'        => 'Jenis kelamin harus L atau P',
+            'tanggal_lahir.date'      => 'Tanggal lahir tidak valid',
+            'kode_wilayah.exists'     => 'Kode wilayah tidak ditemukan',
         ];
     }
 }

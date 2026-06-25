@@ -27,18 +27,7 @@ onMounted(async () => {
 })
 
 function goBack() {
-  router.push('/donations/history')
-}
-
-function share() {
-  if (!donation.value) return
-  if (navigator.share) {
-    navigator.share({
-      title: 'Berbagive - Donasi Berhasil',
-      text: `Saya baru saja berdonasi ${formattedAmount.value} untuk ${donation.value.judul_campaign}. Yuk ikut berdonasi!`,
-      url: window.location.href
-    })
-  }
+  router.push('/')
 }
 </script>
 
@@ -127,23 +116,7 @@ function share() {
           class="px-6 py-3 rounded-xl font-semibold text-white text-sm transition-opacity hover:opacity-90 active:opacity-80"
           style="background-color: #1a2744;"
         >
-          Kembali
-        </button>
-
-        <button
-          @click="share"
-          class="flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-70 active:opacity-50"
-          style="color: #1a2744;"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
-          Bagikan Kebaikan
+          Kembali ke Beranda
         </button>
       </div>
     </div>

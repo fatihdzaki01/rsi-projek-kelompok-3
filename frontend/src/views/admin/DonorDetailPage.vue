@@ -39,12 +39,15 @@
                 <td class="px-5 py-3 text-[#2C2C2C]">{{ h.judul_campaign || '-' }}</td>
                 <td class="px-5 py-3 text-right font-medium">{{ formatRupiah(h.nominal) }}</td>
                 <td class="px-5 py-3 text-center">
-                  <span :class="['px-2 py-0.5 rounded-full text-xs font-medium', statusClass(h.status)]">{{ h.status_label || h.status }}</span>
+                  <span :class="['px-2 py-0.5 rounded-full text-xs font-medium', statusClass(h.status_pembayaran)]">{{ h.status_pembayaran }}</span>
                 </td>
                 <td class="px-5 py-3 text-right text-gray-500">{{ h.created_at ? new Date(h.created_at).toLocaleDateString('id-ID') : '-' }}</td>
               </tr>
             </tbody>
           </table>
+          <div v-if="historyPagination.last_page > 1" class="px-5 py-3 border-t border-stone-100">
+            <PaginationBar :currentPage="currentPage" :totalPages="historyPagination.last_page" :perPage="perPage" :total="historyPagination.total" @update:currentPage="loadPage" @update:perPage="changePerPage" />
+          </div>
         </div>
       </template>
 
@@ -57,12 +60,16 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/api/axios'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const route = useRoute()
 const loading = ref(true)
 const donor = ref(null)
 const history = ref([])
+const historyPagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const currentPage = ref(1)
+const perPage = ref(15)
 
 function formatRupiah(val) { return 'Rp ' + (Number(val) || 0).toLocaleString('id-ID') }
 function statusClass(s) {
@@ -70,13 +77,22 @@ function statusClass(s) {
   return map[s] || 'text-gray-500 bg-gray-100'
 }
 
-async function fetchDetail() {
+function changePerPage(pp) {
+  perPage.value = pp
+  loadPage(1)
+}
+
+async function loadPage(page = 1) {
+  currentPage.value = page
   loading.value = true
   try {
-    const res = await api.get(`/superadmin/donors/${route.params.id}`)
+    const res = await api.get(`/superadmin/donors/${route.params.id}`, { params: { page, per_page: perPage.value } })
     const data = res.data.data || res.data
     donor.value = data.donor || data
-    history.value = data.donation_history || []
+    if (data.donation_history) {
+      history.value = data.donation_history.data || []
+      historyPagination.value = { current_page: data.donation_history.current_page || 1, last_page: data.donation_history.last_page || 1, total: data.donation_history.total || 0 }
+    }
   } catch (e) {
     donor.value = null
   } finally {
@@ -84,5 +100,5 @@ async function fetchDetail() {
   }
 }
 
-onMounted(fetchDetail)
+onMounted(() => loadPage())
 </script>

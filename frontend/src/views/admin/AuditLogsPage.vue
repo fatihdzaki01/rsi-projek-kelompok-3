@@ -67,12 +67,8 @@
             </tr>
           </tbody>
         </table>
-        <div v-if="pagination.last_page > 1" class="px-5 py-3 border-t border-stone-100 flex items-center justify-between">
-          <span class="text-xs text-gray-400">Halaman {{ pagination.current_page }} dari {{ pagination.last_page }}</span>
-          <div class="flex gap-2">
-            <button @click="loadPage(pagination.current_page - 1)" :disabled="pagination.current_page <= 1" class="px-3 py-1 text-xs border border-stone-200 rounded disabled:opacity-30">Prev</button>
-            <button @click="loadPage(pagination.current_page + 1)" :disabled="pagination.current_page >= pagination.last_page" class="px-3 py-1 text-xs border border-stone-200 rounded disabled:opacity-30">Next</button>
-          </div>
+        <div v-if="pagination.last_page > 1" class="px-5 py-3 border-t border-stone-100">
+          <PaginationBar :currentPage="currentPage" :totalPages="pagination.last_page" :perPage="perPage" :total="pagination.total" @update:currentPage="loadPage" @update:perPage="changePerPage" />
         </div>
       </div>
     </div>
@@ -82,12 +78,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const loading = ref(true)
 const logs = ref([])
 const pagination = ref({ current_page: 1, last_page: 1, total: 0 })
 const filter = ref({ action_type: '', start_date: '', end_date: '' })
+const currentPage = ref(1)
+const perPage = ref(20)
 
 function actionBadge(a) {
   const map = {
@@ -112,9 +111,10 @@ function resetFilter() {
 }
 
 async function loadPage(page = 1) {
+  currentPage.value = page
   loading.value = true
   try {
-    const params = { page, per_page: 20 }
+    const params = { page, per_page: perPage.value }
     if (filter.value.action_type) params.action_type = filter.value.action_type
     if (filter.value.start_date) params.start_date = filter.value.start_date
     if (filter.value.end_date) params.end_date = filter.value.end_date
@@ -127,6 +127,11 @@ async function loadPage(page = 1) {
   } finally {
     loading.value = false
   }
+}
+
+function changePerPage(pp) {
+  perPage.value = pp
+  loadPage(1)
 }
 
 onMounted(() => loadPage())

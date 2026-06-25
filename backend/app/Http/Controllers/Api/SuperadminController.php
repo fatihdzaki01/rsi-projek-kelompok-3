@@ -202,6 +202,7 @@ class SuperadminController extends Controller
 
         $this->auditLog($request, 'APPROVE', 'Menyetujui campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
         $this->bustCommunityProfileCache($campaign->id_komunitas);
+        Cache::forget("campaign:public:{$id}");
 
         return ApiResponse::success(null, 'Campaign berhasil disetujui.');
     }
@@ -241,6 +242,7 @@ class SuperadminController extends Controller
 
         $this->auditLog($request, 'REJECT', 'Menolak campaign "' . $campaign->judul . '" (ID: ' . $id . ') — Alasan: ' . $validated['alasan_penolakan']);
         $this->bustCommunityProfileCache($campaign->id_komunitas);
+        Cache::forget("campaign:public:{$id}");
 
         return ApiResponse::success(null, 'Campaign berhasil ditolak.');
     }
@@ -485,11 +487,18 @@ class SuperadminController extends Controller
     {
         $startDate = $request->input('start_date', date('Y-m-01'));
         $endDate = $request->input('end_date', date('Y-m-t'));
+        $perPage = min((int) $request->input('per_page', 15), 100);
+        $page = max(1, (int) $request->input('page', 1));
 
-        return Cache::remember("superadmin:analytics:{$startDate}:{$endDate}", 120, function () use ($startDate, $endDate) {
-            $platformData = DB::table('v_platform_analytics')
+        return Cache::remember("superadmin:analytics:{$startDate}:{$endDate}:{$page}:{$perPage}", 120, function () use ($startDate, $endDate, $perPage, $page) {
+            $platformDataQuery = DB::table('v_platform_analytics')
                 ->whereBetween('tanggal', [$startDate, $endDate])
-                ->orderBy('tanggal')
+                ->orderBy('tanggal');
+
+            $totalDaily = $platformDataQuery->count();
+            $platformData = $platformDataQuery
+                ->offset(($page - 1) * $perPage)
+                ->limit($perPage)
                 ->get();
 
             $financialReport = DB::table('v_financial_report')
@@ -524,13 +533,31 @@ class SuperadminController extends Controller
             ->orderByDesc('total')
             ->get();
 
+        $typeDistribution = DB::table('campaign')
+            ->select('tipe_distribusi', DB::raw('COUNT(id_campaign) as total'))
+            ->groupBy('tipe_distribusi')
+            ->get();
+
+        $beneficiarySummary = [
+            'total_target' => (int) (DB::table('campaign')->sum('total_penerima_manfaat') ?? 0),
+            'total_realisasi' => (int) (DB::table('campaign')->where('status', 'selesai')->sum('total_penerima_manfaat') ?? 0),
+        ];
+
         return ApiResponse::success([
             'platform_daily' => $platformData,
+            'platform_daily_pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $totalDaily,
+                'last_page' => (int) ceil($totalDaily / $perPage),
+            ],
             'financial_report' => $financialReport,
             'financial_summary' => $financialSummary,
             'saldo_akhir' => $saldoAkhir->saldo_akhir ?? 0,
             'campaign_success_rate' => $totalCampaign > 0 ? round(($successfulCampaigns / $totalCampaign) * 100, 2) : 0,
             'category_distribution' => $kategoriDistribution,
+            'type_distribution' => $typeDistribution,
+            'beneficiary_summary' => $beneficiarySummary,
         ], 'Analitik platform berhasil dimuat.');
         });
     }
@@ -576,7 +603,7 @@ class SuperadminController extends Controller
         return ApiResponse::success($data, 'Daftar donatur berhasil dimuat.');
     }
 
-    public function donorDetail(int $id)
+    public function donorDetail(Request $request, int $id)
     {
         $donor = DB::table('users')
             ->select(
@@ -603,11 +630,12 @@ class SuperadminController extends Controller
             return ApiResponse::error('Donatur tidak ditemukan.', 404);
         }
 
+        $perPage = min((int) $request->query('per_page', 15), 100);
+
         $donationHistory = DB::table('v_user_donation_history')
             ->where('id_user', $id)
             ->orderByDesc('created_at')
-            ->limit(50)
-            ->get();
+            ->paginate($perPage);
 
         return ApiResponse::success([
             'donor' => $donor,
@@ -671,7 +699,7 @@ class SuperadminController extends Controller
         return ApiResponse::success($data, 'Daftar komunitas berhasil dimuat.');
     }
 
-    public function communityDetail(int $id)
+    public function communityDetail(Request $request, int $id)
     {
         $community = DB::table('komunitas as k')
             ->leftJoin('users as u', 'u.id_user', '=', 'k.id_user')
@@ -685,10 +713,12 @@ class SuperadminController extends Controller
             return ApiResponse::error('Komunitas tidak ditemukan.', 404);
         }
 
+        $perPage = min((int) $request->query('per_page', 15), 100);
+
         $campaigns = DB::table('campaign')
             ->where('id_komunitas', $id)
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate($perPage);
 
         $documents = DB::table('dokumen_komunitas as dk')
             ->leftJoin('jenis_dokumen as jd', 'jd.id_jenis_dok', '=', 'dk.id_jenis_dok')
@@ -1260,6 +1290,7 @@ class SuperadminController extends Controller
 
         $this->auditLog($request, 'DISABLE', 'Menonaktifkan campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
         $this->bustCommunityProfileCache($campaign->id_komunitas);
+        Cache::forget("campaign:public:{$id}");
 
         return ApiResponse::success(null, 'Campaign berhasil dinonaktifkan.');
     }
@@ -1323,6 +1354,7 @@ class SuperadminController extends Controller
 
         $this->auditLog($request, 'REACTIVATE', 'Mengaktifkan kembali campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
         $this->bustCommunityProfileCache($campaign->id_komunitas);
+        Cache::forget("campaign:public:{$id}");
 
         return ApiResponse::success(null, 'Campaign berhasil diaktifkan kembali.');
     }
@@ -1357,6 +1389,7 @@ class SuperadminController extends Controller
 
         $this->auditLog($request, 'CLOSE_PERMANENT', 'Menutup permanen campaign "' . $campaign->judul . '" (ID: ' . $id . ')');
         $this->bustCommunityProfileCache($campaign->id_komunitas);
+        Cache::forget("campaign:public:{$id}");
 
         return ApiResponse::success(null, 'Campaign berhasil ditutup permanen.');
     }

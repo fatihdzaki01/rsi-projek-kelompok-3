@@ -103,7 +103,13 @@ watch(currentPage, fetchCampaigns)
 
 function goToPage(page) {
   currentPage.value = page
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  fetchCampaigns()
+}
+
+function changePerPage(perPage) {
+  itemsPerPage.value = perPage
+  currentPage.value = 1
+  fetchCampaigns()
 }
 
 function goToCampaignDetail(id) {
@@ -208,7 +214,10 @@ function formatStat(val) {
         v-if="pagination.last_page > 1"
         :currentPage="currentPage"
         :totalPages="pagination.last_page"
+        :perPage="itemsPerPage"
+        :total="pagination.total"
         @update:currentPage="goToPage"
+        @update:perPage="changePerPage"
       />
 
     </div>

@@ -23,7 +23,7 @@
       <div v-if="loading" class="bg-white rounded-xl shadow-sm p-8 text-center text-sm text-gray-400">Memuat data...</div>
 
       <template v-else-if="data">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <div class="bg-white rounded-xl shadow-sm border border-stone-100 p-5">
             <p class="text-xs text-gray-400 mb-1">Total Donasi</p>
             <p class="text-xl font-bold text-[#2C2C2C]">{{ formatRupiah(data.financial_summary?.total_donasi) }}</p>
@@ -40,9 +40,19 @@
             <p class="text-xs text-gray-400 mb-1">Success Rate</p>
             <p class="text-xl font-bold text-[#2C2C2C]">{{ data.campaign_success_rate || 0 }}%</p>
           </div>
+          <div class="bg-white rounded-xl shadow-sm border border-stone-100 p-5">
+            <p class="text-xs text-gray-400 mb-1">Target Penerima</p>
+            <p class="text-xl font-bold text-[#2C2C2C]">{{ (data.beneficiary_summary?.total_target || 0).toLocaleString('id-ID') }}</p>
+            <p class="text-xs text-gray-400 mt-1">Manfaat</p>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-stone-100 p-5">
+            <p class="text-xs text-gray-400 mb-1">Realisasi Penerima</p>
+            <p class="text-xl font-bold text-green-600">{{ (data.beneficiary_summary?.total_realisasi || 0).toLocaleString('id-ID') }}</p>
+            <p class="text-xs text-gray-400 mt-1">Tersalurkan</p>
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div class="bg-white rounded-xl shadow-sm border border-stone-100 p-5">
             <h2 class="text-sm font-bold text-[#2C2C2C] mb-4">Distribusi Kategori</h2>
             <div v-if="!data.category_distribution || data.category_distribution.length === 0" class="text-sm text-gray-400 text-center py-8">Belum ada data</div>
@@ -53,6 +63,20 @@
                   <div class="h-full bg-[#8B4513] rounded-full" :style="{ width: barWidth(cat.total) + '%' }"></div>
                 </div>
                 <span class="text-xs font-medium text-gray-500 w-12 text-right">{{ cat.total }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-stone-100 p-5">
+            <h2 class="text-sm font-bold text-[#2C2C2C] mb-4">Komposisi Campaign</h2>
+            <div v-if="!data.type_distribution || data.type_distribution.length === 0" class="text-sm text-gray-400 text-center py-8">Belum ada data</div>
+            <div v-else class="space-y-2">
+              <div v-for="t in typeDistList" :key="t.key" class="flex items-center gap-3">
+                <span class="text-xs text-gray-600 w-24 truncate">{{ t.label }}</span>
+                <div class="flex-1 h-2 bg-stone-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full" :class="t.key === 'individual' ? 'bg-blue-500' : 'bg-emerald-500'" :style="{ width: typeBarWidth(t.total) + '%' }"></div>
+                </div>
+                <span class="text-xs font-medium text-gray-500 w-12 text-right">{{ t.total }}</span>
               </div>
             </div>
           </div>
@@ -101,6 +125,41 @@
               </tr>
             </tbody>
           </table>
+
+          <div v-if="data.platform_daily_pagination && data.platform_daily_pagination.last_page > 1" class="px-6 py-4 flex items-center justify-between border-t border-stone-100">
+            <p class="text-xs text-gray-500">
+              Halaman {{ data.platform_daily_pagination.current_page }} dari {{ data.platform_daily_pagination.last_page }}
+              ({{ data.platform_daily_pagination.total }} data)
+            </p>
+            <div class="flex items-center gap-1">
+              <button
+                @click="changePage(data.platform_daily_pagination.current_page - 1)"
+                :disabled="data.platform_daily_pagination.current_page === 1 || loading"
+                class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button
+                v-for="p in visibleAnalyticsPages"
+                :key="p"
+                @click="changePage(p)"
+                :disabled="loading"
+                :class="[
+                  'w-8 h-8 flex items-center justify-center rounded-lg text-xs font-medium transition-colors',
+                  currentAnalyticsPage === p ? 'bg-[#8B4513] text-white' : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
+                ]"
+              >
+                {{ p }}
+              </button>
+              <button
+                @click="changePage(data.platform_daily_pagination.current_page + 1)"
+                :disabled="data.platform_daily_pagination.current_page === data.platform_daily_pagination.last_page || loading"
+                class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+          </div>
         </div>
       </template>
     </div>
@@ -108,12 +167,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/api/axios'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const loading = ref(true)
 const data = ref(null)
+const currentAnalyticsPage = ref(1)
 
 const now = new Date()
 const startDate = ref(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0])
@@ -127,11 +187,52 @@ function barWidth(total) {
   return (total / max) * 100
 }
 
+const typeDistList = computed(() => {
+  const raw = data.value?.type_distribution || []
+  const defaults = [
+    { key: 'individual', label: 'Individual', total: 0 },
+    { key: 'kolektif', label: 'Kolektif', total: 0 },
+  ]
+  defaults.forEach(d => {
+    const found = raw.find(r => r.tipe_distribusi === d.key)
+    if (found) d.total = Number(found.total) || 0
+  })
+  return defaults
+})
+
+function typeBarWidth(total) {
+  const totals = typeDistList.value.map(t => t.total)
+  const max = Math.max(...totals, 1)
+  return (total / max) * 100
+}
+
+const visibleAnalyticsPages = computed(() => {
+  const pag = data.value?.platform_daily_pagination
+  if (!pag) return []
+  const total = pag.last_page
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const cur = pag.current_page
+  const pages = new Set([1, total, cur])
+  if (cur > 1) pages.add(cur - 1)
+  if (cur < total) pages.add(cur + 1)
+  return [...pages].sort((a, b) => a - b)
+})
+
+function changePage(page) {
+  currentAnalyticsPage.value = page
+  fetchAnalytics()
+}
+
 async function fetchAnalytics() {
   loading.value = true
   try {
     const res = await api.get('/superadmin/analytics/platform', {
-      params: { start_date: startDate.value, end_date: endDate.value },
+      params: {
+        start_date: startDate.value,
+        end_date: endDate.value,
+        page: currentAnalyticsPage.value,
+        per_page: 15,
+      },
     })
     data.value = res.data.data || res.data
   } catch (e) {

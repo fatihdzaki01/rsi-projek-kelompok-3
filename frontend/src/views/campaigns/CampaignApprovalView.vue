@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/api/axios'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const campaigns = ref([])
@@ -10,6 +11,7 @@ const loading = ref(true)
 const errorMessage = ref('')
 const selectedStatus = ref('menunggu_review')
 const currentPage = ref(1)
+const perPage = ref(10)
 
 const statuses = [
   { label: 'Pending', value: 'menunggu_review' },
@@ -22,7 +24,7 @@ const fetchCampaigns = async () => {
   loading.value = true
   errorMessage.value = ''
   try {
-    const params = { per_page: 10, page: currentPage.value }
+    const params = { per_page: perPage.value, page: currentPage.value }
     if (selectedStatus.value !== 'semua') params.status = selectedStatus.value
     else params.status = ''
     const response = await api.get('/superadmin/campaigns/review', { params })
@@ -36,8 +38,8 @@ const fetchCampaigns = async () => {
 }
 
 const changeStatus = (status) => { selectedStatus.value = status; currentPage.value = 1; fetchCampaigns() }
-const nextPage = () => { if (pagination.value?.next_page_url) { currentPage.value += 1; fetchCampaigns() } }
-const prevPage = () => { if (pagination.value?.prev_page_url) { currentPage.value -= 1; fetchCampaigns() } }
+const loadPage = (page) => { currentPage.value = page; fetchCampaigns() }
+const changePerPage = (pp) => { perPage.value = pp; currentPage.value = 1; fetchCampaigns() }
 const formatRupiah = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID')
 const formatDate = (s) => s ? new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'
 
@@ -106,10 +108,8 @@ onMounted(fetchCampaigns)
           </table>
         </div>
 
-        <div v-if="pagination" class="flex items-center justify-between text-sm">
-          <button :disabled="!pagination.prev_page_url" @click="prevPage" class="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50">← Sebelumnya</button>
-          <span class="text-gray-400 text-xs">Halaman {{ pagination.current_page }} dari {{ pagination.last_page }}</span>
-          <button :disabled="!pagination.next_page_url" @click="nextPage" class="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50">Selanjutnya →</button>
+        <div v-if="pagination" class="flex mt-4">
+          <PaginationBar :currentPage="currentPage" :totalPages="pagination.last_page" :perPage="perPage" :total="pagination.total" @update:currentPage="loadPage" @update:perPage="changePerPage" />
         </div>
       </template>
     </div>

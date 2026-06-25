@@ -22,7 +22,7 @@
           <p class="text-sm text-red-500">{{ errorMessage }}</p>
         </div>
 
-        <template v-else>
+        <template v-else-if="data">
           <!-- Card: Campaign Header -->
           <section class="bg-white rounded-2xl shadow-sm p-6 mb-4">
             <div class="flex items-start justify-between gap-3">
@@ -55,10 +55,14 @@
           </section>
 
           <!-- Stats Cards -->
-          <section class="grid grid-cols-2 gap-4 mb-4">
+          <section class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
             <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
               <p class="text-2xl font-bold text-[#1a2744]">{{ data.jumlah_donatur }}</p>
               <p class="text-xs text-gray-500 mt-1">Donatur</p>
+            </div>
+            <div v-if="data.total_penerima_manfaat" class="bg-white rounded-2xl shadow-sm p-5 text-center">
+              <p class="text-2xl font-bold text-[#1a2744]">{{ data.total_penerima_manfaat.toLocaleString('id-ID') }}</p>
+              <p class="text-xs text-gray-500 mt-1">Target Penerima</p>
             </div>
             <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
               <p class="text-2xl font-bold text-[#8B4513]">{{ formatTimeRemaining(data.tanggal_selesai) }}</p>
@@ -70,7 +74,7 @@
           <section class="bg-white rounded-2xl shadow-sm p-6 mb-4">
             <h2 class="text-sm font-bold text-[#1a2744] mb-4">Donatur Terbaru</h2>
 
-            <div v-if="data.donatur_terbaru?.length === 0" class="text-sm text-gray-400 text-center py-6">
+            <div v-if="!data.donatur_terbaru || data.donatur_terbaru.length === 0" class="text-sm text-gray-400 text-center py-6">
               Belum ada donatur.
             </div>
 
@@ -89,6 +93,16 @@
                 <span class="text-xs text-gray-400">{{ formatDate(d.created_at) }}</span>
               </div>
             </div>
+
+            <PaginationBar
+              v-if="data.donatur_pagination && data.donatur_pagination.last_page > 1"
+              :currentPage="currentPage"
+              :totalPages="data.donatur_pagination.last_page"
+              :perPage="itemsPerPage"
+              :total="data.donatur_pagination.total"
+              @update:currentPage="goToPage"
+              @update:perPage="changePerPage"
+            />
           </section>
 
           <!-- Back link -->
@@ -114,6 +128,7 @@ import { useRoute } from 'vue-router'
 import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import { formatTimeRemaining } from '@/utils/time'
 
 const route = useRoute()
@@ -122,18 +137,33 @@ const campaignId = route.params.id
 const data = ref(null)
 const loading = ref(true)
 const errorMessage = ref('')
+const currentPage = ref(1)
+const itemsPerPage = ref(15)
 
 async function fetchMonitoring() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const res = await api.get(`/campaigns/${campaignId}/monitoring`)
+    const res = await api.get(`/campaigns/${campaignId}/monitoring`, {
+      params: { page: currentPage.value, per_page: itemsPerPage.value },
+    })
     data.value = res.data.data
   } catch (e) {
     errorMessage.value = e.response?.data?.message || 'Gagal memuat monitoring.'
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page) {
+  currentPage.value = page
+  fetchMonitoring()
+}
+
+function changePerPage(perPage) {
+  itemsPerPage.value = perPage
+  currentPage.value = 1
+  fetchMonitoring()
 }
 
 onMounted(fetchMonitoring)

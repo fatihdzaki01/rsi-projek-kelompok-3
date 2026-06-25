@@ -124,6 +124,13 @@
                 Donatur
               </span>
             </div>
+            <div v-if="campaign.total_penerima_manfaat" class="flex items-center gap-1.5 text-sm text-foreground">
+              <Users class="size-4 text-[#8B4513]" aria-hidden="true" />
+              <span>
+                <span class="font-semibold">{{ campaign.total_penerima_manfaat.toLocaleString('id-ID') }}</span>
+                Penerima
+              </span>
+            </div>
             <div class="flex items-center gap-1.5 text-sm text-foreground">
               <Clock
                 class="size-4 text-muted-foreground"
@@ -152,11 +159,11 @@
           </div>
 
           <!-- Campaign story -->
-          <CampaignStory />
+          <CampaignStory :deskripsi="campaign.deskripsi" :update-post="updates" />
         </div>
 
         <!-- ── RIGHT COLUMN (sticky sidebar) ───────────────────── -->
-        <DonationSidebar :campaign-id="campaign.id_campaign" />
+        <DonationSidebar v-if="campaign.tombol_donasi_aktif" :campaign-id="campaign.id_campaign" :campaign-status="campaign.status" />
       </div>
       </template>
       <!-- Report Modal -->
@@ -175,7 +182,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Heart, Clock, Flag, Building2 } from 'lucide-vue-next'
+import { Heart, Clock, Flag, Building2, Users } from 'lucide-vue-next'
 import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
@@ -198,10 +205,13 @@ const campaign = ref({
   foto_campaign_url: '',
   tanggal_selesai: '',
   nama_kategori: '',
+  status: '',
   progress_persen: 0,
   jumlah_donatur: 0,
+  total_penerima_manfaat: 0,
 })
 const komunitas = ref({ id_komunitas: null, nama_lembaga: '' })
+const updates = ref([])
 const loading = ref(true)
 const error = ref('')
 const showReportModal = ref(false)
@@ -213,6 +223,7 @@ async function fetchCampaign() {
     const res = await api.get(`/campaigns/${route.params.id}/public`)
     campaign.value = res.data.data.campaign
     komunitas.value = res.data.data.komunitas || {}
+    updates.value = res.data.data.update_post || []
   } catch (e) {
     error.value = e.response?.data?.message || 'Halaman tidak dapat dimuat.'
   } finally {

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ChevronRight, FolderOpen } from 'lucide-vue-next'
 import Navbar from '@/components/shared/Navbar.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/axios'
 
@@ -20,14 +21,19 @@ const FILTERS = [
 const activeFilter = ref('semua')
 const campaigns = ref([])
 const isLoading = ref(true)
+const currentPage = ref(1)
+const perPage = ref(15)
+const pagination = ref({ current_page: 1, last_page: 1, total: 0 })
 
 const fetchCampaigns = async () => {
   isLoading.value = true
   try {
-    const params = {}
+    const params = { page: currentPage.value, per_page: perPage.value }
     if (activeFilter.value !== 'semua') params.status = activeFilter.value
     const res = await api.get('/communities/campaigns', { params })
-    campaigns.value = res.data.data || []
+    const data = res.data.data || res.data
+    campaigns.value = data.data || data
+    pagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
   } catch (e) {
     if (e.response?.status === 401) router.push('/login')
   } finally {
@@ -35,7 +41,18 @@ const fetchCampaigns = async () => {
   }
 }
 
-watch(activeFilter, fetchCampaigns)
+const loadPage = (page) => {
+  currentPage.value = page
+  fetchCampaigns()
+}
+
+const changePerPage = (pp) => {
+  perPage.value = pp
+  currentPage.value = 1
+  fetchCampaigns()
+}
+
+watch(activeFilter, () => { currentPage.value = 1; fetchCampaigns() })
 onMounted(fetchCampaigns)
 
 // ---------- Helpers ----------
@@ -171,6 +188,16 @@ const goCampaign = (id) => router.push(`/campaigns/${id}`)
               <ChevronRight class="h-5 w-5 text-gray-400 shrink-0 mt-1" />
             </li>
           </ul>
+
+          <PaginationBar
+            v-if="pagination.last_page > 1"
+            :currentPage="currentPage"
+            :totalPages="pagination.last_page"
+            :perPage="perPage"
+            :total="pagination.total"
+            @update:currentPage="loadPage"
+            @update:perPage="changePerPage"
+          />
         </div>
       </div>
     </main>

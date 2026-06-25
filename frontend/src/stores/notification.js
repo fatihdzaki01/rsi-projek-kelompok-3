@@ -4,6 +4,7 @@ import api from '@/api/axios'
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
     items: [],
+    pagination: { current_page: 1, per_page: 10, total: 0, last_page: 1 },
     unreadCount: 0,
     loading: false,
     error: null,
@@ -24,11 +25,11 @@ export const useNotificationStore = defineStore('notification', {
   },
 
   actions: {
-    async fetchAll() {
+    async fetchAll({ page = 1, per_page = 10 } = {}) {
       this.loading = true
       this.error = null
       try {
-        const response = await api.get('/notifications')
+        const response = await api.get('/notifications', { params: { page, per_page } })
         const data = response.data.data || response.data
         const items = Array.isArray(data) ? data : data.items || []
 
@@ -44,6 +45,7 @@ export const useNotificationStore = defineStore('notification', {
           related_update_id: n.related_update_id,
         }))
 
+        this.pagination = data.pagination || { current_page: page, per_page, total: items.length, last_page: 1 }
         this.unreadCount = data.unread_count ?? this.unread.length
       } catch (e) {
         this.error = e.response?.data?.message || e.message

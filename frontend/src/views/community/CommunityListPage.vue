@@ -44,10 +44,6 @@
             style="color: #1a2744;"
           />
         </div>
-        <LocationDropdown
-          v-model="selectedLocation"
-          :locations="locations"
-        />
       </div>
 
       <!-- Community Grid (same card layout as Campaign) -->
@@ -100,7 +96,7 @@
         <button
           class="text-xs underline"
           style="color: #8B4513;"
-          @click="searchInput = ''; searchQuery = ''; selectedLocation = 'semua'"
+          @click="searchInput = ''; searchQuery = ''"
         >
           Reset filter
         </button>
@@ -111,7 +107,10 @@
         v-if="pagination.last_page > 1"
         :currentPage="currentPage"
         :totalPages="pagination.last_page"
+        :perPage="itemsPerPage"
+        :total="pagination.total"
         @update:currentPage="goToPage"
+        @update:perPage="changePerPage"
       />
 
     </div>
@@ -126,13 +125,12 @@ import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 import Navbar          from '@/components/shared/Navbar.vue'
-import LocationDropdown from '@/components/ui/LocationDropdown.vue'
 import PaginationBar    from '@/components/ui/PaginationBar.vue'
 import Footer           from '@/components/shared/Footer.vue'
 
 const router = useRouter()
 
-const itemsPerPage = 6
+const itemsPerPage = ref(6)
 const loading = ref(false)
 const allCommunities = ref([])
 const pagination = ref({ total: 0, last_page: 1 })
@@ -140,20 +138,9 @@ const stats = ref({ total_komunitas: 0, total_campaign: 0, total_donasi: 0 })
 
 const searchQuery = ref('')
 const searchInput = ref('')
-const selectedLocation = ref('semua')
 const currentPage = ref(1)
 
 let searchTimer = null
-
-const locations = ref([
-  { value: 'semua',      label: 'Semua Lokasi' },
-  { value: 'jakarta',    label: 'Jakarta' },
-  { value: 'bandung',    label: 'Bandung' },
-  { value: 'surabaya',   label: 'Surabaya' },
-  { value: 'yogyakarta', label: 'Yogyakarta' },
-  { value: 'medan',      label: 'Medan' },
-  { value: 'makassar',   label: 'Makassar' },
-])
 
 function handleSearchInput() {
   clearTimeout(searchTimer)
@@ -173,9 +160,8 @@ async function fetchStats() {
 async function fetchCommunities() {
   loading.value = true
   try {
-    const params = { page: currentPage.value, per_page: itemsPerPage }
+    const params = { page: currentPage.value, per_page: itemsPerPage.value }
     if (searchQuery.value) params.keyword = searchQuery.value
-    if (selectedLocation.value !== 'semua') params.kabupaten_kota = selectedLocation.value
     const res = await api.get('/communities/search', { params })
     allCommunities.value = res.data.data.items || []
     pagination.value = res.data.data.pagination || { total: 0, last_page: 1 }
@@ -188,7 +174,13 @@ async function fetchCommunities() {
 
 function goToPage(page) {
   currentPage.value = page
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  fetchCommunities()
+}
+
+function changePerPage(perPage) {
+  itemsPerPage.value = perPage
+  currentPage.value = 1
+  fetchCommunities()
 }
 
 function goToCommunityProfile(id) {
@@ -212,7 +204,7 @@ onMounted(() => {
   fetchCommunities()
 })
 
-watch([searchQuery, selectedLocation], () => {
+watch(searchQuery, () => {
   currentPage.value = 1
   fetchCommunities()
 })

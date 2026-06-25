@@ -29,6 +29,9 @@
             <router-link :to="`/campaigns/${r.id_campaign}/review`" class="px-4 py-1.5 text-xs font-medium text-white bg-[#8B4513] rounded-lg hover:bg-[#6b3410]">Tinjau</router-link>
           </div>
         </div>
+        <div v-if="reportPagination.last_page > 1" class="flex justify-center mt-4">
+          <PaginationBar :currentPage="reportPage" :totalPages="reportPagination.last_page" :perPage="perPage" :total="reportPagination.total" @update:currentPage="loadReports" @update:perPage="changePerPage" />
+        </div>
       </template>
 
       <template v-else>
@@ -46,6 +49,9 @@
             <button @click="handleClosePermanent(c)" class="px-4 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50">Tutup Permanen</button>
           </div>
         </div>
+        <div v-if="clarPagination.last_page > 1" class="flex justify-center mt-4">
+          <PaginationBar :currentPage="clarPage" :totalPages="clarPagination.last_page" :perPage="perPageClar" :total="clarPagination.total" @update:currentPage="loadClarifications" @update:perPage="changeClarPerPage" />
+        </div>
       </template>
     </div>
   </AdminLayout>
@@ -54,19 +60,31 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import api from '@/api/axios'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const activeTab = ref('reports')
 const loading = ref(true)
 const reports = ref([])
 const clarifications = ref([])
+const reportPage = ref(1)
+const clarPage = ref(1)
+const perPage = ref(20)
+const perPageClar = ref(20)
+const reportPagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const clarPagination = ref({ current_page: 1, last_page: 1, total: 0 })
 
-async function loadReports() {
+function changePerPage(pp) { perPage.value = pp; loadReports(1) }
+function changeClarPerPage(pp) { perPageClar.value = pp; loadClarifications(1) }
+
+async function loadReports(page = 1) {
+  reportPage.value = page
   loading.value = true
   try {
-    const res = await api.get('/superadmin/campaign-reports', { params: { per_page: 20 } })
+    const res = await api.get('/superadmin/campaign-reports', { params: { page, per_page: perPage.value } })
     const data = res.data.data || res.data
     reports.value = data.data || data
+    reportPagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
   } catch (e) {
     reports.value = []
   } finally {
@@ -74,12 +92,14 @@ async function loadReports() {
   }
 }
 
-async function loadClarifications() {
+async function loadClarifications(page = 1) {
+  clarPage.value = page
   loading.value = true
   try {
-    const res = await api.get('/superadmin/campaign-clarifications', { params: { per_page: 20 } })
+    const res = await api.get('/superadmin/campaign-clarifications', { params: { page, per_page: perPageClar.value } })
     const data = res.data.data || res.data
     clarifications.value = data.data || data
+    clarPagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
   } catch (e) {
     clarifications.value = []
   } finally {

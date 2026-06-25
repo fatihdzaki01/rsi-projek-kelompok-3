@@ -42,7 +42,7 @@
                   Belum ada riwayat pencairan dana untuk campaign ini.
                 </div>
                 <div v-else>
-                  <div v-for="(item, i) in campaignHistory" :key="item.id_pencairan" :class="['px-6 py-4', i < campaignHistory.length - 1 ? 'border-b border-stone-100' : '']">
+                  <div v-for="(item, i) in paginatedHistory" :key="item.id_pencairan" :class="['px-6 py-4', i < paginatedHistory.length - 1 ? 'border-b border-stone-100' : '']">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <p class="text-sm font-medium text-[#2C2C2C]">{{ item.judul_campaign }}</p>
                       <span :class="['px-2 py-0.5 rounded-full text-xs font-medium', statusBadge(item.status)]">{{ statusLabel(item.status) }}</span>
@@ -51,9 +51,18 @@
                     <p class="text-xs text-gray-400 mt-1">{{ item.tanggal_pengajuan ? new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '' }}</p>
                     <p v-if="item.alasan_penolakan" class="text-xs text-red-500 mt-1">Alasan ditolak: {{ item.alasan_penolakan }}</p>
                   </div>
+                  </div>
                 </div>
+                <PaginationBar
+                  v-if="historyTotalPages > 1"
+                  :currentPage="historyPage"
+                  :totalPages="historyTotalPages"
+                  :perPage="historyPerPage"
+                  :total="campaignHistory.length"
+                  @update:currentPage="setHistoryPage"
+                  @update:perPage="setHistoryPerPage"
+                />
               </div>
-            </div>
 
             <!-- KANAN: Form & Rekening -->
             <div class="lg:col-span-1 space-y-6">
@@ -72,7 +81,7 @@
                     <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#2C2C2C]">
                       <template v-if="activeCampaign">
                         <p class="font-medium truncate">{{ activeCampaign.judul }}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">Saldo: Rp {{ activeCampaign.saldo_tersedia.toLocaleString('id-ID') }}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Saldo: Rp {{ (activeCampaign.saldo_tersedia || 0).toLocaleString('id-ID') }}</p>
                       </template>
                       <template v-else>
                         <p class="text-gray-400">Campaign tidak ditemukan atau tidak aktif</p>
@@ -142,15 +151,28 @@ import { useRoute } from 'vue-router'
 import api from '@/api/axios'
 import Navbar from '@/components/shared/Navbar.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 
 const route = useRoute()
 const loading = ref(true)
 const activeAccount = ref(null)
 const campaigns = ref([])
 const history = ref([])
+const historyPage = ref(1)
+const historyPerPage = ref(5)
 
 const activeCampaign = computed(() => campaigns.value.find(c => c.id_campaign == route.params.id))
 const campaignHistory = computed(() => history.value.filter(h => h.id_campaign == route.params.id))
+
+const historyTotalPages = computed(() => Math.ceil(campaignHistory.value.length / historyPerPage.value))
+
+const paginatedHistory = computed(() => {
+  const start = (historyPage.value - 1) * historyPerPage.value
+  return campaignHistory.value.slice(start, start + historyPerPage.value)
+})
+
+function setHistoryPage(page) { historyPage.value = page }
+function setHistoryPerPage(pp) { historyPerPage.value = pp; historyPage.value = 1 }
 
 const approvedCount = computed(() => {
   return campaignHistory.value.filter(h => h.status === 'disetujui' || h.status === 'selesai').length

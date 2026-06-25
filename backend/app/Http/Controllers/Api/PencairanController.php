@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
+use App\Models\PencairanDana;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -75,7 +76,7 @@ class PencairanController extends Controller
                 'url_proposal' => ['required', 'string', 'max:255', 'url'],
             ]);
         } catch (ValidationException $e) {
-            return $this->error('ERR-WDL-01', 'Data tidak valid', 400, $e->errors());
+            return $this->error('Data tidak valid', $e->errors(), 400);
         }
 
         $campaign = Campaign::where('id_campaign', $data['id_campaign'])
@@ -116,8 +117,8 @@ class PencairanController extends Controller
             $campaign->saldo_terkunci += $data['nominal_diajukan'];
             $campaign->save();
 
-            // Insert ke tabel pencairan_dana
-            $id = DB::table('pencairan_dana')->insertGetId([
+            // Insert ke tabel pencairan_dana via Eloquent
+            $pencairan = PencairanDana::create([
                 'id_campaign' => $campaign->id_campaign,
                 'id_komunitas' => $komunitas->id_komunitas,
                 'urutan_ke' => $urutan,
@@ -130,7 +131,7 @@ class PencairanController extends Controller
                 'tanggal_pengajuan' => now(),
             ]);
 
-            return $id;
+            return $pencairan->id_pencairan;
         });
 
         return $this->success([

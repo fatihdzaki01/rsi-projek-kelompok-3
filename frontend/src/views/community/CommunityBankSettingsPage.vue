@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Loader2 } from 'lucide-vue-next'
 import Navbar from '@/components/shared/Navbar.vue'
@@ -19,6 +19,46 @@ const form = reactive({
   nomor_rekening_baru: '',
   foto_buku_rekening_url: '',
   alasan_perubahan: '',
+})
+
+const bankPrefixMap = {
+  '002': 'BRI',
+  '008': 'Mandiri',
+  '009': 'BNI',
+  '014': 'BCA',
+  '013': 'Permata',
+  '011': 'Danamon',
+  '022': 'CIMB Niaga',
+  '200': 'BTN',
+  '213': 'BTPN',
+  '422': 'BSI',
+  '147': 'Muamalat',
+  '432': 'BJB',
+  '426': 'Mega',
+  '441': 'BSI',
+  '451': 'BSI',
+  '016': 'Maybank',
+  '484': 'Bank Kalsel',
+  '490': 'Bank Jateng',
+  '494': 'Bank Jatim',
+}
+
+let userSelectedBank = false
+
+watch(() => form.nama_bank_baru, () => {
+  userSelectedBank = true
+})
+
+watch(() => form.nomor_rekening_baru, (val) => {
+  if (!val || userSelectedBank) return
+  const cleaned = val.replace(/\D/g, '')
+  for (const [prefix, bank] of Object.entries(bankPrefixMap)) {
+    if (cleaned.startsWith(prefix)) {
+      form.nama_bank_baru = bank
+      return
+    }
+  }
+  form.nama_bank_baru = ''
 })
 const errors = reactive({})
 const submitting = ref(false)
@@ -72,6 +112,7 @@ const handleSubmit = async () => {
     form.nomor_rekening_baru = ''
     form.foto_buku_rekening_url = ''
     form.alasan_perubahan = ''
+    userSelectedBank = false
   } catch (e) {
     if (e.response?.status === 401) {
       router.push('/login')

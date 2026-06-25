@@ -79,17 +79,17 @@
                 Edit Profil
               </router-link>
               
-              <!-- Follow/Unfollow button (DONATUR only) -->
+              <!-- Follow/Unfollow button -->
               <button
-                v-else-if="canFollow"
-                @click="isFollowing ? confirmUnfollow() : follow()"
+                v-else-if="!isOwner"
+                @click="handleFollowClick"
                 :disabled="followLoading"
                 class="shrink-0 text-sm font-medium rounded-lg px-4 py-1.5 transition-colors"
                 :class="isFollowing
                   ? 'border border-gray-200 text-gray-600 bg-white hover:bg-gray-50'
                   : 'border border-[#1a2744] text-white bg-[#1a2744] hover:bg-[#22325a]'"
               >
-                {{ followLoading ? '...' : isFollowing ? 'Mengikuti' : 'Ikuti' }}
+                {{ followLoading ? '...' : isFollowing === null ? '' : isFollowing ? 'Sudah Mengikuti' : 'Ikuti' }}
               </button>
             </div>
 
@@ -221,7 +221,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
@@ -238,7 +238,7 @@ const authStore = useAuthStore()
 const profile = ref(null)
 const loading = ref(true)
 const error = ref('')
-const isFollowing = ref(false)
+const isFollowing = ref(null)
 const followLoading = ref(false)
 const showUnfollowModal = ref(false)
 const showFollowersModal = ref(false)
@@ -260,6 +260,9 @@ const isOwner = computed(() => {
 })
 
 async function fetchProfile() {
+  loading.value = true
+  error.value = ''
+  isFollowing.value = null
   try {
     const res = await api.get(`/communities/${route.params.id}/profile`)
     profile.value = res.data.data
@@ -272,6 +275,10 @@ async function fetchProfile() {
 }
 
 async function follow() {
+  if (!authStore.isLoggedIn) {
+    router.push(`/login?redirect=/communities/${route.params.id}`)
+    return
+  }
   followLoading.value = true
   try {
     await api.post(`/communities/${route.params.id}/follow`)
@@ -286,6 +293,14 @@ async function follow() {
 
 function confirmUnfollow() {
   showUnfollowModal.value = true
+}
+
+function handleFollowClick() {
+  if (isFollowing.value) {
+    confirmUnfollow()
+  } else {
+    follow()
+  }
 }
 
 async function unfollow() {
@@ -315,5 +330,5 @@ function formatRupiah(n) {
   return 'Rp ' + n.toLocaleString('id-ID')
 }
 
-onMounted(fetchProfile)
+watch(() => route.params.id, fetchProfile, { immediate: true })
 </script>

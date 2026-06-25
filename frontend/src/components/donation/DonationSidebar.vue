@@ -6,6 +6,14 @@
     <!-- Title -->
     <h2 class="font-semibold text-sm text-foreground">Pilih Nominal Donasi</h2>
 
+    <!-- Campaign selesai notice -->
+    <div v-if="campaignStatus !== 'aktif'" class="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+      <p class="text-sm font-semibold text-gray-700">Campaign sudah selesai</p>
+      <p class="text-xs text-gray-500 mt-1">Campaign ini sudah tidak menerima donasi.</p>
+    </div>
+
+    <fieldset :disabled="campaignStatus !== 'aktif'" class="flex flex-col gap-4 m-0 p-0 border-0">
+
     <!-- Preset amounts grid -->
     <div class="grid grid-cols-2 gap-2" role="group" aria-label="Nominal preset">
       <button
@@ -157,6 +165,7 @@
         <span class="ml-1 text-xs text-muted-foreground font-medium">+36</span>
       </div>
     </div>
+  </fieldset>
   </aside>
 </template>
 
@@ -165,11 +174,14 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ShieldCheck } from 'lucide-vue-next'
 import api from '@/api/axios'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const props = defineProps({
   campaignId: { type: Number, required: true },
+  campaignStatus: { type: String, default: 'aktif' },
 })
 
 const presetAmounts = [50000, 100000, 250000, 500000]
@@ -204,6 +216,16 @@ function handleCustomChange(e) {
 }
 
 async function handleDonate() {
+  if (props.campaignStatus !== 'aktif') {
+    notif.value = { type: 'error', message: 'Campaign tidak menerima donasi' }
+    return
+  }
+
+  if (authStore.isCommunity) {
+    notif.value = { type: 'error', message: 'Komunitas tidak dapat melakukan donasi' }
+    return
+  }
+
   if (!localStorage.getItem('token')) {
     router.push(`/login?redirect=/campaigns/${props.campaignId}`)
     return

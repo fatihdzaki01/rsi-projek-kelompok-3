@@ -30,6 +30,9 @@ class MonitoringController extends Controller
 
     public function publicCampaign(Request $request, int $id)
     {
+        $perPage = min((int) $request->input('per_page', 15), 100);
+        $page = max(1, (int) $request->input('page', 1));
+
         $campaign = DB::table('campaign as c')
             ->join('komunitas as k', 'k.id_komunitas', '=', 'c.id_komunitas')
             ->leftJoin('kategori_campaign as kc', 'kc.id_kategori', '=', 'c.id_kategori')
@@ -43,6 +46,9 @@ class MonitoringController extends Controller
                 'c.tanggal_mulai',
                 'c.tanggal_selesai',
                 'c.created_at',
+                'c.tipe_distribusi',
+                'c.target_audiens',
+                'c.total_penerima_manfaat',
                 'k.id_komunitas',
                 'k.nama_lembaga',
                 'kc.nama_kategori'
@@ -69,7 +75,7 @@ class MonitoringController extends Controller
             ? min(100, round(($campaign->dana_terkumpul / $campaign->target_dana) * 100, 2))
             : 0;
 
-        $recentDonors = DB::table('donasi as d')
+        $donorQuery = DB::table('donasi as d')
             ->join('users as u', 'u.id_user', '=', 'd.id_user')
             ->where('d.id_campaign', $id)
             ->where('d.status_pembayaran', 'berhasil')
@@ -79,8 +85,12 @@ class MonitoringController extends Controller
                 'u.nama_lengkap',
                 'd.created_at'
             )
-            ->orderByDesc('d.created_at')
-            ->limit(20)
+            ->orderByDesc('d.created_at');
+
+        $totalDonor = $donorQuery->count();
+        $recentDonors = $donorQuery
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get()
             ->map(fn ($r) => [
                 'nama'       => $r->is_anonim ? 'Anonim' : ($r->nama_tampil ?? $r->nama_lengkap),
@@ -100,12 +110,23 @@ class MonitoringController extends Controller
             'hari_tersisa'     => $daysRemaining,
             'tanggal_mulai'    => $campaign->tanggal_mulai,
             'tanggal_selesai'  => $campaign->tanggal_selesai,
+            'tipe_distribusi'  => $campaign->tipe_distribusi,
+            'target_audiens'   => $campaign->target_audiens,
+            'total_penerima_manfaat' => (int) ($campaign->total_penerima_manfaat ?? 0),
             'donatur_terbaru'  => $recentDonors,
+            'donatur_pagination' => [
+                'current_page' => $page,
+                'per_page'     => $perPage,
+                'total'        => $totalDonor,
+                'last_page'    => (int) ceil($totalDonor / max($perPage, 1)),
+            ],
         ], 'Monitoring campaign berhasil dimuat.');
     }
 
     public function internalCampaign(Request $request, int $id)
     {
+        $perPage = min((int) $request->input('per_page', 50), 100);
+        $page = max(1, (int) $request->input('page', 1));
         $summary = DB::table('v_campaign_internal_detail')
             ->where('id_campaign', $id)
             ->first();
@@ -155,8 +176,13 @@ class MonitoringController extends Controller
             )
             ->where('d.id_campaign', $id)
             ->orderByDesc('d.created_at')
-            ->limit(50)
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get();
+
+        $totalDonations = DB::table('donasi')
+            ->where('id_campaign', $id)
+            ->count();
 
         $withdrawals = DB::table('pencairan_dana as pd')
             ->leftJoin('laporan_penggunaan_dana as lpd', 'lpd.id_laporan', '=', 'pd.id_laporan_dana')
@@ -197,6 +223,12 @@ class MonitoringController extends Controller
                 'potongan_platform'     => (int) ($summary->potongan_platform ?? 0),
             ],
             'donations' => $donations,
+            'donations_pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $totalDonations,
+                'last_page' => (int) ceil($totalDonations / max($perPage, 1)),
+            ],
             'withdrawals' => $withdrawals,
         ], 'Monitoring internal campaign berhasil dimuat.');
     }

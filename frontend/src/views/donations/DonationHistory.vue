@@ -138,13 +138,6 @@
                 >
                   Lihat Detail
                 </button>
-                <button
-                  v-if="donation.status_pembayaran === 'berhasil'"
-                  @click="viewReceipt(donation.id_donasi)"
-                  class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors"
-                >
-                  Lihat Bukti
-                </button>
               </div>
             </div>
           </template>
@@ -161,49 +154,15 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="totalPages > 1" class="flex items-center justify-between">
-          <p class="text-sm text-gray-500">
-            Halaman {{ currentPage }} dari {{ totalPages }}
-            ({{ store.pagination.total }} donasi)
-          </p>
-
-          <div class="flex items-center gap-1">
-            <button
-              @click="loadPage(currentPage - 1)"
-              :disabled="currentPage === 1 || store.loading"
-              class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            <button
-              v-for="page in visiblePages"
-              :key="page"
-              @click="loadPage(page)"
-              :disabled="store.loading"
-              :class="[
-                'w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors',
-                currentPage === page
-                  ? 'bg-[#8B4513] text-white'
-                  : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
-              ]"
-            >
-              {{ page }}
-            </button>
-
-            <button
-              @click="loadPage(currentPage + 1)"
-              :disabled="currentPage === totalPages || store.loading"
-              class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          v-if="totalPages > 1"
+          :currentPage="currentPage"
+          :totalPages="totalPages"
+          :perPage="itemsPerPage"
+          :total="store.pagination.total"
+          @update:currentPage="loadPage"
+          @update:perPage="changePerPage"
+        />
 
       </div>
     </main>
@@ -217,8 +176,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Navbar from '@/components/shared/Navbar.vue'
 import Footer from '@/components/shared/Footer.vue'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import { useDonationStore } from '@/stores/donation'
-import api from '@/api/axios'
 
 const router = useRouter()
 const store = useDonationStore()
@@ -226,23 +185,10 @@ const store = useDonationStore()
 const searchTerm = ref('')
 const statusFilter = ref('semua')
 const currentPage = ref(1)
+const itemsPerPage = ref(15)
 
 function viewDetail(id) {
   router.push(`/donations/${id}`)
-}
-
-async function viewReceipt(id) {
-  try {
-    const res = await api.get(`/donations/${id}/receipt`)
-    const url = res.data.data?.bukti_pdf_url
-    if (url) {
-      window.open(url, '_blank')
-    } else {
-      window.open(`/donations/${id}/receipt-pdf`, '_blank')
-    }
-  } catch {
-    window.open(`/donations/${id}/receipt-pdf`, '_blank')
-  }
 }
 
 const totalPages = computed(() =>
@@ -251,19 +197,15 @@ const totalPages = computed(() =>
     : 0
 )
 
-const visiblePages = computed(() => {
-  const total = totalPages.value
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const cur = currentPage.value
-  const pages = new Set([1, total, cur])
-  if (cur > 1) pages.add(cur - 1)
-  if (cur < total) pages.add(cur + 1)
-  return [...pages].sort((a, b) => a - b)
-})
-
 function loadPage(page) {
   currentPage.value = page
-  store.fetchHistory({ page, search: searchTerm.value, status: statusFilter.value })
+  store.fetchHistory({ page, per_page: itemsPerPage.value, search: searchTerm.value, status: statusFilter.value })
+}
+
+function changePerPage(perPage) {
+  itemsPerPage.value = perPage
+  currentPage.value = 1
+  store.fetchHistory({ page: 1, per_page: perPage, search: searchTerm.value, status: statusFilter.value })
 }
 
 let searchTimer = null
@@ -271,13 +213,13 @@ function handleSearch() {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(() => {
     currentPage.value = 1
-    store.fetchHistory({ page: 1, search: searchTerm.value, status: statusFilter.value })
+    store.fetchHistory({ page: 1, per_page: itemsPerPage.value, search: searchTerm.value, status: statusFilter.value })
   }, 400)
 }
 
 function handleStatusChange() {
   currentPage.value = 1
-  store.fetchHistory({ page: 1, search: searchTerm.value, status: statusFilter.value })
+  store.fetchHistory({ page: 1, per_page: itemsPerPage.value, search: searchTerm.value, status: statusFilter.value })
 }
 
 const fmt = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })
@@ -295,5 +237,5 @@ const badgeClass = (status) => {
 }
 const statusLabel = (s) => ({ berhasil: 'Berhasil', pending: 'Pending', gagal: 'Gagal' }[s] ?? s)
 
-onMounted(() => store.fetchHistory({ page: 1 }))
+onMounted(() => store.fetchHistory({ page: 1, per_page: itemsPerPage.value }))
 </script>

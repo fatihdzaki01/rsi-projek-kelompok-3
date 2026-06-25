@@ -95,6 +95,7 @@ onMounted(fetchCampaignDetail)
               <div><span class="text-xs text-gray-400 block">Dana Terkumpul</span><span class="text-gray-800 font-medium">{{ formatRupiah(campaign.dana_terkumpul) }}</span></div>
               <div><span class="text-xs text-gray-400 block">Tipe Distribusi</span><span class="text-gray-800 font-medium">{{ campaign.tipe_distribusi || '-' }}</span></div>
               <div><span class="text-xs text-gray-400 block">Target Audiens</span><span class="text-gray-800 font-medium">{{ campaign.target_audiens || '-' }}</span></div>
+              <div v-if="campaign.total_penerima_manfaat"><span class="text-xs text-gray-400 block">Total Penerima Manfaat</span><span class="text-gray-800 font-medium">{{ campaign.total_penerima_manfaat.toLocaleString('id-ID') }}</span></div>
             </div>
 
             <div class="pt-2">

@@ -14,6 +14,10 @@ const isMobileMenuOpen = ref(false)
 const searchQuery = ref('')
 const isLoggedIn = ref(!!localStorage.getItem('token'))
 
+const showNotifPopup = ref(false)
+const notifPage = ref(1)
+const perNotifPage = 5
+
 const indicatorStyle = ref({ width: '0px', transform: 'translateX(0px)' })
 const navRef = ref(null)
 
@@ -59,8 +63,44 @@ function updateIndicator() {
 
 watch(() => route.path, updateIndicator)
 
+const notifPopupRef = ref(null)
+
+const totalNotifPages = computed(() => Math.max(1, Math.ceil(notificationStore.items.length / perNotifPage)))
+const notifPageItems = computed(() => {
+  const start = (notifPage.value - 1) * perNotifPage
+  return notificationStore.items.slice(start, start + perNotifPage)
+})
+
+function toggleNotifPopup() {
+  showNotifPopup.value = !showNotifPopup.value
+  if (showNotifPopup.value) {
+    notifPage.value = 1
+    notificationStore.fetchAll({ page: 1, per_page: 50 })
+  }
+}
+
+function closeNotifPopup() {
+  showNotifPopup.value = false
+}
+
+function notifNextPage() {
+  if (notifPage.value < totalNotifPages.value) notifPage.value++
+}
+function notifPrevPage() {
+  if (notifPage.value > 1) notifPage.value--
+}
+
+function handleClickOutside(e) {
+  const el = notifPopupRef.value
+  const bell = e.target?.closest('[data-notif-bell]')
+  if (el && !el.contains(e.target) && !bell) {
+    closeNotifPopup()
+  }
+}
+
 onMounted(() => {
   nextTick(updateIndicator)
+  document.addEventListener('click', handleClickOutside)
   if (localStorage.getItem('token')) {
     notificationStore.fetchAll()
     if (authStore.isCommunity && !authStore.user?.id_komunitas) {
@@ -109,17 +149,57 @@ onMounted(() => {
 
         <template v-if="isLoggedIn">
           <!-- Notifikasi -->
-          <router-link to="/notifications" class="relative text-gray-700 transition-colors hover:text-[#8B4513] mr-1" aria-label="Notifikasi">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            <span
-              v-if="notificationStore.unreadCount > 0"
-              class="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full leading-none"
+          <div class="relative" ref="notifPopupRef">
+            <button
+              data-notif-bell
+              @click="toggleNotifPopup"
+              class="relative text-gray-700 transition-colors hover:text-[#8B4513] mr-1"
+              aria-label="Notifikasi"
             >
-              {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
-            </span>
-          </router-link>
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span
+                v-if="notificationStore.unreadCount > 0"
+                class="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full leading-none"
+              >
+                {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+              </span>
+            </button>
+            <div
+              v-if="showNotifPopup"
+              class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] border border-gray-100 z-50 overflow-hidden"
+            >
+              <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-[#2C2C2C]">Notifikasi</h3>
+                <span v-if="notificationStore.unreadCount > 0" class="text-xs text-[#8B4513] font-medium">{{ notificationStore.unreadCount }} baru</span>
+              </div>
+              <div v-if="notifPageItems.length === 0" class="px-4 py-8 text-center text-sm text-gray-400">Belum ada notifikasi</div>
+              <div v-else class="max-h-80 overflow-y-auto">
+                <div
+                  v-for="item in notifPageItems"
+                  :key="item.id"
+                  @click="router.push('/notifications'); closeNotifPopup()"
+                  class="px-4 py-3 hover:bg-[#F5F0E8] cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
+                >
+                  <div class="flex items-start gap-2 justify-between">
+                    <p class="text-xs font-semibold text-[#2C2C2C] line-clamp-1 flex-1">{{ item.title }}</p>
+                    <span v-if="!item.is_read" class="shrink-0 w-2 h-2 mt-1 rounded-full bg-blue-500" />
+                  </div>
+                  <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ item.message }}</p>
+                  <p class="text-[10px] text-gray-400 mt-1">{{ item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '' }}</p>
+                </div>
+              </div>
+              <div v-if="totalNotifPages > 1" class="px-4 py-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                <button @click="notifPrevPage" :disabled="notifPage <= 1" class="text-gray-500 hover:text-[#8B4513] disabled:opacity-30">&#8592; Prev</button>
+                <span class="text-gray-400">{{ notifPage }}/{{ totalNotifPages }}</span>
+                <button @click="notifNextPage" :disabled="notifPage >= totalNotifPages" class="text-gray-500 hover:text-[#8B4513] disabled:opacity-30">Next &#8594;</button>
+              </div>
+              <router-link to="/notifications" @click="closeNotifPopup()" class="block text-center text-xs text-[#8B4513] font-medium py-3 border-t border-gray-100 hover:bg-[#F5F0E8] transition-colors">
+                Lihat Semua
+              </router-link>
+            </div>
+          </div>
 
           <!-- Dropdown Profil -->
           <div class="relative group">

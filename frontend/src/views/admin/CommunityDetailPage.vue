@@ -28,7 +28,7 @@
           <div class="px-6 py-4 border-b border-stone-100">
             <h2 class="text-sm font-bold text-[#2C2C2C]">Campaign {{ data.community?.nama_lembaga }}</h2>
           </div>
-          <div v-if="!data.campaigns || data.campaigns.length === 0" class="px-6 py-10 text-center text-sm text-gray-400">Belum ada campaign.</div>
+          <div v-if="!campaigns || campaigns.length === 0" class="px-6 py-10 text-center text-sm text-gray-400">Belum ada campaign.</div>
           <table v-else class="w-full text-sm">
             <thead>
               <tr class="border-b border-stone-100 bg-stone-50">
@@ -39,7 +39,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(c, i) in data.campaigns" :key="c.id_campaign" :class="['hover:bg-stone-50', i < data.campaigns.length - 1 ? 'border-b border-stone-100' : '']">
+              <tr v-for="(c, i) in campaigns" :key="c.id_campaign" :class="['hover:bg-stone-50', i < campaigns.length - 1 ? 'border-b border-stone-100' : '']">
                 <td class="px-5 py-3 text-[#2C2C2C]">{{ c.judul }}</td>
                 <td class="px-5 py-3 text-right">{{ formatRupiah(c.target_dana) }}</td>
                 <td class="px-5 py-3 text-right font-medium text-green-600">{{ formatRupiah(c.dana_terkumpul) }}</td>
@@ -49,6 +49,9 @@
               </tr>
             </tbody>
           </table>
+          <div v-if="campaignPagination.last_page > 1" class="px-5 py-3 border-t border-stone-100">
+            <PaginationBar :currentPage="currentPage" :totalPages="campaignPagination.last_page" :perPage="perPage" :total="campaignPagination.total" @update:currentPage="loadPage" @update:perPage="changePerPage" />
+          </div>
         </div>
       </template>
 
@@ -61,11 +64,16 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/api/axios'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const route = useRoute()
 const loading = ref(true)
 const data = ref(null)
+const campaigns = ref([])
+const campaignPagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const currentPage = ref(1)
+const perPage = ref(15)
 
 function formatRupiah(val) { return 'Rp ' + (Number(val) || 0).toLocaleString('id-ID') }
 function statusBadge(s) {
@@ -77,15 +85,28 @@ function statusLabel(s) {
   return map[s] || s
 }
 
-onMounted(async () => {
+function changePerPage(pp) {
+  perPage.value = pp
+  loadPage(1)
+}
+
+async function loadPage(page = 1) {
+  currentPage.value = page
   loading.value = true
   try {
-    const res = await api.get(`/superadmin/communities/${route.params.id}`)
-    data.value = res.data.data || res.data
+    const res = await api.get(`/superadmin/communities/${route.params.id}`, { params: { page, per_page: perPage.value } })
+    const d = res.data.data || res.data
+    data.value = d
+    if (d.campaigns) {
+      campaigns.value = d.campaigns.data || []
+      campaignPagination.value = { current_page: d.campaigns.current_page || 1, last_page: d.campaigns.last_page || 1, total: d.campaigns.total || 0 }
+    }
   } catch (e) {
     data.value = null
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(() => loadPage())
 </script>

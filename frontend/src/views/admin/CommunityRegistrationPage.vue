@@ -35,10 +35,8 @@
           </div>
         </div>
 
-        <div v-if="pagination.last_page > 1" class="flex items-center justify-center gap-2 mt-4">
-          <button @click="loadPage(pagination.current_page - 1)" :disabled="pagination.current_page <= 1" class="px-3 py-1 text-xs border border-stone-200 rounded hover:bg-stone-50 disabled:opacity-30">Prev</button>
-          <span class="text-xs text-gray-400">{{ pagination.current_page }}/{{ pagination.last_page }}</span>
-          <button @click="loadPage(pagination.current_page + 1)" :disabled="pagination.current_page >= pagination.last_page" class="px-3 py-1 text-xs border border-stone-200 rounded hover:bg-stone-50 disabled:opacity-30">Next</button>
+        <div v-if="pagination.last_page > 1" class="flex justify-center mt-4">
+          <PaginationBar :currentPage="regCurrentPage" :totalPages="pagination.last_page" :perPage="regPerPage" :total="pagination.total" @update:currentPage="loadPage" @update:perPage="changeRegPerPage" />
         </div>
       </template>
 
@@ -66,12 +64,8 @@
               </tr>
             </tbody>
           </table>
-          <div v-if="historyPagination.last_page > 1" class="px-5 py-3 border-t border-stone-100 flex justify-between items-center">
-            <span class="text-xs text-gray-400">Halaman {{ historyPagination.current_page }} dari {{ historyPagination.last_page }}</span>
-            <div class="flex gap-2">
-              <button @click="loadHistoryPage(historyPagination.current_page - 1)" :disabled="historyPagination.current_page <= 1" class="px-3 py-1 text-xs border border-stone-200 rounded hover:bg-stone-50 disabled:opacity-30">Prev</button>
-              <button @click="loadHistoryPage(historyPagination.current_page + 1)" :disabled="historyPagination.current_page >= historyPagination.last_page" class="px-3 py-1 text-xs border border-stone-200 rounded hover:bg-stone-50 disabled:opacity-30">Next</button>
-            </div>
+          <div v-if="historyPagination.last_page > 1" class="px-5 py-3 border-t border-stone-100">
+            <PaginationBar :currentPage="historyCurrentPage" :totalPages="historyPagination.last_page" :perPage="historyPerPage" :total="historyPagination.total" @update:currentPage="loadHistoryPage" @update:perPage="changeHistoryPerPage" />
           </div>
         </div>
       </template>
@@ -95,14 +89,19 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import api from '@/api/axios'
+import PaginationBar from '@/components/ui/PaginationBar.vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
 
 const activeTab = ref('pending')
 const loading = ref(true)
 const registrations = ref([])
-const pagination = ref({ current_page: 1, last_page: 1 })
+const pagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const regCurrentPage = ref(1)
+const regPerPage = ref(10)
 const historyList = ref([])
-const historyPagination = ref({ current_page: 1, last_page: 1 })
+const historyPagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const historyCurrentPage = ref(1)
+const historyPerPage = ref(15)
 
 const showModal = ref(false)
 const rejectTarget = ref(null)
@@ -110,12 +109,13 @@ const rejectReason = ref('')
 const rejectError = ref('')
 
 async function loadPage(page = 1) {
+  regCurrentPage.value = page
   loading.value = true
   try {
-    const res = await api.get('/superadmin/community-registrations', { params: { page, per_page: 10 } })
+    const res = await api.get('/superadmin/community-registrations', { params: { page, per_page: regPerPage.value } })
     const data = res.data.data || res.data
     registrations.value = data.data || data
-    pagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1 }
+    pagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
   } catch (e) {
     registrations.value = []
   } finally {
@@ -124,17 +124,28 @@ async function loadPage(page = 1) {
 }
 
 async function loadHistoryPage(page = 1) {
+  historyCurrentPage.value = page
   loading.value = true
   try {
-    const res = await api.get('/superadmin/community-registrations/history', { params: { page, per_page: 15 } })
+    const res = await api.get('/superadmin/community-registrations/history', { params: { page, per_page: historyPerPage.value } })
     const data = res.data.data || res.data
     historyList.value = data.data || data
-    historyPagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1 }
+    historyPagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
   } catch (e) {
     historyList.value = []
   } finally {
     loading.value = false
   }
+}
+
+function changeRegPerPage(pp) {
+  regPerPage.value = pp
+  loadPage(1)
+}
+
+function changeHistoryPerPage(pp) {
+  historyPerPage.value = pp
+  loadHistoryPage(1)
 }
 
 async function handleApprove(r) {

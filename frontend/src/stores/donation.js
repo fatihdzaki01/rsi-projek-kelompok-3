@@ -8,11 +8,11 @@ export const useDonationStore = defineStore('donation', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  async function fetchHistory({ page = 1, search = '', status = '' } = {}) {
+  async function fetchHistory({ page = 1, per_page = 15, search = '', status = '' } = {}) {
     loading.value = true
     error.value = null
     try {
-      const params = { page, per_page: 15 }
+      const params = { page, per_page }
       if (search) params.search = search
       if (status && status !== 'semua') params.status = status
 

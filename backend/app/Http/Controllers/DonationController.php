@@ -58,7 +58,21 @@ class DonationController extends Controller
             return ApiResponse::error('Nominal donasi tidak valid', 'ERR-DON-01', 400);
         }
 
-        $donasi = $this->service->createDonation($userId, $payload);
+        try {
+            $donasi = $this->service->createDonation($userId, $payload);
+        } catch (\Exception $e) {
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'Campaign tidak aktif')) {
+                return ApiResponse::error('Campaign tidak menerima donasi', 'ERR-DON-02', 403);
+            }
+            if (str_contains($msg, 'User tidak aktif')) {
+                return ApiResponse::error('Akun tidak aktif', 'ERR-DON-09', 403);
+            }
+            if (str_contains($msg, 'check constraint') || str_contains($msg, 'chk_nama_tampil')) {
+                return ApiResponse::error('Nama tampil wajib diisi jika tidak anonim', 'ERR-DON-01', 400);
+            }
+            return ApiResponse::error('Gagal membuat donasi', 'ERR-DON-10', 500);
+        }
 
         $paymentToken = (string) \Illuminate\Support\Str::uuid();
 
@@ -159,7 +173,22 @@ class DonationController extends Controller
             return ApiResponse::error('Data donasi tidak ditemukan', 'ERR-DON-03', 404);
         }
 
-        $result = $this->service->updatePaymentStatus($id, $request->status_pembayaran);
+        if ($donasi->status_pembayaran !== 'pending') {
+            if ($donasi->status_pembayaran === $request->status_pembayaran) {
+                return ApiResponse::success([
+                    'id_donasi' => $donasi->id_donasi,
+                    'status_pembayaran' => $donasi->status_pembayaran,
+                    'tanggal_verifikasi' => now()->toIso8601String(),
+                ], 'Status pembayaran sudah sesuai');
+            }
+            return ApiResponse::error('Status donasi sudah final dan tidak dapat diubah', 'ERR-DON-09', 400);
+        }
+
+        try {
+            $result = $this->service->updatePaymentStatus($id, $request->status_pembayaran);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Gagal memperbarui status pembayaran', 'ERR-DON-10', 500);
+        }
 
         // Notifikasi ke donatur + komunitas + superadmin
         $donasiData = DB::selectOne(

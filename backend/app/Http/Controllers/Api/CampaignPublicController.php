@@ -19,7 +19,7 @@ class CampaignPublicController extends Controller
     {
         $cacheKey = "campaign:public:{$id}";
 
-        $data = Cache::remember($cacheKey, 600, function () use ($id) {
+        $data = Cache::remember($cacheKey, 30, function () use ($id) {
             $campaign = Campaign::with(['komunitas', 'kategori', 'wilayah'])
                 ->where('id_campaign', $id)
                 ->whereIn('status', ['aktif', 'selesai'])
@@ -54,6 +54,9 @@ class CampaignPublicController extends Controller
                     'tombol_donasi_aktif' => $campaign->status === 'aktif',
                     'id_kategori' => $campaign->id_kategori,
                     'kode_wilayah' => $campaign->kode_wilayah,
+                    'tipe_distribusi' => $campaign->tipe_distribusi,
+                    'target_audiens' => $campaign->target_audiens,
+                    'total_penerima_manfaat' => $campaign->total_penerima_manfaat,
                 ],
                 'komunitas' => [
                     'id_komunitas' => $campaign->komunitas->id_komunitas ?? null,

@@ -96,18 +96,11 @@
           <!-- Actions -->
           <div class="flex gap-3">
             <router-link
-              :to="`/donations/history`"
+              to="/"
               class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 text-center hover:bg-gray-50 transition-colors"
             >
-              Kembali
+              Kembali ke Beranda
             </router-link>
-            <button
-              v-if="donation.status_pembayaran === 'berhasil'"
-              @click="viewReceipt"
-              class="flex-1 py-2.5 rounded-xl bg-[#8B4513] text-sm font-medium text-white hover:bg-[#6b3410] transition-colors"
-            >
-              Lihat Bukti
-            </button>
           </div>
         </template>
       </div>
@@ -140,21 +133,6 @@ async function fetchDetail() {
   } finally {
     loading.value = false
   }
-}
-
-async function viewReceipt() {
-  const baseUrl = api.defaults.baseURL.replace(/\/api\/v1$/, '')
-  try {
-    const res = await api.get(`/donations/${route.params.id}/receipt`)
-    const url = res.data.data?.bukti_pdf_url
-    if (url) {
-      window.open(baseUrl + url, '_blank')
-      return
-    }
-  } catch {
-    // fall through to direct endpoint
-  }
-  window.open(baseUrl + `/api/v1/donations/${route.params.id}/receipt-pdf`, '_blank')
 }
 
 const statusBannerClass = computed(() => {
