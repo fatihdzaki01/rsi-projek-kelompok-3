@@ -87,6 +87,40 @@
             </div>
           </div>
 
+          <!-- Tren Penerimaan Donasi -->
+          <div v-if="trenDonasi.length > 0" class="bg-white rounded-xl shadow-sm border border-stone-100 p-5 mb-6">
+            <h2 class="text-sm font-bold text-[#2C2C2C] mb-4">Tren Penerimaan Donasi (6 Bulan)</h2>
+            <div class="flex items-end gap-1 h-40">
+              <div v-for="(t, i) in trenDonasi" :key="i" class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                <span class="text-[10px] font-medium text-gray-600">{{ formatTrenRupiah(t.total) }}</span>
+                <div
+                  class="w-full max-w-[48px] rounded-t"
+                  :style="{
+                    height: barHeight(t.total, maxTren) + '%',
+                    backgroundColor: '#8B4513',
+                    minHeight: t.total > 0 ? '4px' : '0'
+                  }"
+                  :title="`${t.bulan}: ${rupiah(t.total)}`"
+                />
+                <span class="text-[10px] text-gray-400">{{ formatBulan(t.bulan) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Komposisi Metode Pembayaran -->
+          <div v-if="komposisiMetode.length > 0" class="bg-white rounded-xl shadow-sm border border-stone-100 p-5 mb-6">
+            <h2 class="text-sm font-bold text-[#2C2C2C] mb-4">Komposisi Metode Pembayaran</h2>
+            <div class="space-y-2.5">
+              <div v-for="(m, i) in komposisiMetode" :key="i" class="flex items-center gap-3">
+                <span class="text-xs text-gray-600 w-20 capitalize">{{ m.metode }}</span>
+                <div class="flex-1 h-5 bg-stone-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full bg-[#8B4513] transition-all duration-500" :style="{ width: barPct(m.total, maxKomposisi) + '%' }" />
+                </div>
+                <span class="text-xs font-medium text-gray-700 w-24 text-right">{{ rupiah(m.total) }}</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Campaigns nearing completion -->
           <div class="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden">
             <div class="px-6 py-4 border-b border-stone-100">
@@ -122,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/api/axios'
 import Navbar from '@/components/shared/Navbar.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
@@ -141,9 +175,34 @@ const stats = ref({
 })
 const pencairanPending = ref([])
 const campaignHampirSelesai = ref([])
+const trenDonasi = ref([])
+const komposisiMetode = ref([])
 
 function rupiah(val) {
   return 'Rp ' + (Number(val) || 0).toLocaleString('id-ID')
+}
+
+function formatTrenRupiah(val) {
+  if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M'
+  if (val >= 1000) return (val / 1000).toFixed(0) + 'K'
+  return val.toString()
+}
+
+function formatBulan(ym) {
+  const [y, m] = (ym || '').split('-')
+  const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
+  return bulan[parseInt(m) - 1] || ym
+}
+
+const maxTren = computed(() => Math.max(1, ...trenDonasi.value.map(t => t.total)))
+const maxKomposisi = computed(() => Math.max(1, ...komposisiMetode.value.map(m => m.total)))
+
+function barHeight(val, max) {
+  return Math.round((val / max) * 100) || 0
+}
+
+function barPct(val, max) {
+  return (val / max) * 100
 }
 
 async function fetchDashboard() {
@@ -155,6 +214,8 @@ async function fetchDashboard() {
     stats.value = { ...stats.value, ...(data.statistik || data) }
     pencairanPending.value = data.daftar_pencairan_pending || data.pencairan_pending || []
     campaignHampirSelesai.value = data.daftar_campaign_hampir_selesai || data.campaign_hampir_selesai || []
+    trenDonasi.value = data.tren_donasi || []
+    komposisiMetode.value = data.komposisi_metode || []
   } catch (e) {
     error.value = e.response?.data?.message || 'Gagal memuat dashboard'
   } finally {

@@ -33,7 +33,7 @@ const fetchCampaigns = async () => {
     const res = await api.get('/communities/campaigns', { params })
     const data = res.data.data || res.data
     campaigns.value = data.data || data
-    pagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
+    pagination.value = data.meta || { current_page: data.current_page || 1, last_page: data.last_page || 1, total: data.total || 0 }
   } catch (e) {
     if (e.response?.status === 401) router.push('/login')
   } finally {
@@ -186,6 +186,11 @@ const goCampaign = (id) => router.push(`/campaigns/${id}`)
               </div>
 
               <ChevronRight class="h-5 w-5 text-gray-400 shrink-0 mt-1" />
+              <router-link
+                :to="`/communities/campaigns/${c.id_campaign}/analysis`"
+                class="text-[10px] font-medium text-[#8B4513] border border-[#8B4513]/20 rounded px-2 py-0.5 hover:bg-orange-50 transition-colors shrink-0"
+                @click.stop
+              >Analisis</router-link>
             </li>
           </ul>
 

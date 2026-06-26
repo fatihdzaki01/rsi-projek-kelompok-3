@@ -97,6 +97,11 @@ class MonitoringController extends Controller
                 'created_at' => $r->created_at,
             ]);
 
+        $jumlahPencairan = DB::table('pencairan_dana')
+            ->where('id_campaign', $id)
+            ->whereIn('status', ['disetujui', 'selesai'])
+            ->count();
+
         return $this->success([
             'id_campaign'      => $campaign->id_campaign,
             'judul'            => $campaign->judul,
@@ -113,6 +118,10 @@ class MonitoringController extends Controller
             'tipe_distribusi'  => $campaign->tipe_distribusi,
             'target_audiens'   => $campaign->target_audiens,
             'total_penerima_manfaat' => (int) ($campaign->total_penerima_manfaat ?? 0),
+            'target_penerima_label' => $campaign->tipe_distribusi === 'kolektif'
+                ? 'Kolektif'
+                : ($campaign->total_penerima_manfaat ?? '-'),
+            'jumlah_pencairan' => $jumlahPencairan,
             'donatur_terbaru'  => $recentDonors,
             'donatur_pagination' => [
                 'current_page' => $page,
@@ -149,6 +158,10 @@ class MonitoringController extends Controller
                 'c.saldo_tersedia',
                 'c.saldo_terkunci',
                 'c.url_rab',
+                'c.tipe_distribusi',
+                'c.target_audiens',
+                'c.total_penerima_manfaat',
+                'c.alasan_penolakan',
                 'c.created_at',
                 'c.updated_at',
                 'k.id_komunitas',
@@ -214,7 +227,15 @@ class MonitoringController extends Controller
             ->count('id_user');
 
         return $this->success([
-            'campaign' => $campaign,
+            'campaign' => array_merge((array) $campaign, [
+                'target_penerima_label' => ($campaign->tipe_distribusi ?? '') === 'kolektif'
+                    ? 'Kolektif'
+                    : ($campaign->total_penerima_manfaat ?? '-'),
+                'jumlah_pencairan' => DB::table('pencairan_dana')
+                    ->where('id_campaign', $id)
+                    ->whereIn('status', ['disetujui', 'selesai'])
+                    ->count(),
+            ]),
             'summary' => [
                 'total_donasi_berhasil' => (int) ($summary->total_dana_masuk ?? 0),
                 'total_donatur'         => $totalDonatur,

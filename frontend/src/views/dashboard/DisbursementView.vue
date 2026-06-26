@@ -20,6 +20,9 @@ const rejectReason = ref('')
 const rejectLoading = ref(false)
 const approveLoading = ref({})
 
+const showDetailModal = ref(false)
+const detailItem = ref(null)
+
 const fetchDisbursements = async () => {
   loading.value = true
   errorMessage.value = ''
@@ -38,7 +41,7 @@ const fetchDisbursements = async () => {
     })
 
     items.value = response.data.data.data
-    pagination.value = response.data.data
+    pagination.value = response.data.data.meta || response.data.data
   } catch (error) {
     errorMessage.value =
       error.response?.data?.message || 'Gagal memuat data pencairan.'
@@ -101,6 +104,17 @@ const handleReject = async () => {
   }
 }
 
+async function showDetail(id) {
+  showDetailModal.value = true
+  detailItem.value = null
+  try {
+    const res = await api.get(`/superadmin/disbursements/${id}`)
+    detailItem.value = res.data.data || res.data
+  } catch (e) {
+    detailItem.value = {}
+  }
+}
+
 onMounted(fetchDisbursements)
 </script>
 
@@ -146,7 +160,6 @@ onMounted(fetchDisbursements)
               }}
             </p>
           </div>
-          <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full font-medium">{{ pagination?.total || 0 }} data</span>
         </div>
 
         <div v-if="loading" class="flex items-center justify-center py-12">
@@ -177,7 +190,9 @@ onMounted(fetchDisbursements)
               </tr>
               <tr v-for="item in items" :key="item.id_pencairan" class="hover:bg-stone-50 transition-colors">
                 <td class="px-5 py-3 text-gray-500">#{{ item.id_pencairan }}</td>
-                <td class="px-5 py-3 font-medium text-gray-800 max-w-[200px] truncate">{{ item.judul_campaign }}</td>
+                <td class="px-5 py-3 font-medium text-gray-800 max-w-[200px] truncate">
+                  <button @click="showDetail(item.id_pencairan)" class="text-[#8B4513] hover:underline text-left">{{ item.judul_campaign }}</button>
+                </td>
                 <td class="px-5 py-3 text-gray-600">{{ item.nama_lembaga }}</td>
                 <td class="px-5 py-3 text-gray-700">Rp{{ Number(item.nominal_diajukan || item.nominal_disetujui || 0).toLocaleString('id-ID') }}</td>
                 <td class="px-5 py-3">
@@ -248,6 +263,40 @@ onMounted(fetchDisbursements)
           >
             {{ rejectLoading ? 'Memproses...' : 'Tolak Pencairan' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showDetailModal && detailItem" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" @click.self="showDetailModal = false">
+      <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl max-h-[80vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Detail Pengajuan Pencairan #{{ detailItem.id_pencairan }}</h3>
+        <div class="space-y-3 text-sm">
+          <div><span class="text-xs text-gray-400 block">Campaign</span><span class="text-gray-800 font-medium">{{ detailItem.judul_campaign || '-' }}</span></div>
+          <div><span class="text-xs text-gray-400 block">Komunitas</span><span class="text-gray-800 font-medium">{{ detailItem.nama_lembaga || '-' }}</span></div>
+          <div><span class="text-xs text-gray-400 block">Nominal Diajukan</span><span class="text-gray-800 font-medium">Rp{{ Number(detailItem.nominal_diajukan || 0).toLocaleString('id-ID') }}</span></div>
+          <div v-if="detailItem.nominal_disetujui"><span class="text-xs text-gray-400 block">Nominal Disetujui</span><span class="text-gray-800 font-medium">Rp{{ Number(detailItem.nominal_disetujui || 0).toLocaleString('id-ID') }}</span></div>
+          <div><span class="text-xs text-gray-400 block">Status</span>
+            <span :class="['inline px-2 py-0.5 rounded-full text-xs font-medium',
+              detailItem.status === 'menunggu_review' ? 'bg-amber-100 text-amber-700' :
+              detailItem.status === 'disetujui' ? 'bg-green-100 text-green-700' :
+              detailItem.status === 'ditolak' ? 'bg-red-100 text-red-700' :
+              'bg-blue-100 text-blue-700'
+            ]">{{ detailItem.status }}</span>
+          </div>
+          <div v-if="detailItem.keterangan"><span class="text-xs text-gray-400 block">Keterangan</span><span class="text-gray-800 leading-relaxed">{{ detailItem.keterangan }}</span></div>
+          <div v-if="detailItem.url_proposal"><span class="text-xs text-gray-400 block">Proposal</span><a :href="detailItem.url_proposal" target="_blank" class="text-[#8B4513] underline break-all">{{ detailItem.url_proposal }}</a></div>
+          <div><span class="text-xs text-gray-400 block">Bank Tujuan</span><span class="text-gray-800 font-medium">{{ detailItem.nama_bank_tujuan }} - {{ detailItem.nomor_rekening_tujuan }}</span></div>
+          <div v-if="detailItem.bukti_transfer_url"><span class="text-xs text-gray-400 block">Bukti Transfer</span><a :href="detailItem.bukti_transfer_url" target="_blank" class="text-[#8B4513] underline break-all">{{ detailItem.bukti_transfer_url }}</a></div>
+          <div v-if="detailItem.alasan_penolakan"><span class="text-xs text-gray-400 block">Alasan Penolakan</span><span class="text-red-700">{{ detailItem.alasan_penolakan }}</span></div>
+          <div v-if="detailItem.deskripsi_penggunaan" class="pt-3 border-t border-stone-100">
+            <p class="text-xs text-gray-400 font-medium mb-2">Laporan Penggunaan Dana</p>
+            <div><span class="text-xs text-gray-400 block">Deskripsi</span><span class="text-gray-800 leading-relaxed">{{ detailItem.deskripsi_penggunaan }}</span></div>
+            <div><span class="text-xs text-gray-400 block">Total Realisasi</span><span class="text-gray-800 font-medium">Rp{{ Number(detailItem.total_realisasi || 0).toLocaleString('id-ID') }}</span></div>
+            <div v-if="detailItem.file_dokumentasi_url"><span class="text-xs text-gray-400 block">Dokumentasi</span><a :href="detailItem.file_dokumentasi_url" target="_blank" class="text-[#8B4513] underline break-all">{{ detailItem.file_dokumentasi_url }}</a></div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-5 pt-4 border-t border-stone-100">
+          <button @click="showDetailModal = false" class="px-4 py-2 text-sm bg-[#8B4513] text-white rounded-lg hover:bg-[#6b3410]">Tutup</button>
         </div>
       </div>
     </div>

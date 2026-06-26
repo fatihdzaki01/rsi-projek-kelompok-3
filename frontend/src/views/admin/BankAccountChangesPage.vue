@@ -116,7 +116,7 @@ async function loadPage(page = 1) {
     const res = await api.get('/superadmin/bank-account-changes', { params: { page, per_page: perPage.value } })
     const data = res.data.data || res.data
     items.value = data.data || data
-    pagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
+    pagination.value = data.meta || { current_page: data.current_page || 1, last_page: data.last_page || 1, total: data.total || 0 }
   } catch (e) {
     items.value = []
   } finally {
@@ -131,7 +131,7 @@ async function loadHistoryPage(page = 1) {
     const res = await api.get('/superadmin/bank-account-changes/history', { params: { page, per_page: perPageHistory.value } })
     const data = res.data.data || res.data
     historyList.value = data.data || data
-    historyPagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
+    historyPagination.value = data.meta || { current_page: data.current_page || 1, last_page: data.last_page || 1, total: data.total || 0 }
   } catch (e) {
     historyList.value = []
   } finally {

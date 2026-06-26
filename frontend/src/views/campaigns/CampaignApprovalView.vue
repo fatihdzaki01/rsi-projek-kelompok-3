@@ -29,7 +29,7 @@ const fetchCampaigns = async () => {
     else params.status = ''
     const response = await api.get('/superadmin/campaigns/review', { params })
     campaigns.value = response.data.data.data
-    pagination.value = response.data.data
+    pagination.value = response.data.data.meta || response.data.data
   } catch (error) {
     errorMessage.value = error.response?.data?.message || 'Gagal memuat daftar campaign.'
   } finally {

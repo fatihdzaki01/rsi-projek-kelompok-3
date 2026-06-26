@@ -133,7 +133,14 @@
             v-if="profile.role === 'DONATUR'"
             class="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden"
           >
-            <div class="px-6 py-5 flex items-center justify-between gap-4">
+            <div v-if="profile.komunitas_status === 'menunggu'" class="px-6 py-5 flex items-center justify-between gap-4">
+              <div>
+                <p class="text-sm font-bold text-[#2C2C2C]">Daftar sebagai Komunitas</p>
+                <p class="text-xs text-gray-500 mt-0.5">Pendaftaran Anda sedang dalam proses review superadmin.</p>
+              </div>
+              <span class="shrink-0 px-4 py-2 bg-yellow-50 text-yellow-700 rounded-lg text-sm font-medium border border-yellow-200">Menunggu Review</span>
+            </div>
+            <div v-else class="px-6 py-5 flex items-center justify-between gap-4">
               <div>
                 <p class="text-sm font-bold text-[#2C2C2C]">Daftar sebagai Komunitas</p>
                 <p class="text-xs text-gray-500 mt-0.5">Kelola campaign, terima donasi, dan bangun komunitas Anda.</p>

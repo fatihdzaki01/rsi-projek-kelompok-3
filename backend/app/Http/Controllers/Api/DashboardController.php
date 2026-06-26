@@ -53,6 +53,46 @@ class DashboardController extends Controller
             ->whereColumn('dana_terkumpul', '>=', DB::raw('target_dana * 0.8'))
             ->get(['id_campaign', 'judul', 'dana_terkumpul', 'target_dana', 'tanggal_selesai']);
 
+        $trenDonasi = DB::table('donasi')
+            ->join('campaign', 'campaign.id_campaign', '=', 'donasi.id_campaign')
+            ->where('campaign.id_komunitas', $idKomunitas)
+            ->where('donasi.status_pembayaran', Donasi::STATUS_BERHASIL)
+            ->where('donasi.created_at', '>=', now()->subMonths(6)->startOfMonth())
+            ->selectRaw("
+                TO_CHAR(donasi.created_at, 'YYYY-MM') as bulan,
+                COALESCE(SUM(donasi.nominal), 0) as total
+            ")
+            ->groupByRaw("TO_CHAR(donasi.created_at, 'YYYY-MM')")
+            ->orderBy('bulan')
+            ->get()
+            ->map(fn ($r) => [
+                'bulan' => $r->bulan,
+                'total' => (int) $r->total,
+            ])
+            ->values();
+
+        $komposisiMetode = DB::table('donasi')
+            ->join('campaign', 'campaign.id_campaign', '=', 'donasi.id_campaign')
+            ->where('campaign.id_komunitas', $idKomunitas)
+            ->where('donasi.status_pembayaran', Donasi::STATUS_BERHASIL)
+            ->whereNotNull('donasi.metode_pembayaran')
+            ->selectRaw("
+                donasi.metode_pembayaran,
+                COUNT(*) as jumlah,
+                COALESCE(SUM(donasi.nominal), 0) as total
+            ")
+            ->groupBy('donasi.metode_pembayaran')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($r) => [
+                'metode' => $r->metode_pembayaran,
+                'jumlah' => (int) $r->jumlah,
+                'total' => (int) $r->total,
+            ])
+            ->values();
+
+        $trenPenerima = $trenDonasi;
+
         return $this->success([
             'statistik' => [
                 'total_campaign_aktif'   => (int) $campaignStats->total_campaign_aktif,
@@ -64,8 +104,92 @@ class DashboardController extends Controller
                 'total_dana_dicairkan'   => (int) $totalDanaDicairkan,
                 'total_saldo_tersisa'    => (int) $campaignStats->total_saldo_tersisa,
             ],
+            'tren_donasi' => $trenDonasi,
+            'tren_penerima' => $trenPenerima,
+            'komposisi_metode' => $komposisiMetode,
             'daftar_pencairan_pending'      => $pencairanPending,
             'daftar_campaign_hampir_selesai'=> $campaignHampirSelesai,
+        ]);
+    }
+
+    public function donationStats(Request $request, int $id): JsonResponse
+    {
+        $komunitas = $request->user()->komunitas;
+        $campaign = Campaign::where('id_campaign', $id)
+            ->where('id_komunitas', $komunitas->id_komunitas)
+            ->first();
+
+        if (!$campaign) {
+            return $this->error('ERR-DS-01', 'Campaign tidak ditemukan.', 404);
+        }
+
+        $targetPenerima = $campaign->tipe_distribusi === 'kolektif'
+            ? 'Kolektif'
+            : ($campaign->total_penerima_manfaat ?? 0);
+
+        $trenDonasi = DB::table('donasi')
+            ->where('id_campaign', $id)
+            ->where('status_pembayaran', Donasi::STATUS_BERHASIL)
+            ->where('created_at', '>=', now()->subMonths(6)->startOfMonth())
+            ->selectRaw("
+                TO_CHAR(created_at, 'YYYY-MM') as bulan,
+                COALESCE(SUM(nominal), 0) as total
+            ")
+            ->groupByRaw("TO_CHAR(created_at, 'YYYY-MM')")
+            ->orderBy('bulan')
+            ->get()
+            ->map(fn ($r) => [
+                'bulan' => $r->bulan,
+                'total' => (int) $r->total,
+            ])
+            ->values();
+
+        $komposisiMetode = DB::table('donasi')
+            ->where('id_campaign', $id)
+            ->where('status_pembayaran', Donasi::STATUS_BERHASIL)
+            ->whereNotNull('metode_pembayaran')
+            ->selectRaw("
+                metode_pembayaran,
+                COUNT(*) as jumlah,
+                COALESCE(SUM(nominal), 0) as total
+            ")
+            ->groupBy('metode_pembayaran')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($r) => [
+                'metode' => $r->metode_pembayaran,
+                'jumlah' => (int) $r->jumlah,
+                'total' => (int) $r->total,
+            ])
+            ->values();
+
+        $jumlahPelapor = DB::table('laporan_campaign')
+            ->where('id_campaign', $id)
+            ->count();
+
+        $pencairanCount = PencairanDana::where('id_campaign', $id)
+            ->whereIn('status', [PencairanDana::STATUS_DISETUJUI, PencairanDana::STATUS_SELESAI])
+            ->count();
+
+        $pencairanTotal = (int) PencairanDana::where('id_campaign', $id)
+            ->whereIn('status', [PencairanDana::STATUS_DISETUJUI, PencairanDana::STATUS_SELESAI])
+            ->sum('nominal_disetujui');
+
+        return $this->success([
+            'campaign' => [
+                'id_campaign' => $campaign->id_campaign,
+                'judul' => $campaign->judul,
+                'target_dana' => $campaign->target_dana,
+                'dana_terkumpul' => $campaign->dana_terkumpul,
+                'saldo_tersedia' => $campaign->saldo_tersedia,
+                'status' => $campaign->status,
+            ],
+            'jumlah_penerima' => $targetPenerima,
+            'tren_penerimaan' => $trenDonasi,
+            'jumlah_pelapor' => $jumlahPelapor,
+            'komposisi_metode' => $komposisiMetode,
+            'jumlah_pencairan' => $pencairanCount,
+            'total_dicairkan' => $pencairanTotal,
         ]);
     }
 }

@@ -392,6 +392,13 @@ class SuperadminController extends Controller
                 ->groupBy('status')
                 ->pluck('total', 'status');
 
+            $totalCampaignTampil = (int) ($campaignStatusBreakdown->get('aktif', 0))
+                + (int) ($campaignStatusBreakdown->get('selesai', 0))
+                + (int) ($campaignStatusBreakdown->get('menunggu_review', 0))
+                + (int) ($campaignStatusBreakdown->get('ditolak', 0))
+                + (int) ($campaignStatusBreakdown->get('nonaktif', 0))
+                + (int) ($campaignStatusBreakdown->get('ditutup_permanen', 0));
+
             $recentDonations = DB::table('v_donation_transactions')
                 ->where('status_pembayaran', 'berhasil')
                 ->orderByDesc('tanggal_transaksi')
@@ -415,6 +422,7 @@ class SuperadminController extends Controller
 
             return ApiResponse::success([
                 'summary' => $summary,
+                'total_campaign_tampil' => $totalCampaignTampil,
                 'campaign_status_breakdown' => $campaignStatusBreakdown,
                 'recent_donations' => $recentDonations,
                 'recent_campaigns' => $recentCampaigns,
@@ -973,7 +981,10 @@ class SuperadminController extends Controller
 
         DB::table('users')
             ->where('id_user', $komunitas->id_user)
-            ->update(['is_verified' => true]);
+            ->update([
+                'is_verified' => true,
+                'role' => 'KOMUNITAS',
+            ]);
 
         return ApiResponse::success(null, 'Pendaftaran komunitas berhasil disetujui.');
     }

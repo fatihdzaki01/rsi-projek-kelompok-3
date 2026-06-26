@@ -39,6 +39,7 @@ const routes = [
   { path: '/communities/campaigns/:id/withdrawals', component: () => import('@/views/community/WithdrawalRequestPage.vue'), meta: { requiresAuth: true, role: 'KOMUNITAS' } },
   { path: '/communities/bank-account', component: () => import('@/views/community/CommunityBankSettingsPage.vue'), meta: { requiresAuth: true, role: 'KOMUNITAS' } },
   { path: '/communities/campaigns/history', component: () => import('@/views/community/CommunityHistoryPage.vue'), meta: { requiresAuth: true, role: 'KOMUNITAS' } },
+  { path: '/communities/campaigns/:id/analysis', component: () => import('@/views/community/CommunityCampaignAnalysisPage.vue'), meta: { requiresAuth: true, role: 'KOMUNITAS' } },
   { path: '/communities/:id', name: 'CommunityProfile', component: PublicCommunityProfilePage },
   { path: '/search', component: () => import('@/views/search/SearchResultsPage.vue') },
 

@@ -16,7 +16,7 @@
         </div>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="space-y-5" novalidate>
+      <form v-if="!success" @submit.prevent="handleSubmit" class="space-y-5" novalidate>
 
         <!-- Nama PIC -->
         <div>
@@ -318,14 +318,8 @@ async function handleSubmit() {
     })
 
     const result = res.data.data || res.data
-    const updatedUser = {
-      ...loggedInUser.value,
-      role: result.role || 'KOMUNITAS',
-    }
-    localStorage.setItem('user', JSON.stringify(updatedUser))
 
-    success.value = 'Registrasi komunitas berhasil! Mengalihkan...'
-    setTimeout(() => router.push('/communities/dashboard'), 2000)
+    success.value = result.message || 'Pendaftaran komunitas berhasil dikirim. Menunggu review superadmin.'
   } catch (e) {
     const status = e.response?.status
     const errData = e.response?.data?.errors || {}

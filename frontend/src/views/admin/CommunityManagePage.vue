@@ -103,7 +103,7 @@ async function loadPage(page = 1) {
     const res = await api.get('/superadmin/communities', { params })
     const data = res.data.data || res.data
     communities.value = data.data || data
-    pagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
+    pagination.value = data.meta || { current_page: data.current_page || 1, last_page: data.last_page || 1, total: data.total || 0 }
   } catch (e) {
     error.value = e.response?.data?.message || 'Gagal memuat data komunitas'
   } finally {

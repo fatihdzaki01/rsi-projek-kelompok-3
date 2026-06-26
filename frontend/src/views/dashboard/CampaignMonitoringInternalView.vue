@@ -136,6 +136,30 @@ const disbursementStatusBadge = (status) => {
           </div>
         </section>
 
+        <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <h3 class="text-sm font-bold text-[#1a2744] mb-3">Detail Requirement Campaign</h3>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <div><span class="text-xs text-gray-400 block">Tipe Distribusi</span><span class="text-gray-800 font-medium">{{ campaign.tipe_distribusi || '-' }}</span></div>
+            <div><span class="text-xs text-gray-400 block">Target Audiens</span><span class="text-gray-800 font-medium">{{ campaign.target_audiens || '-' }}</span></div>
+            <div><span class="text-xs text-gray-400 block">Target Penerima</span><span class="text-gray-800 font-medium">{{ campaign.target_penerima_label || '-' }}</span></div>
+            <div><span class="text-xs text-gray-400 block">Pencairan</span><span class="text-gray-800 font-medium">{{ campaign.jumlah_pencairan || 0 }}x</span></div>
+            <div><span class="text-xs text-gray-400 block">Lokasi</span><span class="text-gray-800 font-medium">{{ campaign.nama_wilayah || '-' }}</span></div>
+            <div><span class="text-xs text-gray-400 block">Status</span><span :class="statusBadgeClass" class="inline px-3 py-0.5 rounded-full text-xs font-semibold">{{ campaign.status }}</span></div>
+          </div>
+          <div v-if="campaign.deskripsi" class="mt-4 pt-4 border-t border-stone-100">
+            <p class="text-xs text-gray-400 font-medium mb-1">Deskripsi</p>
+            <p class="text-sm text-gray-700 leading-relaxed">{{ campaign.deskripsi }}</p>
+          </div>
+          <div v-if="campaign.url_rab" class="mt-3">
+            <p class="text-xs text-gray-400 font-medium mb-1">Dokumen RAB</p>
+            <a :href="campaign.url_rab" target="_blank" class="text-sm text-[#8B4513] underline break-all">{{ campaign.url_rab }}</a>
+          </div>
+          <div v-if="campaign.alasan_penolakan" class="mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+            <p class="text-xs text-red-500 font-medium mb-0.5">Alasan Penolakan</p>
+            <p class="text-sm text-red-700">{{ campaign.alasan_penolakan }}</p>
+          </div>
+        </section>
+
         <section class="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden mb-6">
           <div class="px-5 py-3 border-b border-stone-100">
             <h3 class="text-sm font-semibold text-gray-800">Donasi (50 Terbaru)</h3>

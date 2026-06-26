@@ -121,7 +121,8 @@ async function loadPage(page = 1) {
     const res = await api.get('/superadmin/audit-logs', { params })
     const data = (res.data && res.data.data) || {}
     logs.value = data.data || []
-    pagination.value = { current_page: data.current_page || 1, last_page: data.last_page || 1, total: data.total || 0 }
+    const meta = data.meta || {}
+    pagination.value = { current_page: meta.current_page || data.current_page || 1, last_page: meta.last_page || data.last_page || 1, total: meta.total || data.total || 0 }
   } catch (e) {
     logs.value = []
   } finally {

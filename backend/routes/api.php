@@ -79,6 +79,7 @@ Route::middleware(['throttle:120,1', 'auth:sanctum'])->group(function () {
         Route::post('/communities/withdrawals', [PencairanController::class, 'store']);
 
         Route::get('/communities/dashboard', [DashboardController::class, 'index']);
+        Route::get('/communities/campaigns/{id}/donation-stats', [DashboardController::class, 'donationStats']);
     });
 
     Route::post('/donations', [DonationController::class, 'store']);

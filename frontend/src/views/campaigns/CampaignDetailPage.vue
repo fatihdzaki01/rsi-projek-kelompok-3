@@ -111,31 +111,30 @@
           </div>
 
           <!-- Stats row -->
-          <div class="flex items-center gap-5">
+          <div class="flex items-center flex-wrap gap-5">
             <div class="flex items-center gap-1.5 text-sm text-foreground">
-              <Heart
-                class="size-4 text-[#C0392B]"
-                aria-hidden="true"
-              />
+              <Heart class="size-4 text-[#C0392B]" aria-hidden="true" />
               <span>
-                <span class="font-semibold">
-                  {{ campaign.jumlah_donatur.toLocaleString('id-ID') }}
-                </span>
+                <span class="font-semibold">{{ campaign.jumlah_donatur.toLocaleString('id-ID') }}</span>
                 Donatur
               </span>
             </div>
-            <div v-if="campaign.total_penerima_manfaat" class="flex items-center gap-1.5 text-sm text-foreground">
+            <div class="flex items-center gap-1.5 text-sm text-foreground">
               <Users class="size-4 text-[#8B4513]" aria-hidden="true" />
               <span>
-                <span class="font-semibold">{{ campaign.total_penerima_manfaat.toLocaleString('id-ID') }}</span>
+                <span class="font-semibold">{{ targetPenerimaLabel }}</span>
                 Penerima
               </span>
             </div>
+            <div v-if="campaign.jumlah_pencairan > 0" class="flex items-center gap-1.5 text-sm text-foreground">
+              <svg class="size-4 text-[#8B4513]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 17l4-5 4 3 4-6 4 2 4-4"/></svg>
+              <span>
+                <span class="font-semibold">{{ campaign.jumlah_pencairan }}x</span>
+                Pencairan
+              </span>
+            </div>
             <div class="flex items-center gap-1.5 text-sm text-foreground">
-              <Clock
-                class="size-4 text-muted-foreground"
-                aria-hidden="true"
-              />
+              <Clock class="size-4 text-muted-foreground" aria-hidden="true" />
               <span class="font-semibold">{{ timeRemaining }}</span>
             </div>
           </div>
@@ -182,7 +181,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Heart, Clock, Flag, Building2, Users } from 'lucide-vue-next'
+import { Heart, Clock, Flag, Users } from 'lucide-vue-next'
 import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
@@ -209,6 +208,8 @@ const campaign = ref({
   progress_persen: 0,
   jumlah_donatur: 0,
   total_penerima_manfaat: 0,
+  target_penerima_label: '-',
+  jumlah_pencairan: 0,
 })
 const komunitas = ref({ id_komunitas: null, nama_lembaga: '' })
 const updates = ref([])
@@ -240,6 +241,14 @@ const pct = computed(() => {
 })
 
 const timeRemaining = computed(() => formatTimeRemaining(campaign.value.tanggal_selesai))
+
+const targetPenerimaLabel = computed(() => {
+  const val = campaign.value.target_penerima_label
+  if (val === 'Kolektif') return 'Kolektif'
+  const num = Number(val)
+  if (!isNaN(num) && num > 0) return num.toLocaleString('id-ID')
+  return '-'
+})
 
 function formatRupiah(amount) {
   return 'Rp ' + Number(amount).toLocaleString('id-ID')

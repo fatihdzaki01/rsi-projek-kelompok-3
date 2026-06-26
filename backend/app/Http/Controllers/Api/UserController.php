@@ -22,6 +22,11 @@ class UserController extends Controller
             return ApiResponse::error('Akses profil ditolak', null, 403);
         }
 
+        $komunitasStatus = null;
+        if ($user->komunitas) {
+            $komunitasStatus = $user->komunitas->status;
+        }
+
         return ApiResponse::success([
             'id_user' => $user->id_user,
             'username' => $user->username,
@@ -35,6 +40,7 @@ class UserController extends Controller
             'jenis_kelamin' => $user->jenis_kelamin,
             'tanggal_lahir' => $user->tanggal_lahir,
             'kode_wilayah' => $user->kode_wilayah,
+            'komunitas_status' => $komunitasStatus,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
         ], 'Profil berhasil ditampilkan');

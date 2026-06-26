@@ -231,15 +231,12 @@ class AuthController extends Controller
                 'nama_bank'        => '-',
                 'nomor_rekening'   => '-',
                 'foto_buku_rekening_url' => '-',
-                'status'           => Komunitas::STATUS_AKTIF,
-                'direview_oleh'    => User::where('role', User::ROLE_SUPERADMIN)->first()->id_user,
+                'status'           => Komunitas::STATUS_MENUNGGU,
             ]);
 
             if ($request->nama_pic) {
                 $authUser->update(['nama_lengkap' => $request->nama_pic]);
             }
-
-            $authUser->update(['role' => User::ROLE_KOMUNITAS]);
 
             if ($request->hasFile('dokumen')) {
                 foreach ($request->file('dokumen') as $idJenisDok => $file) {
@@ -260,8 +257,9 @@ class AuthController extends Controller
             'id_user'     => $authUser->id_user,
             'email'       => $authUser->email,
             'nama_lembaga' => $request->nama_lembaga,
-            'role'        => User::ROLE_KOMUNITAS,
-        ], 'Registrasi komunitas berhasil.', 201);
+            'role'        => $authUser->role,
+            'status'      => Komunitas::STATUS_MENUNGGU,
+        ], 'Pendaftaran komunitas berhasil dikirim. Menunggu review superadmin.', 201);
     }
 
     public function logout()

@@ -13,7 +13,7 @@
           <div class="px-6 py-5 flex items-center gap-4">
             <div class="w-14 h-14 rounded-full bg-[#F5F0E8] flex items-center justify-center text-lg font-bold text-[#8B4513]">{{ (data.community?.nama_lembaga || '?').charAt(0) }}</div>
             <div class="flex-1">
-              <h1 class="text-base font-bold text-[#2C2C2C]">{{ data.community?.nama_lembaga }}</h1>
+              <router-link :to="`/communities/${data.community?.id_komunitas}`" class="text-base font-bold text-[#2C2C2C] hover:text-[#8B4513] transition-colors">{{ data.community?.nama_lembaga }}</router-link>
               <p class="text-sm text-gray-400">{{ data.community?.email }}</p>
               <div class="flex items-center gap-3 mt-1">
                 <span :class="['px-2 py-0.5 rounded-full text-xs font-medium', data.community?.is_active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700']">{{ data.community?.is_active ? 'Aktif' : 'Nonaktif' }}</span>
@@ -40,7 +40,9 @@
             </thead>
             <tbody>
               <tr v-for="(c, i) in campaigns" :key="c.id_campaign" :class="['hover:bg-stone-50', i < campaigns.length - 1 ? 'border-b border-stone-100' : '']">
-                <td class="px-5 py-3 text-[#2C2C2C]">{{ c.judul }}</td>
+                <td class="px-5 py-3 text-[#2C2C2C]">
+                  <router-link :to="`/campaigns/${c.id_campaign}/review`" class="text-[#8B4513] hover:underline">{{ c.judul }}</router-link>
+                </td>
                 <td class="px-5 py-3 text-right">{{ formatRupiah(c.target_dana) }}</td>
                 <td class="px-5 py-3 text-right font-medium text-green-600">{{ formatRupiah(c.dana_terkumpul) }}</td>
                 <td class="px-5 py-3 text-center">

@@ -84,7 +84,7 @@ async function loadReports(page = 1) {
     const res = await api.get('/superadmin/campaign-reports', { params: { page, per_page: perPage.value } })
     const data = res.data.data || res.data
     reports.value = data.data || data
-    reportPagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
+    reportPagination.value = data.meta || { current_page: data.current_page || 1, last_page: data.last_page || 1, total: data.total || 0 }
   } catch (e) {
     reports.value = []
   } finally {
@@ -99,7 +99,7 @@ async function loadClarifications(page = 1) {
     const res = await api.get('/superadmin/campaign-clarifications', { params: { page, per_page: perPageClar.value } })
     const data = res.data.data || res.data
     clarifications.value = data.data || data
-    clarPagination.value = data.meta || data.pagination || { current_page: 1, last_page: 1, total: 0 }
+    clarPagination.value = data.meta || { current_page: data.current_page || 1, last_page: data.last_page || 1, total: data.total || 0 }
   } catch (e) {
     clarifications.value = []
   } finally {

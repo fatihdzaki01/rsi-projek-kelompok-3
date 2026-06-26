@@ -13,6 +13,9 @@ const stats = ref({
   campaign_aktif: 0,
   campaign_selesai: 0,
   campaign_menunggu_review: 0,
+  campaign_ditolak: 0,
+  campaign_nonaktif: 0,
+  campaign_ditutup_permanen: 0,
   total_donatur_aktif: 0,
 })
 
@@ -33,13 +36,17 @@ const fetchDashboard = async () => {
     const data = dashboardResponse.data.data
 
     const summary = data?.summary ?? {}
+    const breakdown = data?.campaign_status_breakdown ?? {}
     stats.value = {
       total_users: summary.total_users ?? 0,
-      total_campaign: summary.total_campaign ?? 0,
+      total_campaign: data?.total_campaign_tampil ?? summary.total_campaign ?? 0,
       total_donasi: summary.total_nominal_donasi ?? 0,
-      campaign_aktif: summary.campaign_aktif ?? 0,
-      campaign_selesai: summary.campaign_selesai ?? 0,
-      campaign_menunggu_review: summary.campaign_menunggu_review ?? 0,
+      campaign_aktif: breakdown.aktif ?? summary.campaign_aktif ?? 0,
+      campaign_selesai: breakdown.selesai ?? summary.campaign_selesai ?? 0,
+      campaign_menunggu_review: breakdown.menunggu_review ?? summary.campaign_menunggu_review ?? 0,
+      campaign_ditolak: breakdown.ditolak ?? 0,
+      campaign_nonaktif: breakdown.nonaktif ?? 0,
+      campaign_ditutup_permanen: breakdown.ditutup_permanen ?? 0,
       total_donatur_aktif: summary.total_donatur_aktif ?? 0,
     }
 
@@ -78,14 +85,13 @@ onMounted(fetchDashboard)
           <div class="bg-white rounded-xl p-5 shadow-sm border border-stone-200">
             <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total User</p>
             <h2 class="text-2xl font-bold text-gray-800 mt-1">{{ Number(stats.total_users).toLocaleString('id-ID') }}</h2>
-            <span class="text-xs text-gray-400">Database aktif</span>
           </div>
 
           <div class="bg-white rounded-xl p-5 shadow-sm border border-stone-200">
             <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total Campaign</p>
             <h2 class="text-2xl font-bold text-gray-800 mt-1">{{ Number(stats.total_campaign).toLocaleString('id-ID') }}</h2>
             <span class="text-xs text-gray-400">
-              {{ stats.campaign_aktif }} aktif &bull; {{ stats.campaign_selesai }} selesai &bull; {{ stats.campaign_menunggu_review }} menunggu
+              {{ stats.campaign_aktif }} aktif &bull; {{ stats.campaign_selesai }} selesai &bull; {{ stats.campaign_menunggu_review }} menunggu &bull; {{ stats.campaign_ditolak }} ditolak &bull; {{ stats.campaign_nonaktif }} nonaktif &bull; {{ stats.campaign_ditutup_permanen }} ditutup
             </span>
           </div>
 
@@ -103,7 +109,6 @@ onMounted(fetchDashboard)
                 <h2 class="text-sm font-semibold text-gray-800">Perlu Tindakan Segera</h2>
                 <p class="text-xs text-gray-400">Campaign yang menunggu review superadmin.</p>
               </div>
-              <span class="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-medium">{{ campaigns.length }} data</span>
             </div>
 
             <div v-if="campaigns.length === 0" class="p-8 text-center text-gray-400 text-sm">

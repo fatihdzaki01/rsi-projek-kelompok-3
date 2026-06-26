@@ -57,6 +57,10 @@ class CampaignPublicController extends Controller
                     'tipe_distribusi' => $campaign->tipe_distribusi,
                     'target_audiens' => $campaign->target_audiens,
                     'total_penerima_manfaat' => $campaign->total_penerima_manfaat,
+                    'jumlah_pencairan' => $campaign->jumlah_pencairan_approve ?? 0,
+                    'target_penerima_label' => $campaign->tipe_distribusi === 'kolektif'
+                        ? 'Kolektif'
+                        : ($campaign->total_penerima_manfaat ?? '-'),
                 ],
                 'komunitas' => [
                     'id_komunitas' => $campaign->komunitas->id_komunitas ?? null,
