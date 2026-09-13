@@ -123,13 +123,16 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/api/axios'
 import TheNavbar from '@/components/shared/Navbar.vue'
 import TheFooter from '@/components/shared/Footer.vue'
 import PaginationBar from '@/components/ui/PaginationBar.vue'
 import { formatTimeRemaining } from '@/utils/time'
+
+import {CampaignMonitoringServiceClient,} from '@/grpc/monitoring_grpc_web_pb'
+import {CampaignMonitoringRequest,} from '@/grpc/monitoring_pb'
 
 const route = useRoute()
 const campaignId = route.params.id
@@ -139,6 +142,7 @@ const loading = ref(true)
 const errorMessage = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(15)
+const grpcClient = new CampaignMonitoringServiceClient('http://localhost:8090')
 
 async function fetchMonitoring() {
   loading.value = true
@@ -155,6 +159,25 @@ async function fetchMonitoring() {
   }
 }
 
+function testGrpcUnary() {
+  const request = new CampaignMonitoringRequest()
+
+  request.setIdCampaign(Number(campaignId))
+
+  grpcClient.getCampaignMonitoring(
+    request,
+    {},
+    (err, response) => {
+      if (err) {
+        console.error('gRPC error:', err)
+        return
+      }
+
+      console.log('gRPC response:', response)
+    }
+  )
+}
+
 function goToPage(page) {
   currentPage.value = page
   fetchMonitoring()
@@ -166,7 +189,10 @@ function changePerPage(perPage) {
   fetchMonitoring()
 }
 
-onMounted(fetchMonitoring)
+onMounted(() => {
+  fetchMonitoring()
+  testGrpcUnary()
+})
 
 const statusBadgeClass = computed(() => {
   const map = {
