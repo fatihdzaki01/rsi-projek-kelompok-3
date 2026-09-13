@@ -202,6 +202,37 @@ services:
     networks:
       - berbagive-net
 
+  grpc-service:
+    build: ./grpc-service
+    container_name: berbagive-grpc
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: "${DB_DATABASE:-berbagive}"
+      DB_USERNAME: "${DB_USERNAME:-berbagive}"
+      DB_PASSWORD: "${DB_PASSWORD:-berbagive123}"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - berbagive-net
+
+  envoy:
+    image: envoyproxy/envoy:v1.31-latest
+    container_name: berbagive-envoy
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+    depends_on:
+      - grpc-service
+    networks:
+      - berbagive-net
+
 volumes:
   pgdata:
   minio-data:
