@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package monitoring;
+
+// ============================================================
+// Messages
+// ============================================================
+
+// Request: kirim id_campaign untuk unary maupun streaming
+message CampaignMonitoringRequest {
+  int32 id_campaign = 1;
+}
+
+// Satu item donatur terbaru
+message DonaturItem {
+  string nama       = 1; // "Anonim" jika is_anonim = true
+  string created_at = 2; // format string: "2026-09-01 10:00:00"
+  int64  nominal    = 3; // nominal donasi dalam rupiah
+}
+
+// Payload utama — dipakai untuk unary response & setiap update streaming
+message CampaignMonitoringUpdate {
+  int32  id_campaign     = 1;
+  string judul           = 2;
+  string status          = 3;  // e.g. "aktif", "selesai"
+  string nama_lembaga    = 4;
+  string nama_kategori   = 5;  // "" jika tidak ada kategori
+  int64  target_dana     = 6;
+  int64  dana_terkumpul  = 7;
+  float  progress_persen = 8;  // e.g. 45.67
+  int32  jumlah_donatur  = 9;
+  int32  hari_tersisa    = 10;
+  string tanggal_mulai   = 11; // format string: "2026-09-01"
+  string tanggal_selesai = 12; // format string: "2026-09-30"
+  repeated DonaturItem donatur_terbaru = 13; // maks 20 item
+}
+
+// ============================================================
+// Service
+// ============================================================
+
+service CampaignMonitoringService {
+  // Unary — ambil data campaign monitoring sekali (pengganti REST GET)
+  rpc GetCampaignMonitoring(CampaignMonitoringRequest)
+      returns (CampaignMonitoringUpdate);
+
+  // Server-streaming — push update otomatis tiap ada perubahan data
+  rpc StreamCampaignMonitoring(CampaignMonitoringRequest)
+      returns (stream CampaignMonitoringUpdate);
+}
