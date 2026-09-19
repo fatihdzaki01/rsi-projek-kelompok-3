@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@berbagive/grpc-client": "file:grpc-client",
     "axios": "^1.17.0",
     "google-protobuf": "^4.0.2",
     "grpc-web": "^2.1.1",
