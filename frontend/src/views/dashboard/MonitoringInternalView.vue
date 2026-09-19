@@ -12,6 +12,54 @@
           <span class="text-[#1a2744] font-medium">Monitoring</span>
         </nav>
 
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex gap-2">
+            <button
+              type="button"
+              @click="switchMode('rest')"
+              class="px-4 py-2 rounded-lg text-sm font-medium transition"
+              :class="
+                !useGrpc
+                  ? 'bg-[#8B4513] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              "
+            >
+              REST API
+            </button>
+
+            <button
+              type="button"
+              @click="switchMode('grpc')"
+              class="px-4 py-2 rounded-lg text-sm font-medium transition"
+              :class="
+                useGrpc
+                  ? 'bg-[#8B4513] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              "
+            >
+              gRPC Streaming
+            </button>
+          </div>
+
+          <div v-if="useGrpc" class="text-sm font-medium">
+            <span v-if="streamStatus === 'connecting'" class="text-yellow-600">
+              🟡 Connecting...
+            </span>
+
+            <span v-else-if="streamStatus === 'connected'" class="text-green-600">
+              🟢 Live
+            </span>
+
+            <span v-else-if="streamStatus === 'error'" class="text-red-600">
+              🔴 Error
+            </span>
+
+            <span v-else-if="streamStatus === 'ended'" class="text-gray-500">
+              ⚪ Ended
+            </span>
+          </div>
+        </div>
+
         <!-- Loading -->
         <div v-if="loading" class="flex items-center justify-center py-20">
           <div class="w-8 h-8 border-2 border-[#8B4513] border-t-transparent rounded-full animate-spin" />
@@ -131,8 +179,11 @@ import TheFooter from '@/components/shared/Footer.vue'
 import PaginationBar from '@/components/ui/PaginationBar.vue'
 import { formatTimeRemaining } from '@/utils/time'
 
-import {CampaignMonitoringServiceClient,} from '@/grpc/monitoring_grpc_web_pb'
-import {CampaignMonitoringRequest,} from '@/grpc/monitoring_pb'
+import * as grpcWebPb from '@berbagive/grpc-client'
+import * as monitoringPb from '@berbagive/grpc-client/monitoring_pb.js'
+
+const CampaignMonitoringServiceClient = grpcWebPb.CampaignMonitoringServiceClient
+const CampaignMonitoringRequest = monitoringPb.CampaignMonitoringRequest
 
 const route = useRoute()
 const campaignId = route.params.id
@@ -143,6 +194,95 @@ const errorMessage = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(15)
 const grpcClient = new CampaignMonitoringServiceClient('http://localhost:8090')
+
+const useGrpc = ref(false)
+const streamStatus = ref('')
+let grpcStream = null
+
+function mapGrpcResponse(response) {
+  return {
+    id_campaign: response.getIdCampaign(),
+    judul: response.getJudul(),
+    status: response.getStatus(),
+    nama_lembaga: response.getNamaLembaga(),
+    nama_kategori: response.getNamaKategori(),
+    target_dana: response.getTargetDana(),
+    dana_terkumpul: response.getDanaTerkumpul(),
+    progress_persen: response.getProgressPersen(),
+    jumlah_donatur: response.getJumlahDonatur(),
+    hari_tersisa: response.getHariTersisa(),
+    tanggal_mulai: response.getTanggalMulai(),
+    tanggal_selesai: response.getTanggalSelesai(),
+
+    donatur_terbaru: response.getDonaturTerbaruList().map((donatur) => ({
+      nama: donatur.getNama(),
+      created_at: donatur.getCreatedAt(),
+      nominal: donatur.getNominal(),
+    })),
+
+    // Tidak tersedia di monitoring.proto
+    total_penerima_manfaat: null,
+    donatur_pagination: null,
+  }
+}
+
+function startGrpcStream() {
+  stopGrpcStream()
+
+  const request = new CampaignMonitoringRequest()
+  request.setIdCampaign(Number(campaignId))
+
+  streamStatus.value = 'connecting'
+  loading.value = true
+  errorMessage.value = ''
+
+  grpcStream = grpcClient.streamCampaignMonitoring(request, {})
+
+  grpcStream.on('data', (response) => {
+    console.log('gRPC stream data:', response)
+
+    data.value = mapGrpcResponse(response)
+
+    loading.value = false
+    streamStatus.value = 'connected'
+  })
+
+  grpcStream.on('error', (err) => {
+    console.error('gRPC stream error:', err)
+
+    loading.value = false
+    streamStatus.value = 'error'
+    errorMessage.value = 'Gagal terhubung ke gRPC streaming.'
+  })
+
+  grpcStream.on('end', () => {
+    console.log('gRPC stream ended')
+
+    streamStatus.value = 'ended'
+    grpcStream = null
+  })
+}
+
+function stopGrpcStream() {
+  if (grpcStream) {
+    grpcStream.cancel()
+    grpcStream = null
+  }
+
+  streamStatus.value = ''
+}
+
+function switchMode(mode) {
+  if (mode === 'grpc') {
+    useGrpc.value = true
+    startGrpcStream()
+    return
+  }
+
+  useGrpc.value = false
+  stopGrpcStream()
+  fetchMonitoring()
+}
 
 async function fetchMonitoring() {
   loading.value = true
@@ -189,10 +329,8 @@ function changePerPage(perPage) {
   fetchMonitoring()
 }
 
-onMounted(() => {
-  fetchMonitoring()
-  testGrpcUnary()
-})
+onMounted(() => {fetchMonitoring()})
+onUnmounted(() => {stopGrpcStream()})
 
 const statusBadgeClass = computed(() => {
   const map = {

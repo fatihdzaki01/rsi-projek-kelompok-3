@@ -11,9 +11,14 @@ export default defineConfig({
     vueDevTools(),
   ],
   resolve: {
+    preserveSymlinks: true,
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
+  },
+  optimizeDeps: {
+    include: ['@berbagive/grpc-client'],
+    force: true,
   },
   server: {
     proxy: {

@@ -1,0 +1,6 @@
+{
+  "name": "@berbagive/grpc-client",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./monitoring_grpc_web_pb.js"
+}
