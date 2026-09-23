@@ -107,7 +107,7 @@ services:
       - berbagive-net
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: berbagive-minio
     restart: unless-stopped
     logging: *logging
