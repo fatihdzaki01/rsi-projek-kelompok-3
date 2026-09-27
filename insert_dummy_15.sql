@@ -117,22 +117,39 @@ INSERT INTO dokumen_komunitas (id_dokumen, id_komunitas, id_jenis_dok, file_url,
 SELECT setval('dokumen_komunitas_id_dokumen_seq', 15, true);
 
 -- 8. campaign
-INSERT INTO campaign (id_campaign, id_komunitas, id_kategori, kode_wilayah, judul, deskripsi, foto_campaign_url, target_dana, dana_terkumpul, tipe_distribusi, status, tanggal_mulai, tanggal_selesai) VALUES
-(1, 1, 1, '33.01', 'Campaign 1', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(2, 2, 2, '33.02', 'Campaign 2', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(3, 3, 3, '33.03', 'Campaign 3', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(4, 4, 4, '33.04', 'Campaign 4', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(5, 5, 5, '33.05', 'Campaign 5', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(6, 6, 6, '33.06', 'Campaign 6', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(7, 7, 7, '33.07', 'Campaign 7', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(8, 8, 8, '33.08', 'Campaign 8', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(9, 9, 9, '33.09', 'Campaign 9', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(10, 10, 10, '33.10', 'Campaign 10', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(11, 11, 11, '33.11', 'Campaign 11', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(12, 12, 12, '33.12', 'Campaign 12', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(13, 13, 13, '33.13', 'Campaign 13', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(14, 14, 14, '33.14', 'Campaign 14', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31'),
-(15, 15, 15, '33.15', 'Campaign 15', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'aktif', '2026-06-01', '2026-12-31');
+
+INSERT INTO campaign (
+    id_campaign,
+    id_komunitas,
+    id_kategori,
+    kode_wilayah,
+    judul,
+    deskripsi,
+    foto_campaign_url,
+    target_dana,
+    dana_terkumpul,
+    tipe_distribusi,
+    target_audiens,
+    status,
+    tanggal_mulai,
+    tanggal_selesai
+) VALUES
+
+(1, 1, 1, '33.01', 'Campaign 1', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(2, 2, 2, '33.02', 'Campaign 2', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(3, 3, 3, '33.03', 'Campaign 3', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(4, 4, 4, '33.04', 'Campaign 4', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(5, 5, 5, '33.05', 'Campaign 5', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(6, 6, 6, '33.06', 'Campaign 6', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(7, 7, 7, '33.07', 'Campaign 7', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(8, 8, 8, '33.08', 'Campaign 8', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(9, 9, 9, '33.09', 'Campaign 9', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(10, 10, 10, '33.10', 'Campaign 10', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(11, 11, 11, '33.11', 'Campaign 11', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(12, 12, 12, '33.12', 'Campaign 12', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(13, 13, 13, '33.13', 'Campaign 13', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(14, 14, 14, '33.14', 'Campaign 14', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31'),
+(15, 15, 15, '33.15', 'Campaign 15', 'Desc', 'foto.png', 10000000, 10000, 'individual', 'Masyarakat umum', 'aktif', '2026-06-01', '2026-12-31');
 
 SELECT setval('campaign_id_campaign_seq', 15, true);
 
