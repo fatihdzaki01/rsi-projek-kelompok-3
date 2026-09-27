@@ -116,7 +116,7 @@ def main():
         },
     }
 
-    output_path = Path("benchmark/rest_result.json")
+    output_path = Path(__file__).parent / "rest_result.json"
     output_path.write_text(
         json.dumps(result, indent=2),
         encoding="utf-8",

@@ -139,7 +139,7 @@ def main():
         },
     }
 
-    output_path = Path("benchmark/grpc_result.json")
+    output_path = Path(__file__).parent / "grpc_result.json"
     output_path.write_text(
         json.dumps(result, indent=2),
         encoding="utf-8",

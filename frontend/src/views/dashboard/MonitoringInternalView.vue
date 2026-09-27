@@ -193,7 +193,10 @@ const loading = ref(true)
 const errorMessage = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(15)
-const grpcClient = new CampaignMonitoringServiceClient('http://localhost:8090')
+const grpcClient = new CampaignMonitoringServiceClient(
+  import.meta.env.VITE_GRPC_URL ?? 'http://localhost:8090',
+)
+
 
 const useGrpc = ref(false)
 const streamStatus = ref('')
