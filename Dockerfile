@@ -25,7 +25,10 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 
 COPY backend/composer.json backend/composer.lock ./
-RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts --ignore-platform-req=php
+RUN COMPOSER_PROCESS_TIMEOUT=600 composer install \
+    --no-dev --no-interaction --optimize-autoloader \
+    --no-scripts --ignore-platform-req=php
+
 
 COPY backend/ .
 COPY php-fpm-www.conf /usr/local/etc/php-fpm.d/zz-opcache-preload.conf

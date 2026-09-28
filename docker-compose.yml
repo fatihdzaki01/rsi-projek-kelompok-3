@@ -30,7 +30,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CACHE_STORE: redis
-      FILESYSTEM_DISK: s3
+      FILESYSTEM_DISK: "${FILESYSTEM_DISK:-public}"
       AWS_ACCESS_KEY_ID: "${MINIO_ROOT_USER:-berbagive}"
       AWS_SECRET_ACCESS_KEY: "${MINIO_ROOT_PASSWORD:-berbagive123}"
       AWS_DEFAULT_REGION: us-east-1
@@ -56,7 +56,7 @@ services:
       - berbagive-net
 
   nginx:
-    image: nginx:1.24-alpine
+    image: nginx:1.27-alpine
     container_name: berbagive-nginx
     restart: unless-stopped
     logging: *logging
@@ -107,7 +107,8 @@ services:
       - berbagive-net
 
   minio:
-    image: quay.io/minio/minio:latest
+    profiles: ["storage"]
+    image: minio/minio:latest
     container_name: berbagive-minio
     restart: unless-stopped
     logging: *logging
@@ -189,7 +190,7 @@ services:
       REDIS_PORT: 6379
       CACHE_STORE: redis
       QUEUE_CONNECTION: database
-      FILESYSTEM_DISK: s3
+      FILESYSTEM_DISK: "${FILESYSTEM_DISK:-public}"
       AWS_ACCESS_KEY_ID: "${MINIO_ROOT_USER:-berbagive}"
       AWS_SECRET_ACCESS_KEY: "${MINIO_ROOT_PASSWORD:-berbagive123}"
       AWS_DEFAULT_REGION: us-east-1
